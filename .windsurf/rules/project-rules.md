@@ -11,7 +11,7 @@ The code will be written in a windows environment.
 - When fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implementation. And if you finally do this, make sure to remove the old implementation afterwards so we don't have duplicate logic.
 - Keep the codebase very clean and organized
 - Structs should be created in their own files where the file name is the struct name.
-- if structs or functions within them become large > 40 lines, then split the struct off into its own mod and have separate files for big functions.
+- if structs or functions within them become large > 40 lines, then split the struct off into its own mod and have separate files for big functions.s
 - Avoid writing scripts in files if possible, especially if the script is likely only to be run once
 - Avoid having files over 40-100 lines of code (excluding tests). Refactor at that point.
 - Mocking data is only needed for tests

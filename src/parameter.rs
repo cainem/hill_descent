@@ -4,16 +4,23 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     value: f64,
-    min:   Option<f64>,
-    max:   Option<f64>,
+    min: Option<f64>,
+    max: Option<f64>,
 }
 
 impl Parameter {
     /// Creates a new unconstrained Parameter.
     /// Panics if `value` is NaN or infinite.
     pub fn new(value: f64) -> Self {
-        assert!(value.is_finite(), "value must be finite and not NaN or infinite");
-        Self { value, min: None, max: None }
+        assert!(
+            value.is_finite(),
+            "value must be finite and not NaN or infinite"
+        );
+        Self {
+            value,
+            min: None,
+            max: None,
+        }
     }
 
     /// Creates a new Parameter with given bounds.
@@ -23,10 +30,21 @@ impl Parameter {
         assert!(min.is_finite() && max.is_finite(), "bounds must be finite");
         assert!(min <= max, "min must be ≤ max");
         let mut v = value;
-        assert!(v.is_finite(), "value must be finite and not NaN or infinite");
-        if v < min { v = min; }
-        if v > max { v = max; }
-        Self { value: v, min: Some(min), max: Some(max) }
+        assert!(
+            v.is_finite(),
+            "value must be finite and not NaN or infinite"
+        );
+        if v < min {
+            v = min;
+        }
+        if v > max {
+            v = max;
+        }
+        Self {
+            value: v,
+            min: Some(min),
+            max: Some(max),
+        }
     }
 
     /// Returns the current value.
@@ -37,10 +55,19 @@ impl Parameter {
     /// Sets a new value, clamping it to [min, max] (or [f64::MIN, f64::MAX] if unconstrained).
     /// Panics if `new_value` is NaN or infinite.
     pub fn set(&mut self, new_value: f64) {
-        assert!(new_value.is_finite(), "value must be finite and not NaN or infinite");
+        assert!(
+            new_value.is_finite(),
+            "value must be finite and not NaN or infinite"
+        );
         let lo = self.min.unwrap_or(f64::MIN);
         let hi = self.max.unwrap_or(f64::MAX);
-        let v = if new_value < lo { lo } else if new_value > hi { hi } else { new_value };
+        let v = if new_value < lo {
+            lo
+        } else if new_value > hi {
+            hi
+        } else {
+            new_value
+        };
         self.value = v;
     }
 }
