@@ -1,6 +1,8 @@
 // src/locus.rs
+use crate::locus_adjustment::DirectionOfTravel;
 use crate::locus_adjustment::LocusAdjustment;
 use crate::parameter::Parameter;
+use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Locus {
@@ -33,6 +35,55 @@ impl Locus {
     pub fn apply_adjustment_flag(&self) -> bool {
         self.apply_adjustment_flag
     }
+
+    /// Applies PDD mutation rules to this locus, returning a new one.
+    pub fn mutate<R: Rng>(&self, rng: &mut R, m1: f64, m2: f64, m3: f64, m4: f64, m5: f64) -> Self {
+        let mut new_adj_val = self.adjustment.adjustment_value().clone();
+        let mut new_direction = self.adjustment.direction_of_travel();
+        let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
+        let mut new_apply_flag = self.apply_adjustment_flag();
+        // Direction mutation (m4)
+        if rng.gen_bool(m4) {
+            new_direction = match new_direction {
+                DirectionOfTravel::Add => DirectionOfTravel::Subtract,
+                DirectionOfTravel::Subtract => DirectionOfTravel::Add,
+            };
+            new_double_flag = !new_double_flag;
+        }
+        // Doubling flag mutation (m3)
+        if rng.gen_bool(m3) {
+            new_double_flag = !new_double_flag;
+        }
+        // Adjustment value mutation (m5)
+        if rng.gen_bool(m5) {
+            if new_double_flag {
+                new_adj_val.set(new_adj_val.get() * 2.0);
+            } else {
+                new_adj_val.set(new_adj_val.get() / 2.0);
+            }
+        }
+        // Rebuild adjustment (checksum updated)
+        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Apply flag mutation (m1/m2)
+        if new_apply_flag {
+            if rng.gen_bool(m2) {
+                new_apply_flag = false;
+            }
+        } else if rng.gen_bool(m1) {
+            new_apply_flag = true;
+        }
+        // Apply adjustment to value if flag is true
+        let mut new_value = self.value.clone();
+        if new_apply_flag {
+            let sign = match new_adjustment.direction_of_travel() {
+                DirectionOfTravel::Add => 1.0,
+                DirectionOfTravel::Subtract => -1.0,
+            };
+            let delta = sign * new_adjustment.adjustment_value().get();
+            new_value.set(new_value.get() + delta);
+        }
+        Locus::new(new_value, new_adjustment, new_apply_flag)
+    }
 }
 
 #[cfg(test)]
@@ -40,6 +91,7 @@ mod tests {
     use super::*;
     use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
+    use rand::rngs::mock::StepRng;
 
     // Helper function to create a LocusAdjustment for tests
     fn create_test_adjustment(
@@ -53,6 +105,12 @@ mod tests {
     // Helper function to create a Parameter for tests
     fn create_test_parameter(value: f64) -> Parameter {
         Parameter::new(value)
+    }
+
+    fn create_test_locus(val: f64) -> Locus {
+        let param = Parameter::new(val);
+        let adj = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Add, false);
+        Locus::new(param, adj, false)
     }
 
     #[test]
@@ -100,5 +158,26 @@ mod tests {
         let flag_false = false;
         let locus_false = Locus::new(param_val.clone(), adj.clone(), flag_false);
         assert_eq!(locus_false.apply_adjustment_flag(), flag_false);
+    }
+
+    #[test]
+    fn mutate_no_mutation_returns_same() {
+        let l = create_test_locus(1.5);
+        let mut rng = StepRng::new(0, 0);
+        let l2 = l.mutate(&mut rng, 0.0, 0.0, 0.0, 0.0, 0.0);
+        assert_eq!(l2, l);
+    }
+
+    #[test]
+    fn mutate_with_full_probs_applies_flag_flip() {
+        let l = create_test_locus(2.0);
+        let mut rng = StepRng::new(u64::MAX, 0);
+        let l2 = l.mutate(&mut rng, 1.0, 1.0, 1.0, 1.0, 1.0);
+        assert_ne!(l2, l);
+        assert_eq!(l2.apply_adjustment_flag(), true);
+        assert_eq!(
+            l2.adjustment().direction_of_travel(),
+            DirectionOfTravel::Subtract
+        );
     }
 }
