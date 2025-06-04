@@ -90,7 +90,7 @@ mod tests {
         let adj1 = LocusAdjustment::new(p.clone(), DirectionOfTravel::Add, false);
         assert_eq!(adj1.adjustment_value(), &p);
         assert_eq!(adj1.direction_of_travel(), DirectionOfTravel::Add);
-        assert_eq!(adj1.doubling_or_halving_flag(), false);
+        assert!(!adj1.doubling_or_halving_flag());
         // deterministic checksum
         let adj2 = LocusAdjustment::new(p.clone(), DirectionOfTravel::Add, false);
         assert_eq!(adj1.checksum(), adj2.checksum());
