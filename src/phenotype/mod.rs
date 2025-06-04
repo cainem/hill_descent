@@ -3,6 +3,8 @@ use crate::system_parameters::SystemParameters;
 use rand::Rng;
 
 pub mod compute_expressed;
+pub mod sexual_reproduction;
+pub mod calculate_crossovers;
 
 /// A Phenotype is constructed from a pair of gametes.
 #[derive(Debug, Clone, PartialEq)]
