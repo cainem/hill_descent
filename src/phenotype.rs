@@ -1,4 +1,5 @@
 use crate::gamete::Gamete;
+use crate::system_parameters::SystemParameters;
 use rand::Rng;
 
 /// A Phenotype is constructed from a pair of gametes.
@@ -10,17 +11,32 @@ pub struct Phenotype {
     gamete2: Gamete,
     /// The expressed parameter values derived from the two gametes.
     expressed: Vec<f64>,
+    /// System parameters extracted from the first five expressed values.
+    system_parameters: SystemParameters,
 }
 
 impl Phenotype {
     /// Creates a new Phenotype from two gametes, computing expressed values using the given RNG.
     pub fn new<R: Rng>(gamete1: Gamete, gamete2: Gamete, rng: &mut R) -> Self {
         let expressed = Self::compute_expressed(&gamete1, &gamete2, rng);
+        // Extract the first five expressed values as system parameters
+        let system_parameters = SystemParameters::new(&expressed);
         Self {
             gamete1,
             gamete2,
             expressed,
+            system_parameters,
         }
+    }
+
+    /// Returns a reference to the first gamete.
+    pub fn gamete1(&self) -> &Gamete {
+        &self.gamete1
+    }
+
+    /// Returns a reference to the second gamete.
+    pub fn gamete2(&self) -> &Gamete {
+        &self.gamete2
     }
 
     /// Returns references to the two gametes.
@@ -33,15 +49,18 @@ impl Phenotype {
         &self.expressed
     }
 
+    /// Returns a reference to the system parameters (m1..m5).
+    pub fn system_parameters(&self) -> &SystemParameters {
+        &self.system_parameters
+    }
+
     /// Compute expressed values per PDD regression rules.
     fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -> Vec<f64> {
         let loci1 = g1.loci();
         let loci2 = g2.loci();
-        assert_eq!(
-            loci1.len(),
-            loci2.len(),
-            "Gametes must have same number of loci"
-        );
+        if loci1.len() != loci2.len() {
+            panic!("Gametes must have same number of loci");
+        }
         let max_u64 = u64::MAX as f64;
         let mut result = Vec::with_capacity(loci1.len());
         for (l1, l2) in loci1.iter().zip(loci2.iter()) {

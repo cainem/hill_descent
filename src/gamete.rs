@@ -1,4 +1,5 @@
 use crate::locus::Locus;
+use crate::system_parameters::SystemParameters;
 use rand::Rng;
 use rand::seq::SliceRandom;
 
@@ -43,11 +44,7 @@ impl Gamete {
         parent2: &Gamete,
         crossovers: usize,
         rng: &mut R,
-        m1: f64,
-        m2: f64,
-        m3: f64,
-        m4: f64,
-        m5: f64,
+        sys: &SystemParameters,
     ) -> (Gamete, Gamete) {
         let len = parent1.len();
         assert_eq!(len, parent2.len(), "Gametes must have same number of loci");
@@ -74,11 +71,11 @@ impl Gamete {
                 }
             }
             if use_p1 {
-                offspring1.push(parent1.loci[i].mutate(rng, m1, m2, m3, m4, m5));
-                offspring2.push(parent2.loci[i].mutate(rng, m1, m2, m3, m4, m5));
+                offspring1.push(parent1.loci[i].mutate(rng, sys));
+                offspring2.push(parent2.loci[i].mutate(rng, sys));
             } else {
-                offspring1.push(parent2.loci[i].mutate(rng, m1, m2, m3, m4, m5));
-                offspring2.push(parent1.loci[i].mutate(rng, m1, m2, m3, m4, m5));
+                offspring1.push(parent2.loci[i].mutate(rng, sys));
+                offspring2.push(parent1.loci[i].mutate(rng, sys));
             }
         }
         (Gamete::new(offspring1), Gamete::new(offspring2))
@@ -88,8 +85,10 @@ impl Gamete {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::locus::Locus;
     use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
+    use crate::system_parameters::SystemParameters;
     use rand::rngs::mock::StepRng;
 
     fn create_test_locus(val: f64) -> Locus {
@@ -127,7 +126,8 @@ mod tests {
         let g1 = create_test_gamete(&[1.0, 2.0, 3.0]);
         let g2 = create_test_gamete(&[4.0, 5.0, 6.0]);
         let mut rng = StepRng::new(0, 0);
-        let (o1, o2) = Gamete::reproduce(&g1, &g2, 0, &mut rng, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let sys = SystemParameters::default();
+        let (o1, o2) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
         assert_eq!(o1, g1);
         assert_eq!(o2, g2);
     }
@@ -138,7 +138,8 @@ mod tests {
         let g1 = create_test_gamete(&[1.0]);
         let g2 = create_test_gamete(&[1.0, 2.0]);
         let mut rng = StepRng::new(0, 0);
-        let _ = Gamete::reproduce(&g1, &g2, 0, &mut rng, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let sys = SystemParameters::default();
+        let _ = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
     }
 
     #[test]
@@ -147,6 +148,7 @@ mod tests {
         let g1 = create_test_gamete(&[1.0, 2.0, 3.0]);
         let g2 = create_test_gamete(&[4.0, 5.0, 6.0]);
         let mut rng = StepRng::new(0, 0);
-        let _ = Gamete::reproduce(&g1, &g2, 2, &mut rng, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let sys = SystemParameters::default();
+        let _ = Gamete::reproduce(&g1, &g2, 2, &mut rng, &sys);
     }
 }

@@ -2,6 +2,7 @@
 use crate::locus_adjustment::DirectionOfTravel;
 use crate::locus_adjustment::LocusAdjustment;
 use crate::parameter::Parameter;
+use crate::system_parameters::SystemParameters;
 use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,13 +38,13 @@ impl Locus {
     }
 
     /// Applies PDD mutation rules to this locus, returning a new one.
-    pub fn mutate<R: Rng>(&self, rng: &mut R, m1: f64, m2: f64, m3: f64, m4: f64, m5: f64) -> Self {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
         let mut new_adj_val = self.adjustment.adjustment_value().clone();
         let mut new_direction = self.adjustment.direction_of_travel();
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
         // Direction mutation (m4)
-        if rng.gen_bool(m4) {
+        if rng.gen_bool(sys.m4()) {
             new_direction = match new_direction {
                 DirectionOfTravel::Add => DirectionOfTravel::Subtract,
                 DirectionOfTravel::Subtract => DirectionOfTravel::Add,
@@ -51,11 +52,11 @@ impl Locus {
             new_double_flag = !new_double_flag;
         }
         // Doubling flag mutation (m3)
-        if rng.gen_bool(m3) {
+        if rng.gen_bool(sys.m3()) {
             new_double_flag = !new_double_flag;
         }
         // Adjustment value mutation (m5)
-        if rng.gen_bool(m5) {
+        if rng.gen_bool(sys.m5()) {
             if new_double_flag {
                 new_adj_val.set(new_adj_val.get() * 2.0);
             } else {
@@ -66,10 +67,10 @@ impl Locus {
         let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
-            if rng.gen_bool(m2) {
+            if rng.gen_bool(sys.m2()) {
                 new_apply_flag = false;
             }
-        } else if rng.gen_bool(m1) {
+        } else if rng.gen_bool(sys.m1()) {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true
@@ -91,6 +92,7 @@ mod tests {
     use super::*;
     use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
+    use crate::system_parameters::SystemParameters;
     use rand::rngs::mock::StepRng;
 
     // Helper function to create a LocusAdjustment for tests
@@ -164,7 +166,8 @@ mod tests {
     fn mutate_no_mutation_returns_same() {
         let l = create_test_locus(1.5);
         let mut rng = StepRng::new(0, 0);
-        let l2 = l.mutate(&mut rng, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let sys = SystemParameters::new(&[]);
+        let l2 = l.mutate(&mut rng, &sys);
         assert_eq!(l2, l);
     }
 
@@ -172,7 +175,8 @@ mod tests {
     fn mutate_with_full_probs_applies_flag_flip() {
         let l = create_test_locus(2.0);
         let mut rng = StepRng::new(u64::MAX, 0);
-        let l2 = l.mutate(&mut rng, 1.0, 1.0, 1.0, 1.0, 1.0);
+        let sys = SystemParameters::new(&[1.0, 1.0, 1.0, 1.0, 1.0]);
+        let l2 = l.mutate(&mut rng, &sys);
         assert_ne!(l2, l);
         assert_eq!(l2.apply_adjustment_flag(), true);
         assert_eq!(
