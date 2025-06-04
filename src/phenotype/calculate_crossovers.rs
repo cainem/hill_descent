@@ -37,16 +37,36 @@ mod tests {
     fn test_calculate_crossovers() {
         assert_eq!(Phenotype::calculate_crossovers(1.0, 0), 0, "len 0");
         assert_eq!(Phenotype::calculate_crossovers(0.0, 5), 0, "len 5, m3=0.0");
-        assert_eq!(Phenotype::calculate_crossovers(0.8, 5), 1, "len 5, m3=0.8 -> 1");
-        assert_eq!(Phenotype::calculate_crossovers(2.0, 5), 2, "len 5, m3=2.0 -> 2"); // max_allowed = (5-1)/2 = 2
+        assert_eq!(
+            Phenotype::calculate_crossovers(0.8, 5),
+            1,
+            "len 5, m3=0.8 -> 1"
+        );
+        assert_eq!(
+            Phenotype::calculate_crossovers(2.0, 5),
+            2,
+            "len 5, m3=2.0 -> 2"
+        ); // max_allowed = (5-1)/2 = 2
         assert_eq!(
             Phenotype::calculate_crossovers(3.0, 5),
             2,
             "len 5, m3=3.0 -> capped at 2"
         );
-        assert_eq!(Phenotype::calculate_crossovers(1.0, 1), 0, "len 1, max_allowed=0");
-        assert_eq!(Phenotype::calculate_crossovers(1.0, 2), 0, "len 2, max_allowed=0");
-        assert_eq!(Phenotype::calculate_crossovers(1.0, 3), 1, "len 3, max_allowed=1");
+        assert_eq!(
+            Phenotype::calculate_crossovers(1.0, 1),
+            0,
+            "len 1, max_allowed=0"
+        );
+        assert_eq!(
+            Phenotype::calculate_crossovers(1.0, 2),
+            0,
+            "len 2, max_allowed=0"
+        );
+        assert_eq!(
+            Phenotype::calculate_crossovers(1.0, 3),
+            1,
+            "len 3, max_allowed=1"
+        );
         assert_eq!(Phenotype::calculate_crossovers(-1.0, 5), 0, "negative m3");
     }
 }
