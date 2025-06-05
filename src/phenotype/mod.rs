@@ -64,7 +64,7 @@ impl Phenotype {
 mod tests {
     use super::*;
     use crate::locus::Locus;
-    use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
+    use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
     use rand::thread_rng;
 

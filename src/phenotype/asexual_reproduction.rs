@@ -11,7 +11,7 @@ impl Phenotype {
     ///
     /// The process involves:
     /// 1. Taking the parent's two gametes (`gamete1`, `gamete2`).
-    /// 2. Calling `gamete::reproduce(gamete1, gamete2, ...)` which performs crossover
+    /// 2. Calling `gamete::Gamete::reproduce(gamete1, gamete2, ...)` which performs crossover
     ///    and mutation, returning a new pair of gametes (`new_gamete_a`, `new_gamete_b`).
     /// 3. Creating a single new `Phenotype` offspring using these two new gametes:
     ///    `Phenotype::new(new_gamete_a, new_gamete_b, rng)`.
@@ -27,7 +27,7 @@ impl Phenotype {
         // Perform reproduction (crossover and mutation) on the parent's gametes
         // to get a new pair of gametes.
         let (new_gamete_a, new_gamete_b) =
-            gamete::reproduce(gamete1, gamete2, crossovers, rng, sys_params);
+            gamete::Gamete::reproduce(gamete1, gamete2, crossovers, rng, sys_params);
 
         // Create one new phenotype using the pair of newly formed gametes.
         Phenotype::new(new_gamete_a, new_gamete_b, rng)

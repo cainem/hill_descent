@@ -46,11 +46,11 @@ impl Phenotype {
 
         let crossovers1 = Phenotype::calculate_crossovers(sys_params1.m3(), gamete_len);
         let (meiotic_g1_p1, meiotic_g2_p1) =
-            crate::gamete::reproduce(p1_g1, p1_g2, crossovers1, rng, sys_params1);
+            crate::gamete::Gamete::reproduce(p1_g1, p1_g2, crossovers1, rng, sys_params1);
 
         let crossovers2 = Phenotype::calculate_crossovers(sys_params2.m3(), gamete_len);
         let (meiotic_g1_p2, meiotic_g2_p2) =
-            crate::gamete::reproduce(p2_g1, p2_g2, crossovers2, rng, sys_params2);
+            crate::gamete::Gamete::reproduce(p2_g1, p2_g2, crossovers2, rng, sys_params2);
 
         let offspring1 = Phenotype::new(meiotic_g1_p1, meiotic_g1_p2, rng);
         let offspring2 = Phenotype::new(meiotic_g2_p1, meiotic_g2_p2, rng);
@@ -63,7 +63,7 @@ impl Phenotype {
 mod tests {
     use crate::gamete::Gamete;
     use crate::locus::Locus;
-    use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
+    use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
     use crate::phenotype::Phenotype; // For Phenotype::new in helpers
     use crate::system_parameters::SystemParameters;

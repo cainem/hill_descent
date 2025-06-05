@@ -1,5 +1,4 @@
 pub mod reproduce;
-pub use self::reproduce::reproduce;
 
 use crate::locus::Locus;
 
@@ -41,7 +40,7 @@ impl Gamete {
 mod tests {
     use super::*;
     use crate::locus::Locus;
-    use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
+    use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
 
     fn create_test_locus(val: f64) -> Locus {

@@ -1,6 +1,6 @@
 // src/locus/mutate.rs
 use super::Locus; // Locus struct is defined in src/locus/mod.rs
-use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
+use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
 use crate::system_parameters::SystemParameters;
 use rand::Rng;
 
@@ -58,7 +58,7 @@ impl Locus {
 #[cfg(test)]
 mod tests {
     use crate::locus::Locus; // To use the Locus struct definition
-    use crate::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
+    use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameter::Parameter;
     use crate::system_parameters::SystemParameters;
     use rand::rngs::mock::StepRng;
