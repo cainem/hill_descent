@@ -97,13 +97,15 @@ mod tests {
     #[test]
     fn given_parents_with_zero_m_values_when_reproduce_then_offspring_inherit_parental_gametes() {
         let mut rng = StepRng::new(0, 1);
-        let p_vals = vec![0.0; 5]; // For SystemParameters m_i to be 0.0
+        // Phenotype::new requires 7 loci for system parameters.
+        // These will all be 0.0, resulting in m_i = 0.0 for system parameters.
+        let p_vals = vec![0.0; 7];
 
         let parent1 = helper_create_test_phenotype(&p_vals, &p_vals, &mut rng);
         let parent2 = helper_create_test_phenotype(&p_vals, &p_vals, &mut rng);
 
         // Verify test setup: all system parameters should be 0.0
-        let zero_sys_params = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0]);
+        let zero_sys_params = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
         assert_eq!(
             parent1.system_parameters(),
             &zero_sys_params,
@@ -145,21 +147,29 @@ mod tests {
     #[should_panic(expected = "Parent gametes must have the same length for sexual reproduction.")]
     fn given_parents_with_mismatched_gamete_lengths_when_reproduce_then_panics() {
         let mut rng = StepRng::new(0, 1);
-        let p1 = helper_create_test_phenotype(&[0.0; 3], &[0.0; 3], &mut rng);
-        let p2 = helper_create_test_phenotype(&[0.0; 2], &[0.0; 2], &mut rng);
+        // Ensure phenotypes can be created (>=7 loci), but have different lengths for the target panic.
+        let p1_loci_vals = &[0.0; 7]; // 7 loci
+        let p2_loci_vals = &[0.0; 8]; // 8 loci
+        let p1 = helper_create_test_phenotype(p1_loci_vals, p1_loci_vals, &mut rng);
+        let p2 = helper_create_test_phenotype(p2_loci_vals, p2_loci_vals, &mut rng);
         Phenotype::sexual_reproduction(&p1, &p2, &mut rng);
     }
 
     #[test]
-    #[should_panic(expected = "Number of crossovers must satisfy len > 2 * crossovers")]
+    #[should_panic(
+        expected = "Cannot create Phenotype: expressed values (genes) length 0 is less than required 7 for SystemParameters. Gametes need to provide at least 7 loci."
+    )]
     fn given_parent_with_zero_length_gametes_when_reproduce_then_panics() {
         let mut rng = StepRng::new(0, 1);
         let empty_gamete = Gamete::new(vec![]);
-        // Phenotype::new with empty gametes will lead to SystemParameters with m_i=0.
-        // calculate_crossovers(0.0, 0) will return 0.
-        // Gamete::reproduce with len=0, crossovers=0 will panic.
+        // Phenotype::new will panic because gametes with 0 loci cannot provide the 7 values needed for SystemParameters.
+        // This panic occurs before sexual_reproduction can be called with such a phenotype.
         let parent1 = Phenotype::new(empty_gamete.clone(), empty_gamete.clone(), &mut rng);
+        // The following line is not strictly necessary for the panic, as parent1 creation will panic,
+        // but kept for structural similarity if one wanted to test sexual_reproduction with invalid parents.
+        // However, sexual_reproduction itself would not be reached if parent creation fails.
         let parent2 = Phenotype::new(empty_gamete.clone(), empty_gamete.clone(), &mut rng);
+        // The call to sexual_reproduction will not be reached due to panic in Phenotype::new above.
         Phenotype::sexual_reproduction(&parent1, &parent2, &mut rng);
     }
 }

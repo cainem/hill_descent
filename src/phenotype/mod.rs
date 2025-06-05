@@ -15,7 +15,7 @@ pub struct Phenotype {
     gamete2: Gamete,
     /// The expressed parameter values derived from the two gametes.
     expressed: Vec<f64>,
-    /// System parameters extracted from the first five expressed values.
+    /// System parameters extracted from the first seven expressed values.
     system_parameters: SystemParameters,
 }
 
@@ -23,12 +23,18 @@ impl Phenotype {
     /// Creates a new Phenotype from two gametes, computing expressed values using the given RNG.
     pub fn new<R: Rng>(gamete1: Gamete, gamete2: Gamete, rng: &mut R) -> Self {
         let expressed = compute_expressed::compute_expressed(&gamete1, &gamete2, rng);
-        // Extract the first five expressed values as system parameters
-        let system_parameters = SystemParameters::new(&expressed);
+        if expressed.len() < 7 {
+            panic!(
+                "Cannot create Phenotype: expressed values (genes) length {} is less than required 7 for SystemParameters. Gametes need to provide at least 7 loci.",
+                expressed.len()
+            );
+        }
+        // Extract the first seven expressed values as system parameters
+        let system_parameters = SystemParameters::new(&expressed[0..7]);
         Self {
             gamete1,
             gamete2,
-            expressed,
+            expressed, // Stores all expressed values
             system_parameters,
         }
     }
@@ -80,10 +86,20 @@ mod tests {
 
     #[test]
     fn given_two_gametes_when_new_then_fields_are_set() {
-        let g1 = create_test_gamete(&[1.0, 2.0]);
-        let g2 = create_test_gamete(&[3.0, 4.0]);
+        // Provide at least 7 values for loci to ensure SystemParameters can be derived.
+        // The actual values for the first 7 can be arbitrary for this test's purpose,
+        // as it only checks gamete storage.
+        let g1_loci_values = &[1.0, 2.0, 0.1, 0.5, 0.001, 100.0, 2.0, 8.0, 9.0]; // 9 loci
+        let g2_loci_values = &[3.0, 4.0, 0.1, 0.5, 0.001, 100.0, 2.0, 10.0, 11.0]; // 9 loci
+        let g1 = create_test_gamete(g1_loci_values);
+        let g2 = create_test_gamete(g2_loci_values);
         let mut rng = thread_rng();
         let ph = Phenotype::new(g1.clone(), g2.clone(), &mut rng);
         assert_eq!(ph.gametes(), (&g1, &g2));
+        // Assert that expressed values and system parameters are also set.
+        // The length of expressed_values should match the number of loci in the gametes.
+        // This assumes compute_expressed returns one value per locus pair.
+        assert_eq!(ph.expressed_values().len(), g1_loci_values.len());
+        let _ = ph.system_parameters(); // Access to ensure it was created without panic
     }
 }

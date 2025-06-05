@@ -43,11 +43,15 @@ mod tests {
     #[test]
     fn given_phenotype_when_asexual_reproduction_then_one_offspring_is_created() {
         let mut parent_creation_rng = StepRng::new(0, 1); // RNG for creating parent Phenotype
-        // Gamete::reproduce requires gamete_len > 2 * crossovers.
-        // If parent's m3 leads to crossovers=1, then len must be > 2 (e.g., 3 or more).
-        // Using len=4 for safety, as calculate_crossovers will cap crossovers if m3 is too high.
-        let parent_g1 = create_test_gamete(&[0.1, 0.2, 0.3, 0.4]); // Use valid probabilities for m1-m4
-        let parent_g2 = create_test_gamete(&[0.5, 0.6, 0.7, 0.8]); // Use valid probabilities for m1-m4
+        // Phenotype::new requires at least 7 loci to derive SystemParameters.
+        // Gamete::reproduce also has constraints: gamete_len > 2 * crossovers.
+        // We'll use 7 loci, with values corresponding to default system parameters.
+        // m1, m2, m3, m4, m5, max_age, crossover_points
+        let parent_loci_values1 = &[0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0];
+        let parent_loci_values2 = &[0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // Can be different
+
+        let parent_g1 = create_test_gamete(parent_loci_values1);
+        let parent_g2 = create_test_gamete(parent_loci_values2);
 
         let parent_phenotype = Phenotype::new(
             parent_g1.clone(),

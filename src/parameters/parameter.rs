@@ -70,6 +70,16 @@ impl Parameter {
         };
         self.value = v;
     }
+
+    /// Returns the minimum bound of the parameter, if set.
+    pub fn min(&self) -> Option<f64> {
+        self.min
+    }
+
+    /// Returns the maximum bound of the parameter, if set.
+    pub fn max(&self) -> Option<f64> {
+        self.max
+    }
 }
 
 #[cfg(test)]
