@@ -1,15 +1,15 @@
 // src/parameter.rs
+use std::ops::RangeInclusive;
 
 /// Parameter struct for bounded/unbounded f64 values
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     value: f64,
-    min: Option<f64>,
-    max: Option<f64>,
+    bounds: RangeInclusive<f64>,
 }
 
 impl Parameter {
-    /// Creates a new unconstrained Parameter.
+    /// Creates a new Parameter with default bounds [f64::MIN, f64::MAX].
     /// Panics if `value` is NaN or infinite.
     pub fn new(value: f64) -> Self {
         assert!(
@@ -18,32 +18,33 @@ impl Parameter {
         );
         Self {
             value,
-            min: None,
-            max: None,
+            bounds: f64::MIN..=f64::MAX,
         }
     }
 
     /// Creates a new Parameter with given bounds.
     /// Clamps the initial value to [min, max].
     /// Panics if `min` > `max` or if either bound is not finite.
-    pub fn with_bounds(value: f64, min: f64, max: f64) -> Self {
-        assert!(min.is_finite() && max.is_finite(), "bounds must be finite");
-        assert!(min <= max, "min must be ≤ max");
+    pub fn with_bounds(value: f64, min_val: f64, max_val: f64) -> Self {
+        assert!(
+            min_val.is_finite() && max_val.is_finite(),
+            "bounds must be finite"
+        );
+        assert!(min_val <= max_val, "min must be ≤ max");
         let mut v = value;
         assert!(
             v.is_finite(),
             "value must be finite and not NaN or infinite"
         );
-        if v < min {
-            v = min;
+        if v < min_val {
+            v = min_val;
         }
-        if v > max {
-            v = max;
+        if v > max_val {
+            v = max_val;
         }
         Self {
             value: v,
-            min: Some(min),
-            max: Some(max),
+            bounds: min_val..=max_val,
         }
     }
 
@@ -52,15 +53,15 @@ impl Parameter {
         self.value
     }
 
-    /// Sets a new value, clamping it to [min, max] (or [f64::MIN, f64::MAX] if unconstrained).
+    /// Sets a new value, clamping it to the parameter's bounds.
     /// Panics if `new_value` is NaN or infinite.
     pub fn set(&mut self, new_value: f64) {
         assert!(
             new_value.is_finite(),
             "value must be finite and not NaN or infinite"
         );
-        let lo = self.min.unwrap_or(f64::MIN);
-        let hi = self.max.unwrap_or(f64::MAX);
+        let lo = *self.bounds.start();
+        let hi = *self.bounds.end();
         let v = if new_value < lo {
             lo
         } else if new_value > hi {
@@ -71,61 +72,122 @@ impl Parameter {
         self.value = v;
     }
 
-    /// Returns the minimum bound of the parameter, if set.
-    pub fn min(&self) -> Option<f64> {
-        self.min
-    }
-
-    /// Returns the maximum bound of the parameter, if set.
-    pub fn max(&self) -> Option<f64> {
-        self.max
+    /// Returns the bounds of the parameter.
+    pub fn bounds(&self) -> &RangeInclusive<f64> {
+        &self.bounds
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Parameter;
+    use super::*;
 
     #[test]
-    fn given_unconstrained_new_and_set_values_work() {
+    fn given_new_when_value_is_valid_then_parameter_is_created_with_default_bounds() {
+        let p = Parameter::new(1.23);
+        assert_eq!(p.get(), 1.23);
+        assert_eq!(p.bounds(), &(f64::MIN..=f64::MAX));
+    }
+
+    #[test]
+    fn given_new_and_set_when_values_are_valid_then_values_are_set_correctly() {
         let mut p = Parameter::new(1.23);
         assert_eq!(p.get(), 1.23);
         p.set(-9.87);
         assert_eq!(p.get(), -9.87);
+        // Test clamping with default bounds (effectively unconstrained for typical values)
+        p.set(f64::MAX / 2.0);
+        assert_eq!(p.get(), f64::MAX / 2.0);
+        p.set(f64::MIN / 2.0);
+        assert_eq!(p.get(), f64::MIN / 2.0);
     }
 
     #[test]
-    fn given_constrained_new_clamps_initial_value() {
+    fn given_with_bounds_when_value_is_within_bounds_then_parameter_is_created() {
+        let p = Parameter::with_bounds(1.5, 1.0, 2.0);
+        assert_eq!(p.get(), 1.5);
+        assert_eq!(p.bounds(), &(1.0..=2.0));
+    }
+
+    #[test]
+    fn given_with_bounds_when_value_is_below_min_then_value_is_clamped_to_min() {
         let p = Parameter::with_bounds(0.5, 1.0, 2.0);
         assert_eq!(p.get(), 1.0);
-        let p2 = Parameter::with_bounds(3.0, 1.0, 2.0);
-        assert_eq!(p2.get(), 2.0);
     }
 
     #[test]
-    fn given_constrained_set_clamps_value() {
+    fn given_with_bounds_when_value_is_above_max_then_value_is_clamped_to_max() {
+        let p = Parameter::with_bounds(3.0, 1.0, 2.0);
+        assert_eq!(p.get(), 2.0);
+    }
+
+    #[test]
+    fn given_set_when_value_is_within_bounds_then_value_is_set() {
+        let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
+        p.set(1.7);
+        assert_eq!(p.get(), 1.7);
+    }
+
+    #[test]
+    fn given_set_when_value_is_below_min_then_value_is_clamped_to_min() {
         let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
         p.set(0.0);
         assert_eq!(p.get(), 1.0);
+    }
+
+    #[test]
+    fn given_set_when_value_is_above_max_then_value_is_clamped_to_max() {
+        let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
         p.set(10.0);
         assert_eq!(p.get(), 2.0);
     }
 
     #[test]
-    #[should_panic]
-    fn new_panics_on_nan_or_infinite() {
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_new_when_value_is_nan_then_panics() {
         let _ = Parameter::new(f64::NAN);
     }
 
     #[test]
-    #[should_panic]
-    fn with_bounds_panics_on_invalid_bounds() {
-        let _ = Parameter::with_bounds(0.0, f64::INFINITY, 1.0);
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_new_when_value_is_infinite_then_panics() {
+        let _ = Parameter::new(f64::INFINITY);
     }
 
     #[test]
-    #[should_panic]
-    fn set_panics_on_nan_or_infinite() {
+    #[should_panic(expected = "bounds must be finite")]
+    fn given_with_bounds_when_min_is_nan_then_panics() {
+        let _ = Parameter::with_bounds(0.0, f64::NAN, 1.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "bounds must be finite")]
+    fn given_with_bounds_when_max_is_infinite_then_panics() {
+        let _ = Parameter::with_bounds(0.0, 0.0, f64::INFINITY);
+    }
+
+    #[test]
+    #[should_panic(expected = "min must be ≤ max")]
+    fn given_with_bounds_when_min_greater_than_max_then_panics() {
+        let _ = Parameter::with_bounds(0.0, 1.0, 0.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_with_bounds_when_value_is_nan_then_panics() {
+        let _ = Parameter::with_bounds(f64::NAN, 0.0, 1.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_set_when_value_is_nan_then_panics() {
+        let mut p = Parameter::new(0.0);
+        p.set(f64::NAN);
+    }
+
+    #[test]
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_set_when_value_is_infinite_then_panics() {
         let mut p = Parameter::new(0.0);
         p.set(f64::INFINITY);
     }

@@ -14,8 +14,14 @@ pub enum IntervalType {
 
 impl Dimension {
     pub fn new(min: f64, max: f64, number_of_divisions: usize) -> Self {
-        assert!(number_of_divisions > 0, "Dimension divisions must be greater than 0");
-        assert!(max >= min, "Dimension max must be greater than or equal to min");
+        assert!(
+            number_of_divisions > 0,
+            "Dimension divisions must be greater than 0"
+        );
+        assert!(
+            max >= min,
+            "Dimension max must be greater than or equal to min"
+        );
         Self {
             range: min..=max,
             number_of_divisions,
@@ -41,7 +47,7 @@ impl Dimension {
 
         (0..self.number_of_divisions).map(move |i| {
             let start = min_val + i as f64 * step;
-            
+
             if i == self.number_of_divisions - 1 {
                 // Ensure the last interval precisely ends at max_val and is inclusive.
                 IntervalType::EndOfRange(start..=max_val)
@@ -110,7 +116,8 @@ mod tests {
     }
 
     #[test]
-    fn given_dimension_where_min_equals_max_when_get_intervals_then_returns_intervals_of_zero_length() {
+    fn given_dimension_where_min_equals_max_when_get_intervals_then_returns_intervals_of_zero_length()
+     {
         let dimension = Dimension::new(5.0, 5.0, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 3);
@@ -123,7 +130,8 @@ mod tests {
     }
 
     #[test]
-    fn given_dimension_with_fp_step_when_get_intervals_then_boundaries_are_consistent_and_last_interval_ends_at_max() {
+    fn given_dimension_with_fp_step_when_get_intervals_then_boundaries_are_consistent_and_last_interval_ends_at_max()
+     {
         let dimension = Dimension::new(0.0, 0.3, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 3);
@@ -132,29 +140,62 @@ mod tests {
 
         match intervals[0] {
             IntervalType::Standard(ref r) => {
-                assert!((r.start - expected_boundaries[0]).abs() < EPSILON, "Interval 0 start mismatch. Expected {}, got {}", expected_boundaries[0], r.start);
-                assert!((r.end - expected_boundaries[1]).abs() < EPSILON, "Interval 0 end mismatch. Expected {}, got {}", expected_boundaries[1], r.end);
+                assert!(
+                    (r.start - expected_boundaries[0]).abs() < EPSILON,
+                    "Interval 0 start mismatch. Expected {}, got {}",
+                    expected_boundaries[0],
+                    r.start
+                );
+                assert!(
+                    (r.end - expected_boundaries[1]).abs() < EPSILON,
+                    "Interval 0 end mismatch. Expected {}, got {}",
+                    expected_boundaries[1],
+                    r.end
+                );
             }
             _ => panic!("Expected Standard interval for interval 0"),
         }
 
         match intervals[1] {
             IntervalType::Standard(ref r) => {
-                assert!((r.start - expected_boundaries[1]).abs() < EPSILON, "Interval 1 start mismatch. Expected {}, got {}", expected_boundaries[1], r.start);
-                assert!((r.end - expected_boundaries[2]).abs() < EPSILON, "Interval 1 end mismatch. Expected {}, got {}", expected_boundaries[2], r.end);
+                assert!(
+                    (r.start - expected_boundaries[1]).abs() < EPSILON,
+                    "Interval 1 start mismatch. Expected {}, got {}",
+                    expected_boundaries[1],
+                    r.start
+                );
+                assert!(
+                    (r.end - expected_boundaries[2]).abs() < EPSILON,
+                    "Interval 1 end mismatch. Expected {}, got {}",
+                    expected_boundaries[2],
+                    r.end
+                );
             }
             _ => panic!("Expected Standard interval for interval 1"),
         }
 
         match intervals[2] {
             IntervalType::EndOfRange(ref r) => {
-                assert!((*r.start() - expected_boundaries[2]).abs() < EPSILON, "Interval 2 start mismatch. Expected {}, got {}", expected_boundaries[2], *r.start());
+                assert!(
+                    (*r.start() - expected_boundaries[2]).abs() < EPSILON,
+                    "Interval 2 start mismatch. Expected {}, got {}",
+                    expected_boundaries[2],
+                    *r.start()
+                );
                 // The last interval's end is explicitly set to dimension's max_val.
-                assert_eq!(*r.end(), *dimension.range.end(), "Interval 2 end should be exactly dimension max_val");
-                assert!((*r.end() - expected_boundaries[3]).abs() < EPSILON, "Interval 2 end mismatch with expected boundary. Expected {}, got {}", expected_boundaries[3], *r.end());
+                assert_eq!(
+                    *r.end(),
+                    *dimension.range.end(),
+                    "Interval 2 end should be exactly dimension max_val"
+                );
+                assert!(
+                    (*r.end() - expected_boundaries[3]).abs() < EPSILON,
+                    "Interval 2 end mismatch with expected boundary. Expected {}, got {}",
+                    expected_boundaries[3],
+                    *r.end()
+                );
             }
             _ => panic!("Expected EndOfRange interval for interval 2"),
         }
     }
 }
-

@@ -80,12 +80,12 @@ mod tests {
 
         // Check original parameters are at the end and unchanged
         assert_eq!(enhanced_params[7].get(), p1.get());
-        assert_eq!(enhanced_params[7].min(), None);
-        assert_eq!(enhanced_params[7].max(), None);
+        assert_eq!(*enhanced_params[7].bounds().start(), f64::MIN);
+        assert_eq!(*enhanced_params[7].bounds().end(), f64::MAX);
 
         assert_eq!(enhanced_params[8].get(), p2.get());
-        assert_eq!(enhanced_params[8].min(), Some(15.0));
-        assert_eq!(enhanced_params[8].max(), Some(25.0));
+        assert_eq!(*enhanced_params[8].bounds().start(), 15.0);
+        assert_eq!(*enhanced_params[8].bounds().end(), 25.0);
     }
 
     #[test]
@@ -95,37 +95,37 @@ mod tests {
 
         // m1
         let p_m1 = &enhanced_params[0];
-        assert_eq!(p_m1.min(), Some(0.0));
-        assert_eq!(p_m1.max(), Some(1.0));
+        assert_eq!(*p_m1.bounds().start(), 0.0);
+        assert_eq!(*p_m1.bounds().end(), 1.0);
 
         // m2
         let p_m2 = &enhanced_params[1];
-        assert_eq!(p_m2.min(), Some(0.0));
-        assert_eq!(p_m2.max(), Some(1.0));
+        assert_eq!(*p_m2.bounds().start(), 0.0);
+        assert_eq!(*p_m2.bounds().end(), 1.0);
 
         // m3
         let p_m3 = &enhanced_params[2];
-        assert_eq!(p_m3.min(), Some(0.0));
-        assert_eq!(p_m3.max(), Some(1.0));
+        assert_eq!(*p_m3.bounds().start(), 0.0);
+        assert_eq!(*p_m3.bounds().end(), 1.0);
 
         // m4
         let p_m4 = &enhanced_params[3];
-        assert_eq!(p_m4.min(), Some(0.0));
-        assert_eq!(p_m4.max(), Some(1.0));
+        assert_eq!(*p_m4.bounds().start(), 0.0);
+        assert_eq!(*p_m4.bounds().end(), 1.0);
 
         // m5
         let p_m5 = &enhanced_params[4];
-        assert_eq!(p_m5.min(), Some(0.0));
-        assert_eq!(p_m5.max(), Some(1.0));
+        assert_eq!(*p_m5.bounds().start(), 0.0);
+        assert_eq!(*p_m5.bounds().end(), 1.0);
 
         // max_age
         let p_max_age = &enhanced_params[5];
-        assert_eq!(p_max_age.min(), Some(10.0));
-        assert_eq!(p_max_age.max(), Some(1000.0));
+        assert_eq!(*p_max_age.bounds().start(), 10.0);
+        assert_eq!(*p_max_age.bounds().end(), 1000.0);
 
         // crossover_points
         let p_crossover = &enhanced_params[6];
-        assert_eq!(p_crossover.min(), Some(1.0));
-        assert_eq!(p_crossover.max(), Some(10.0));
+        assert_eq!(*p_crossover.bounds().start(), 1.0);
+        assert_eq!(*p_crossover.bounds().end(), 10.0);
     }
 }
