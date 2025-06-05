@@ -2,8 +2,9 @@
 pub mod locus_adjustment;
 pub mod mutate; // Declare the new mutate module
 
+use crate::parameters::parameter::Parameter;
+
 use self::locus_adjustment::LocusAdjustment;
-use crate::parameter::Parameter;
 // Rng and SystemParameters are no longer directly used in this file's non-test code.
 // DirectionOfTravel is only used in tests.
 
@@ -44,9 +45,10 @@ impl Locus {
 
 #[cfg(test)]
 mod tests {
+    use crate::parameters::parameter::Parameter;
+
     use self::locus_adjustment::{DirectionOfTravel, LocusAdjustment}; // DirectionOfTravel needed for create_test_adjustment
     use super::*; // Brings Locus struct and its methods (new, value, etc.) into scope
-    use crate::parameter::Parameter;
     // StepRng and SystemParameters are no longer needed for tests in this file.
 
     // Helper function to create a LocusAdjustment for tests

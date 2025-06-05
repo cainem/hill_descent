@@ -1,5 +1,6 @@
+use crate::parameters::system_parameters::SystemParameters;
+
 use super::Gamete;
-use crate::system_parameters::SystemParameters;
 use rand::Rng;
 use rand::seq::SliceRandom;
 
@@ -55,8 +56,8 @@ mod tests {
     use crate::gamete::Gamete;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
-    use crate::parameter::Parameter;
-    use crate::system_parameters::SystemParameters;
+    use crate::parameters::parameter::Parameter;
+    use crate::parameters::system_parameters::SystemParameters;
     use rand::rngs::mock::StepRng;
 
     fn create_test_locus(val: f64) -> Locus {

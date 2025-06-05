@@ -1,5 +1,6 @@
-use crate::parameter::Parameter;
 use xxhash_rust::xxh3::xxh3_64;
+
+use crate::parameters::parameter::Parameter;
 
 /// Direction of how adjustment is applied: add or subtract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,8 +82,9 @@ impl LocusAdjustment {
 
 #[cfg(test)]
 mod tests {
+    use crate::parameters::parameter::Parameter;
+
     use super::*;
-    use crate::parameter::Parameter;
 
     #[test]
     fn given_valid_params_when_new_then_fields_set() {

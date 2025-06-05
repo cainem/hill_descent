@@ -41,7 +41,7 @@ mod tests {
     use crate::gamete::Gamete;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
-    use crate::parameter::Parameter;
+    use crate::parameters::parameter::Parameter;
     use crate::phenotype::tests::{create_test_gamete, create_test_locus};
     use rand::rngs::mock::StepRng;
     use rand::thread_rng;

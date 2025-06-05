@@ -41,7 +41,7 @@ mod tests {
     use super::*;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
-    use crate::parameter::Parameter;
+    use crate::parameters::parameter::Parameter;
 
     fn create_test_locus(val: f64) -> Locus {
         let param = Parameter::new(val);

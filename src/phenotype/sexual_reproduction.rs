@@ -64,9 +64,9 @@ mod tests {
     use crate::gamete::Gamete;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
-    use crate::parameter::Parameter;
+    use crate::parameters::parameter::Parameter;
+    use crate::parameters::system_parameters::SystemParameters;
     use crate::phenotype::Phenotype; // For Phenotype::new in helpers
-    use crate::system_parameters::SystemParameters;
     use rand::Rng;
     use rand::rngs::mock::StepRng; // For Rng trait in helper signature
 

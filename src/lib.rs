@@ -1,10 +1,22 @@
 pub mod gamete;
 pub mod locus;
-pub mod parameter;
+pub mod parameters;
 pub mod phenotype;
-pub mod system_parameters;
+pub mod world;
 
 pub use gamete::Gamete;
 pub use locus::Locus;
 pub use phenotype::Phenotype;
-pub use system_parameters::SystemParameters;
+use world::World;
+
+use crate::parameters::parameter::Parameter;
+
+// this will take a list of parameters and return a world
+pub fn setup_world(_params: Vec<Parameter>) -> World {
+    todo!()
+}
+
+// this will need sample data
+pub fn run_world(_world: &mut World) {
+    todo!()
+}

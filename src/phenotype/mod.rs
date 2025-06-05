@@ -1,5 +1,4 @@
-use crate::gamete::Gamete;
-use crate::system_parameters::SystemParameters;
+use crate::{gamete::Gamete, parameters::system_parameters::SystemParameters};
 use rand::Rng;
 
 pub mod asexual_reproduction;
@@ -65,7 +64,7 @@ mod tests {
     use super::*;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
-    use crate::parameter::Parameter;
+    use crate::parameters::parameter::Parameter;
     use rand::thread_rng;
 
     pub(crate) fn create_test_locus(val: f64) -> Locus {
