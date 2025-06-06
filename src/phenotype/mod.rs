@@ -4,6 +4,7 @@ use rand::Rng;
 pub mod asexual_reproduction;
 pub mod calculate_crossovers;
 pub mod compute_expressed;
+pub mod new_random_phenotype;
 pub mod sexual_reproduction;
 
 /// A Phenotype is constructed from a pair of gametes.
