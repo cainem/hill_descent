@@ -1,3 +1,4 @@
+pub mod new_random_gamete;
 pub mod reproduce;
 
 use crate::locus::Locus;
