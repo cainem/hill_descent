@@ -1,11 +1,11 @@
 // src/locus/mod.rs
 pub mod locus_adjustment;
 pub mod mutate; // Declare the new mutate module
-pub mod new_random_locus_adjustment;
 pub mod new_random_locus;
+pub mod new_random_locus_adjustment;
 
-use crate::parameters::parameter::Parameter;
-use self::locus_adjustment::LocusAdjustment; // LocusAdjustment for struct
+use self::locus_adjustment::LocusAdjustment;
+use crate::parameters::parameter::Parameter; // LocusAdjustment for struct
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Locus {
@@ -45,9 +45,9 @@ impl Locus {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::locus::locus_adjustment::DirectionOfTravel;
-    use crate::parameters::parameter::Parameter; // Used by create_test_parameter, create_test_adjustment
-    use super::*; // Brings Locus, LocusAdjustment, DirectionOfTravel etc. into scope
+    use crate::parameters::parameter::Parameter; // Used by create_test_parameter, create_test_adjustment // Brings Locus, LocusAdjustment, DirectionOfTravel etc. into scope
     // StdRng, SeedableRng are no longer needed for tests in this file.
 
     // Helper function to create a LocusAdjustment for tests

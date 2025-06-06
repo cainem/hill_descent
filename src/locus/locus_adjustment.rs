@@ -82,13 +82,9 @@ impl LocusAdjustment {
 
 #[cfg(test)]
 mod tests {
-    use crate::parameters::parameter::Parameter; // Existing import
-    use super::*; // Existing import
+    use super::*;
+    use crate::parameters::parameter::Parameter; // Existing import // Existing import
 
-    // New imports for the moved tests
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-    use std::ops::RangeInclusive;
     // E0 is available from file scope (super::E0 or just E0 if in same module level)
     // DirectionOfTravel is available from file scope (super::DirectionOfTravel or just DirectionOfTravel)
 
