@@ -59,29 +59,46 @@ impl Locus {
 
 #[cfg(test)]
 mod tests {
+    use crate::E0;
     use crate::locus::Locus; // To use the Locus struct definition
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::parameters::system_parameters::SystemParameters;
-    use rand::rngs::mock::StepRng;
+    use rand::rngs::mock::StepRng; // For calculating adjustment bounds consistently
 
-    // Original helper function, kept for existing tests if they rely on its specific setup.
+    // Helper function for simpler test cases, now with bounded adjustment_value.
     fn create_test_locus(val: f64) -> Locus {
         let param = Parameter::new(val);
-        let adj = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Add, false);
+        // Assume a typical locus span of 100.0 for calculating adjustment bounds in tests.
+        let assumed_locus_span_for_adj_bounds = 100.0;
+        let max_adj_val_for_tests = (assumed_locus_span_for_adj_bounds
+            * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE)
+            .max(E0);
+        let adj_param = Parameter::with_bounds(0.0, 0.0, max_adj_val_for_tests);
+        let adj = LocusAdjustment::new(adj_param, DirectionOfTravel::Add, false);
         Locus::new(param, adj, false)
     }
 
     // Helper function to create a Locus with specific initial values for testing
     fn create_test_locus_detailed(
         value: f64,
-        adj_value: f64,
+        adj_value: f64, // Initial value for the adjustment parameter
         direction: DirectionOfTravel,
         double_flag: bool,
         apply_flag: bool,
     ) -> Locus {
         let locus_val = Parameter::new(value);
-        let adj_param = Parameter::new(adj_value);
+
+        // Assume a typical locus span of 100.0 for calculating adjustment bounds in tests.
+        let assumed_locus_span_for_adj_bounds = 100.0;
+        let max_adj_val_for_tests = (assumed_locus_span_for_adj_bounds
+            * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE)
+            .max(E0);
+
+        // Create the adjustment_value Parameter with bounds.
+        // The provided adj_value will be clamped if it's outside [0.0, max_adj_val_for_tests].
+        let adj_param = Parameter::with_bounds(adj_value, 0.0, max_adj_val_for_tests);
+
         let adjustment = LocusAdjustment::new(adj_param, direction, double_flag);
         Locus::new(locus_val, adjustment, apply_flag)
     }
@@ -163,6 +180,44 @@ mod tests {
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
         let mutated_locus = initial_locus.mutate(&mut rng, &sys);
         assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 1.0);
+    }
+
+    #[test]
+    fn given_m5_double_true_adj_value_near_max_when_mutate_then_adj_value_clamped_at_max() {
+        // max_adj_val_for_tests will be (100.0 * 0.1).max(E0) = 10.0
+        let initial_locus =
+            create_test_locus_detailed(1.0, 6.0, DirectionOfTravel::Add, true, false); // 6.0 * 2 = 12.0, should clamp to 10.0
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let expected_max_adj_val =
+            (100.0 * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
+        assert_eq!(
+            mutated_locus.adjustment().adjustment_value().get(),
+            expected_max_adj_val
+        );
+    }
+
+    #[test]
+    fn given_m5_halve_true_adj_value_small_positive_when_mutate_then_adj_value_halved_correctly() {
+        // adj_value = 0.1, max_adj_val_for_tests = 10.0. Halving 0.1 gives 0.05.
+        let initial_locus =
+            create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 0.05);
+    }
+
+    #[test]
+    fn given_m5_halve_true_adj_value_zero_when_mutate_then_adj_value_remains_zero() {
+        // adj_value = 0.0, max_adj_val_for_tests = 10.0. Halving 0.0 gives 0.0.
+        let initial_locus =
+            create_test_locus_detailed(1.0, 0.0, DirectionOfTravel::Add, false, false);
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 0.0);
     }
 
     #[test]

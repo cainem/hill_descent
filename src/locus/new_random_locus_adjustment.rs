@@ -23,9 +23,9 @@ impl LocusAdjustment {
         };
         let doubling_or_halving_flag = rng.r#gen::<bool>();
         let locus_span = *value_bounds_for_locus.end() - *value_bounds_for_locus.start();
-        let max_adj_val = (locus_span.abs() * 0.1).max(E0);
+        let max_adj_val = (locus_span.abs() * Self::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
         let random_adj_val = rng.gen_range(0.0..=max_adj_val);
-        let adjustment_value = Parameter::new(random_adj_val);
+        let adjustment_value = Parameter::with_bounds(random_adj_val, 0.0, max_adj_val);
         LocusAdjustment::new(
             adjustment_value,
             direction_of_travel,
@@ -50,15 +50,20 @@ mod tests {
         for _ in 0..100 {
             let adj = LocusAdjustment::new_random_locus_adjustment(&mut rng, &bounds);
             assert!(adj.adjustment_value().get() >= 0.0);
+            let expected_max_wide = (bounds.end() - bounds.start()).abs()
+                * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE;
             assert!(
-                adj.adjustment_value().get() <= 10.0,
-                "adj_val: {} should be <= 10.0",
-                adj.adjustment_value().get()
+                adj.adjustment_value().get() <= expected_max_wide.max(E0),
+                "adj_val: {} should be <= expected_max_wide: {}",
+                adj.adjustment_value().get(),
+                expected_max_wide.max(E0)
             );
         }
 
         let narrow_bounds = 5.0..=5.1;
-        let expected_max_narrow = 0.01f64.max(E0);
+        let narrow_span: f64 = *narrow_bounds.end() - *narrow_bounds.start();
+        let expected_max_narrow =
+            (narrow_span.abs() * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
         for _ in 0..100 {
             let adj_narrow = LocusAdjustment::new_random_locus_adjustment(&mut rng, &narrow_bounds);
             assert!(adj_narrow.adjustment_value().get() >= 0.0);

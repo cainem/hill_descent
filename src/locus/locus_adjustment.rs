@@ -19,6 +19,8 @@ pub struct LocusAdjustment {
 }
 
 impl LocusAdjustment {
+    pub const ADJUSTMENT_VALUE_BOUND_PERCENTAGE: f64 = 0.1;
+
     /// Compute checksum from adjustment parameters.
     fn compute_checksum(
         adjustment_value: &Parameter,
