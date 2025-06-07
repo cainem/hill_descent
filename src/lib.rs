@@ -16,7 +16,7 @@ pub use phenotype::Phenotype;
 use world::World;
 
 // this will take a list of parameters and return a world
-pub fn setup_world(_params: Vec<RangeInclusive<f64>>, _global_constants: GlobalConstants) -> World {
+pub fn setup_world(_params: &[RangeInclusive<f64>], _global_constants: GlobalConstants) -> World {
     todo!()
 }
 
