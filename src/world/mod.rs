@@ -18,7 +18,8 @@ pub struct World {
     _last_division_index: usize,
     _organisms: Organisms,
     _regions: Regions,
-    rng: SmallRng,
+    _global_constants: GlobalConstants,
+    _rng: SmallRng,
 }
 
 impl World {
@@ -28,29 +29,18 @@ impl World {
         // organisms: Organisms, // Organisms will be created internally
         regions: Regions,
         user_defined_parameter_bounds: &[RangeInclusive<f64>],
-        population_size: usize,
-        max_regions: usize,
+        global_constants: GlobalConstants,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
-        let global_constants = GlobalConstants::new(population_size, max_regions);
-        let organisms_instance =
-            Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
+        let organisms = Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
 
         World {
             _dimensions: dimensions,
             _last_division_index: last_division_index,
-            _organisms: organisms_instance,
+            _organisms: organisms,
             _regions: regions,
-            rng, // rng is already initialized
+            _global_constants: global_constants,
+            _rng: rng,
         }
     }
-
-    pub fn reset_rng(&mut self, new_seed: u64) {
-        self.rng = SmallRng::seed_from_u64(new_seed);
-    }
-
-    // Example of how you might provide access to the rng
-    // pub fn rng_mut(&mut self) -> &mut SmallRng {
-    //     &mut self.rng
-    // }
 }

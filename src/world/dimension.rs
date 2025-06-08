@@ -13,17 +13,17 @@ pub enum IntervalType {
 }
 
 impl Dimension {
-    pub fn new(min: f64, max: f64, number_of_divisions: usize) -> Self {
+    pub fn new(range_bounds: RangeInclusive<f64>, number_of_divisions: usize) -> Self {
         assert!(
             number_of_divisions > 0,
             "Dimension divisions must be greater than 0"
         );
         assert!(
-            max >= min,
+            *range_bounds.end() >= *range_bounds.start(),
             "Dimension max must be greater than or equal to min"
         );
         Self {
-            range: min..=max,
+            range: range_bounds,
             number_of_divisions,
         }
     }
@@ -68,18 +68,18 @@ mod tests {
     #[test]
     #[should_panic(expected = "Dimension divisions must be greater than 0")]
     fn given_zero_divisions_when_new_dimension_then_panics() {
-        Dimension::new(0.0, 5.0, 0);
+        Dimension::new(0.0..=5.0, 0);
     }
 
     #[test]
     #[should_panic(expected = "Dimension max must be greater than or equal to min")]
     fn given_max_less_than_min_when_new_dimension_then_panics() {
-        Dimension::new(5.0, 0.0, 1);
+        Dimension::new(5.0..=0.0, 1);
     }
 
     #[test]
     fn given_dimension_when_get_intervals_with_multiple_divisions_then_returns_correct_intervals() {
-        let dimension = Dimension::new(0.0, 3.0, 3);
+        let dimension = Dimension::new(0.0..=3.0, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 3);
         assert_eq!(intervals[0], IntervalType::Standard(0.0..1.0));
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn given_dimension_when_get_intervals_with_one_division_then_returns_single_interval() {
-        let dimension = Dimension::new(0.0, 5.0, 1);
+        let dimension = Dimension::new(0.0..=5.0, 1);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 1);
         assert_eq!(intervals[0], IntervalType::EndOfRange(0.0..=5.0));
@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn given_dimension_with_negative_min_when_get_intervals_then_returns_correct_intervals() {
-        let dimension = Dimension::new(-2.0, 2.0, 4);
+        let dimension = Dimension::new(-2.0..=2.0, 4);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 4);
         assert_eq!(intervals[0], IntervalType::Standard(-2.0..-1.0));
@@ -108,17 +108,18 @@ mod tests {
 
     #[test]
     fn given_dimension_with_non_integer_step_when_get_intervals_then_returns_correct_intervals() {
-        let dimension = Dimension::new(0.0, 1.0, 2);
+        let dimension = Dimension::new(0.0..=1.5, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
-        assert_eq!(intervals.len(), 2);
+        assert_eq!(intervals.len(), 3);
         assert_eq!(intervals[0], IntervalType::Standard(0.0..0.5));
-        assert_eq!(intervals[1], IntervalType::EndOfRange(0.5..=1.0));
+        assert_eq!(intervals[1], IntervalType::Standard(0.5..1.0));
+        assert_eq!(intervals[2], IntervalType::EndOfRange(1.0..=1.5));
     }
 
     #[test]
     fn given_dimension_where_min_equals_max_when_get_intervals_then_returns_intervals_of_zero_length()
      {
-        let dimension = Dimension::new(5.0, 5.0, 3);
+        let dimension = Dimension::new(5.0..=5.0, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 3);
         // When min == max, step is 0. All intervals start at min.
@@ -132,7 +133,7 @@ mod tests {
     #[test]
     fn given_dimension_with_fp_step_when_get_intervals_then_boundaries_are_consistent_and_last_interval_ends_at_max()
      {
-        let dimension = Dimension::new(0.0, 0.3, 3);
+        let dimension = Dimension::new(0.0..=0.3, 3);
         let intervals: Vec<IntervalType> = dimension.get_intervals().collect();
         assert_eq!(intervals.len(), 3);
 
