@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use crate::world::dimension::Dimension;
+use crate::world::dimensions::dimension::Dimension;
 
 impl Dimension {
     pub fn new(range_bounds: RangeInclusive<f64>, number_of_divisions: usize) -> Self {

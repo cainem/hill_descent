@@ -8,3 +8,19 @@ pub mod region;
 pub struct Regions {
     _regions: BTreeMap<Vec<usize>, Region>,
 }
+
+impl Regions {
+    pub fn new() -> Self {
+        Regions {
+            _regions: BTreeMap::new(),
+        }
+    }
+
+    pub fn get_region(&self, key: &Vec<usize>) -> Option<&Region> {
+        self._regions.get(key)
+    }
+
+    pub fn regions(&self) -> &BTreeMap<Vec<usize>, Region> {
+        &self._regions
+    }
+}

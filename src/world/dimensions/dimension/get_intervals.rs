@@ -1,4 +1,4 @@
-use crate::world::dimension::{Dimension, IntervalType};
+use crate::world::dimensions::dimension::{Dimension, IntervalType};
 
 impl Dimension {
     pub fn get_intervals(&self) -> impl Iterator<Item = IntervalType> + '_ {
