@@ -1,33 +1,6 @@
-use std::ops::{Range, RangeInclusive};
-
-#[derive(Debug, Clone)]
-pub struct Dimension {
-    range: RangeInclusive<f64>,
-    number_of_divisions: usize,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum IntervalType {
-    Standard(Range<f64>),
-    EndOfRange(RangeInclusive<f64>),
-}
+use crate::world::dimension::{Dimension, IntervalType};
 
 impl Dimension {
-    pub fn new(range_bounds: RangeInclusive<f64>, number_of_divisions: usize) -> Self {
-        assert!(
-            number_of_divisions > 0,
-            "Dimension divisions must be greater than 0"
-        );
-        assert!(
-            *range_bounds.end() >= *range_bounds.start(),
-            "Dimension max must be greater than or equal to min"
-        );
-        Self {
-            range: range_bounds,
-            number_of_divisions,
-        }
-    }
-
     pub fn get_intervals(&self) -> impl Iterator<Item = IntervalType> + '_ {
         assert!(
             self.number_of_divisions > 0,
@@ -64,18 +37,6 @@ mod tests {
     use super::*; // This brings Dimension and IntervalType into scope
 
     const EPSILON: f64 = 1e-9; // Tolerance for floating-point comparisons
-
-    #[test]
-    #[should_panic(expected = "Dimension divisions must be greater than 0")]
-    fn given_zero_divisions_when_new_dimension_then_panics() {
-        Dimension::new(0.0..=5.0, 0);
-    }
-
-    #[test]
-    #[should_panic(expected = "Dimension max must be greater than or equal to min")]
-    fn given_max_less_than_min_when_new_dimension_then_panics() {
-        Dimension::new(5.0..=0.0, 1);
-    }
 
     #[test]
     fn given_dimension_when_get_intervals_with_multiple_divisions_then_returns_correct_intervals() {
