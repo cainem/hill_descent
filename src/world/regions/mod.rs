@@ -9,6 +9,12 @@ pub struct Regions {
     _regions: BTreeMap<Vec<usize>, Region>,
 }
 
+impl Default for Regions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Regions {
     pub fn new() -> Self {
         Regions {
