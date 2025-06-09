@@ -10,14 +10,20 @@ pub struct Dimension {
 }
 
 impl Dimension {
-    // Getter for the 'range' field
+    /// Returns the range of the dimension.
     pub fn range(&self) -> &RangeInclusive<f64> {
         &self.range
     }
 
-    // Getter for the 'number_of_divisions' field
+    /// Returns the number of times the dimension has been divided.
     pub fn number_of_divisions(&self) -> usize {
         self.number_of_divisions
+    }
+
+    /// Sets the number of times the dimension has been divided.
+    /// This is pub(super) as only the parent dimensions module should modify it directly after creation.
+    pub(super) fn set_number_of_divisions(&mut self, new_divisions: usize) {
+        self.number_of_divisions = new_divisions;
     }
 }
 

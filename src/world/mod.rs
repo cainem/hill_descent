@@ -30,7 +30,8 @@ impl World {
         let organisms = Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
 
         let spacial_limits = organisms.find_spacial_limits();
-        let dimensions = Dimensions::new(spacial_limits);
+        // Pass global_constants to Dimensions::new, and spacial_limits by reference
+        let dimensions = Dimensions::new(&spacial_limits, &global_constants);
         let regions = Regions::new();
 
         World {
