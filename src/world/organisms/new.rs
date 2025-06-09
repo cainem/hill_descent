@@ -16,7 +16,7 @@ impl Organisms {
         let phenotypes = generate_random_phenotypes(
             rng,
             &enhanced_parameter_bounds,
-            global_constants.population_size,
+            global_constants.population_size(),
         );
 
         Self {
@@ -43,7 +43,7 @@ mod tests {
 
         assert_eq!(
             organisms._organisms.len(),
-            global_constants_instance.population_size,
+            global_constants_instance.population_size(),
             "Number of organisms should match population size"
         );
 

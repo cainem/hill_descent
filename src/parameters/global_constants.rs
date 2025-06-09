@@ -4,12 +4,22 @@
 #[derive(Debug, Clone, Copy)]
 pub struct GlobalConstants {
     /// Total target population size (P).
-    pub population_size: usize,
+    population_size: usize,
     /// Maximum number of regions the space can be divided into (Z).
-    pub max_regions: usize,
+    max_regions: usize,
 }
 
 impl GlobalConstants {
+    /// Returns the total target population size.
+    pub fn population_size(&self) -> usize {
+        self.population_size
+    }
+
+    /// Returns the maximum number of regions.
+    pub fn max_regions(&self) -> usize {
+        self.max_regions
+    }
+
     /// Creates a new instance of GlobalConstants.
     ///
     /// # Arguments
@@ -45,8 +55,8 @@ mod tests {
         let max_regions = 1000;
         let constants = GlobalConstants::new(population_size, max_regions);
 
-        assert_eq!(constants.population_size, population_size);
-        assert_eq!(constants.max_regions, max_regions);
+        assert_eq!(constants.population_size(), population_size);
+        assert_eq!(constants.max_regions(), max_regions);
     }
 
     #[test]
