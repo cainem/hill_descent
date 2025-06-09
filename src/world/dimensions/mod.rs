@@ -2,6 +2,7 @@ use crate::world::dimensions::dimension::Dimension;
 
 pub mod dimension;
 pub mod new;
+pub mod double;
 
 #[derive(Debug, Clone)]
 pub struct Dimensions {
