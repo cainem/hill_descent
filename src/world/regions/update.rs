@@ -2,7 +2,7 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Region
 
 pub enum RegionResult {
     DoubleRegions, // we need to divide the next dimension in line hence doubling the regions
-    ExpandDimensions(Vec<usize>), // we need to double the range of the dimensions returned
+    ExpandDimension(usize), // we need to double the range of the dimensions returned
     Complete,
 }
 
@@ -16,7 +16,7 @@ impl Regions {
             RegionResult::DoubleRegions => {
                 // Logic for doubling regions if needed
             }
-            RegionResult::ExpandDimensions(dimensions_to_expand) => {
+            RegionResult::ExpandDimension(dimensions_to_expand) => {
                 // Logic for expanding dimensions based on the provided indices
             }
             RegionResult::Complete => {

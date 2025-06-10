@@ -1,8 +1,7 @@
 use std::ops::{Range, RangeInclusive};
 
-pub mod get_intervals;
-pub mod new;
 pub mod get_interval;
+pub mod new;
 
 #[derive(Debug, Clone)]
 pub struct Dimension {

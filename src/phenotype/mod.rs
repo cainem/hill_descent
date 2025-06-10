@@ -21,6 +21,8 @@ pub struct Phenotype {
     system_parameters: SystemParameters,
     /// Hash of the expressed parameter values.
     expressed_hash: u64,
+    dimensions_key: Option<Vec<f64>>,
+    last_score: Option<f64>,
 }
 
 impl Phenotype {
@@ -42,6 +44,8 @@ impl Phenotype {
             expressed, // Stores all expressed values
             system_parameters,
             expressed_hash,
+            dimensions_key: None, // Optional field for dimensions key, can be set later
+            last_score: None,     // Optional field for last score, can be set later
         }
     }
 
