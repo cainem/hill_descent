@@ -8,7 +8,7 @@ use crate::Phenotype;
 
 #[derive(Debug, Clone)]
 pub struct Organisms {
-    _organisms: Vec<Phenotype>,
+    organisms: Vec<Phenotype>,
 }
 
 #[cfg(test)]
@@ -17,7 +17,7 @@ impl Organisms {
     /// This is intended for testing purposes only.
     pub(crate) fn new_from_phenotypes(phenotypes: Vec<Phenotype>) -> Self {
         Self {
-            _organisms: phenotypes,
+            organisms: phenotypes,
         }
     }
 }

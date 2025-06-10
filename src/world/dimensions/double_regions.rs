@@ -9,7 +9,7 @@ impl Dimensions {
     /// # Panics
     ///
     /// Panics if the `_dimensions` vector is empty, as there would be no dimension to divide.
-    pub fn double(&mut self) {
+    pub fn double_regions(&mut self) {
         if self.dimensions.is_empty() {
             panic!("Cannot double divisions: no dimensions are present.");
         }
@@ -55,18 +55,18 @@ mod tests {
     #[should_panic(expected = "Cannot double divisions: no dimensions are present.")]
     fn given_empty_dimensions_when_double_called_then_panics() {
         let mut dims = create_dimensions_for_test(0, vec![], 0);
-        dims.double();
+        dims.double_regions();
     }
 
     #[test]
     fn given_single_dimension_when_double_called_then_division_increments_and_index_updates() {
         let mut dims = create_dimensions_for_test(1, vec![0], 0); // Start with last_div_idx = 0 for a single dim
 
-        dims.double(); // Should divide dimension 0 ( (0+1)%1 = 0 )
+        dims.double_regions(); // Should divide dimension 0 ( (0+1)%1 = 0 )
         assert_eq!(dims.dimensions[0].number_of_divisions(), 1);
         assert_eq!(dims.last_division_index, 0);
 
-        dims.double(); // Should divide dimension 0 again
+        dims.double_regions(); // Should divide dimension 0 again
         assert_eq!(dims.dimensions[0].number_of_divisions(), 2);
         assert_eq!(dims.last_division_index, 0);
     }
@@ -78,7 +78,7 @@ mod tests {
         let mut dims = create_dimensions_for_test(3, vec![1, 1, 1], 2);
 
         // Call 1: Divide dimension 0
-        dims.double();
+        dims.double_regions();
         assert_eq!(
             dims.dimensions[0].number_of_divisions(),
             2,
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(dims.last_division_index, 0, "Last index after 1st double");
 
         // Call 2: Divide dimension 1
-        dims.double();
+        dims.double_regions();
         assert_eq!(
             dims.dimensions[0].number_of_divisions(),
             2,
@@ -116,7 +116,7 @@ mod tests {
         assert_eq!(dims.last_division_index, 1, "Last index after 2nd double");
 
         // Call 3: Divide dimension 2
-        dims.double();
+        dims.double_regions();
         assert_eq!(
             dims.dimensions[0].number_of_divisions(),
             2,
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(dims.last_division_index, 2, "Last index after 3rd double");
 
         // Call 4: Divide dimension 0 again (round robin)
-        dims.double();
+        dims.double_regions();
         assert_eq!(
             dims.dimensions[0].number_of_divisions(),
             3,
@@ -162,7 +162,7 @@ mod tests {
         // (0+1)%1 = 0. So, if last_division_index is 0 (or any valid usize for that matter, due to modulo 1)
         // it will still target dimension 0.
         let mut dims = create_dimensions_for_test(1, vec![5], 0);
-        dims.double();
+        dims.double_regions();
         assert_eq!(dims.dimensions[0].number_of_divisions(), 6);
         assert_eq!(dims.last_division_index, 0);
     }

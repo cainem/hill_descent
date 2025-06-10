@@ -13,18 +13,26 @@ pub mod organisms;
 pub mod regions;
 
 #[derive(Debug, Clone)]
-pub struct World {
+pub struct World<F>
+where
+    F: Fn(&[f64]) -> Vec<f64>,
+{
     _dimensions: Dimensions,
     _organisms: Organisms,
     _regions: Regions,
     _global_constants: GlobalConstants,
     _rng: SmallRng,
+    _world_function: F,
 }
 
-impl World {
+impl<F> World<F>
+where
+    F: Fn(&[f64]) -> Vec<f64>,
+{
     pub fn new(
         user_defined_parameter_bounds: &[RangeInclusive<f64>],
         global_constants: GlobalConstants,
+        world_function: F,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
         let organisms = Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
@@ -32,7 +40,9 @@ impl World {
         let spacial_limits = organisms.find_spacial_limits();
         // Pass global_constants to Dimensions::new, and spacial_limits by reference
         let dimensions = Dimensions::new(&spacial_limits, &global_constants);
-        let regions = Regions::new();
+        let mut regions = Regions::default();
+
+        regions.update(&organisms, &dimensions);
 
         World {
             _dimensions: dimensions,
@@ -40,6 +50,7 @@ impl World {
             _regions: regions,
             _global_constants: global_constants,
             _rng: rng,
+            _world_function: world_function,
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::world::dimensions::dimension::Dimension;
 
 pub mod dimension;
-pub mod double;
+pub mod double_regions;
 pub mod new;
 
 #[derive(Debug, Clone)]

@@ -20,7 +20,7 @@ impl Organisms {
         );
 
         Self {
-            _organisms: phenotypes,
+            organisms: phenotypes,
         }
     }
 }
@@ -42,7 +42,7 @@ mod tests {
         let organisms = Organisms::new(&mut rng, &user_bounds, &global_constants_instance);
 
         assert_eq!(
-            organisms._organisms.len(),
+            organisms.organisms.len(),
             global_constants_instance.population_size(),
             "Number of organisms should match population size"
         );
@@ -50,7 +50,7 @@ mod tests {
         // Check if phenotypes were created with the correct number of loci
         // enhanced_parameter_bounds.len() should be NUM_SYSTEM_PARAMETERS + user_bounds.len()
         let _expected_loci_count = NUM_SYSTEM_PARAMETERS + user_bounds.len();
-        if !organisms._organisms.is_empty() {
+        if !organisms.organisms.is_empty() {
             // Assuming Phenotype has a way to get its loci count or direct access to its gametes' loci
             // For now, we'll infer from the fact that new_random_phenotype would have used these bounds.
             // This test relies on the correctness of new_random_phenotype and enhance_parameters.
@@ -60,7 +60,7 @@ mod tests {
         }
         // Check that each phenotype has the expected number of parameters
         // This is implicitly tested by Phenotype::new_random_phenotype, which expects enhanced_parameter_bounds
-        for _phenotype in organisms._organisms {
+        for _phenotype in organisms.organisms {
             // If Phenotype had a method like `num_loci()` or similar, we could assert it here.
             // e.g., assert_eq!(phenotype.num_loci(), expected_loci_count);
             // For now, we trust that Phenotype::new_random_phenotype used the enhanced_parameter_bounds correctly.

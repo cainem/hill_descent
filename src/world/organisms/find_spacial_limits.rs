@@ -11,20 +11,20 @@ impl Organisms {
     /// If there are no organisms, an empty vector is returned.
     /// Assumes all phenotypes have the same number of expressed values (dimensions).
     pub fn find_spacial_limits(&self) -> Vec<RangeInclusive<f64>> {
-        if self._organisms.is_empty() {
+        if self.organisms.is_empty() {
             return Vec::new();
         }
 
         // Phenotype::new ensures expressed_values.len() >= 7, so num_dimensions will be > 0.
-        let num_dimensions = self._organisms[0].expressed_values().len();
+        let num_dimensions = self.organisms[0].expressed_values().len();
 
-        let mut limits: Vec<RangeInclusive<f64>> = self._organisms[0]
+        let mut limits: Vec<RangeInclusive<f64>> = self.organisms[0]
             .expressed_values()
             .iter()
             .map(|&val| val..=val)
             .collect();
 
-        for phenotype in self._organisms.iter().skip(1) {
+        for phenotype in self.organisms.iter().skip(1) {
             let expressed_values = phenotype.expressed_values();
             // As per PDD, 'n' (number of dimensions) is fixed for the run.
             assert_eq!(
