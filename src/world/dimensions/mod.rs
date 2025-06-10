@@ -22,3 +22,21 @@ impl Dimensions {
         self.last_division_index
     }
 }
+
+#[cfg(test)]
+impl Dimensions {
+    /// Test-only constructor to create a `Dimensions` object with a specific set of `Dimension`s.
+    pub fn new_for_test(dimensions: Vec<Dimension>) -> Self {
+        let last_division_index = if dimensions.is_empty() {
+            0
+        } else {
+            // A sensible default for tests that don't care about this value.
+            // The logic in `double_regions` depends on this, but `update_dimensions_key` does not.
+            dimensions.len() - 1
+        };
+        Self {
+            dimensions,
+            last_division_index,
+        }
+    }
+}

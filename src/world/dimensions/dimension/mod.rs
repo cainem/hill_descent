@@ -21,8 +21,7 @@ impl Dimension {
     }
 
     /// Sets the number of times the dimension has been divided.
-    /// This is pub(super) as only the parent dimensions module should modify it directly after creation.
-    pub(super) fn set_number_of_divisions(&mut self, new_divisions: usize) {
+    pub fn set_number_of_divisions(&mut self, new_divisions: usize) {
         self.number_of_divisions = new_divisions;
     }
 }

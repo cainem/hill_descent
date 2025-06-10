@@ -79,6 +79,11 @@ impl Phenotype {
     pub fn expressed_hash(&self) -> u64 {
         self.expressed_hash
     }
+
+    /// Returns the dimensions key, if it has been calculated.
+    pub fn dimensions_key(&self) -> Option<&[usize]> {
+        self.dimensions_key.as_deref()
+    }
 }
 
 #[cfg(test)]

@@ -1,46 +1,57 @@
 use super::Organisms;
+use crate::NUM_SYSTEM_PARAMETERS;
 use std::ops::RangeInclusive;
 
 impl Organisms {
-    /// Calculates the spatial limits (min and max values) for each dimension
+    /// Calculates the spatial limits (min and max values) for each problem-specific dimension
     /// based on the expressed values of all phenotypes in the collection.
     ///
     /// Returns a vector of `RangeInclusive<f64>`, where each range represents
-    /// the observed minimum and maximum for a dimension.
+    /// the observed minimum and maximum for a problem-specific dimension.
     ///
-    /// If there are no organisms, an empty vector is returned.
+    /// If there are no organisms or no problem-specific parameters, an empty vector is returned.
     /// Assumes all phenotypes have the same number of expressed values (dimensions).
     pub fn find_spacial_limits(&self) -> Vec<RangeInclusive<f64>> {
         if self.organisms.is_empty() {
             return Vec::new();
         }
 
-        // Phenotype::new ensures expressed_values.len() >= 7, so num_dimensions will be > 0.
-        let num_dimensions = self.organisms[0].expressed_values().len();
+        // Get the first phenotype to determine the number of problem-specific dimensions.
+        let first_phenotype_expressed = self.organisms[0].expressed_values();
+        if first_phenotype_expressed.len() <= NUM_SYSTEM_PARAMETERS {
+            // No problem-specific parameters to find limits for.
+            return Vec::new();
+        }
+        let num_problem_dimensions = first_phenotype_expressed.len() - NUM_SYSTEM_PARAMETERS;
 
-        let mut limits: Vec<RangeInclusive<f64>> = self.organisms[0]
-            .expressed_values()
+        // Initialize limits using only problem-specific parameters from the first phenotype.
+        let mut limits: Vec<RangeInclusive<f64>> = first_phenotype_expressed
+            [NUM_SYSTEM_PARAMETERS..]
             .iter()
             .map(|&val| val..=val)
             .collect();
 
         for phenotype in self.organisms.iter().skip(1) {
             let expressed_values = phenotype.expressed_values();
-            // As per PDD, 'n' (number of dimensions) is fixed for the run.
             assert_eq!(
                 expressed_values.len(),
-                num_dimensions,
-                "Inconsistent number of dimensions in phenotypes"
+                first_phenotype_expressed.len(),
+                "Inconsistent total number of dimensions in phenotypes"
             );
 
-            for i in 0..num_dimensions {
-                // Ensure we are within bounds for expressed_values, though lengths should match.
-                if i < expressed_values.len() {
-                    let value = expressed_values[i];
-                    let current_min = *limits[i].start();
-                    let current_max = *limits[i].end();
-                    limits[i] = current_min.min(value)..=current_max.max(value);
-                }
+            // Iterate only over problem-specific dimensions.
+            let problem_expressed_values = &expressed_values[NUM_SYSTEM_PARAMETERS..];
+            assert_eq!(problem_expressed_values.len(), num_problem_dimensions);
+            assert_eq!(
+                limits.len(),
+                num_problem_dimensions,
+                "Mismatch between limits and problem dimensions count"
+            );
+
+            for (limit_range, &value) in limits.iter_mut().zip(problem_expressed_values.iter()) {
+                let current_min = *limit_range.start();
+                let current_max = *limit_range.end();
+                *limit_range = current_min.min(value)..=current_max.max(value);
             }
         }
         limits
@@ -50,6 +61,7 @@ impl Organisms {
 #[cfg(test)]
 mod tests {
     // Required to bring the impl Organisms block into scope for Organisms struct defined in parent mod
+    use crate::NUM_SYSTEM_PARAMETERS; // Added import for tests
     use crate::gamete::Gamete;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
@@ -99,62 +111,85 @@ mod tests {
     #[test]
     fn given_one_organism_when_find_spacial_limits_then_returns_ranges_from_that_organism() {
         let mut rng = StepRng::new(0, 1); // Deterministic RNG
-        let phenotype_vals = &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]; // 8 values
+        // Values: 7 system params + 1 problem param
+        let phenotype_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 8.0];
         let phenotype = create_test_phenotype(phenotype_vals, &mut rng);
 
-        let expected_expressed_values = phenotype.expressed_values().to_vec();
+        // We expect limits only for the problem-specific parameters.
+        // Clone phenotype for expressed_values access if phenotype is moved later.
+        let cloned_phenotype = phenotype.clone();
+        let expected_problem_expressed_values =
+            &cloned_phenotype.expressed_values()[NUM_SYSTEM_PARAMETERS..];
 
         let organisms_collection = super::Organisms::new_from_phenotypes(vec![phenotype]);
         let limits = organisms_collection.find_spacial_limits();
 
-        assert_eq!(limits.len(), expected_expressed_values.len());
-        for (i, val) in expected_expressed_values.iter().enumerate() {
-            assert_eq!(limits[i], *val..=*val, "Mismatch for dimension {}", i);
+        assert_eq!(limits.len(), expected_problem_expressed_values.len());
+        for (i, val) in expected_problem_expressed_values.iter().enumerate() {
+            assert_eq!(
+                limits[i],
+                *val..=*val,
+                "Mismatch for problem dimension {}",
+                i
+            );
         }
     }
 
     #[test]
     fn given_multiple_organisms_when_find_spacial_limits_then_returns_correct_min_max_ranges() {
         let mut rng_ph1 = StepRng::new(0, 1);
-        let vals1 = &[1.0, 10.0, -5.0, 0.1, 0.2, 0.3, 0.4]; // 7 values
+        // System params (first 7) + Problem params (next 3)
+        let vals1 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 10.0, -5.0];
         let phenotype1 = create_test_phenotype(vals1, &mut rng_ph1);
-        let expressed1 = phenotype1.expressed_values().to_vec();
+        let cloned_phenotype1 = phenotype1.clone();
+        let problem_expressed1 = &cloned_phenotype1.expressed_values()[NUM_SYSTEM_PARAMETERS..];
 
         let mut rng_ph2 = StepRng::new(0, 1);
-        let vals2 = &[5.0, 2.0, 0.0, 0.1, 0.2, 0.3, 0.4];
+        let vals2 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 2.0, 0.0];
         let phenotype2 = create_test_phenotype(vals2, &mut rng_ph2);
-        let expressed2 = phenotype2.expressed_values().to_vec();
+        let cloned_phenotype2 = phenotype2.clone();
+        let problem_expressed2 = &cloned_phenotype2.expressed_values()[NUM_SYSTEM_PARAMETERS..];
 
         let mut rng_ph3 = StepRng::new(0, 1);
-        let vals3 = &[-2.0, 6.0, -2.0, 0.1, 0.2, 0.3, 0.4];
+        let vals3 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0, 6.0, -2.0];
         let phenotype3 = create_test_phenotype(vals3, &mut rng_ph3);
-        let expressed3 = phenotype3.expressed_values().to_vec();
+        let cloned_phenotype3 = phenotype3.clone();
+        let problem_expressed3 = &cloned_phenotype3.expressed_values()[NUM_SYSTEM_PARAMETERS..];
 
         let organisms_collection =
             super::Organisms::new_from_phenotypes(vec![phenotype1, phenotype2, phenotype3]);
         let limits = organisms_collection.find_spacial_limits();
 
-        let num_dims = expressed1.len();
+        let num_problem_dims = problem_expressed1.len();
         assert_eq!(
-            expressed2.len(),
-            num_dims,
-            "Phenotype 2 has different dimension count"
+            problem_expressed2.len(),
+            num_problem_dims,
+            "Phenotype 2 has different problem dimension count"
         );
         assert_eq!(
-            expressed3.len(),
-            num_dims,
-            "Phenotype 3 has different dimension count"
+            problem_expressed3.len(),
+            num_problem_dims,
+            "Phenotype 3 has different problem dimension count"
         );
         assert_eq!(
             limits.len(),
-            num_dims,
-            "Limits have different dimension count"
+            num_problem_dims,
+            "Limits have different problem dimension count"
         );
 
-        for i in 0..num_dims {
-            let min_val = expressed1[i].min(expressed2[i]).min(expressed3[i]);
-            let max_val = expressed1[i].max(expressed2[i]).max(expressed3[i]);
-            assert_eq!(limits[i], min_val..=max_val, "Mismatch for dimension {}", i);
+        for i in 0..num_problem_dims {
+            let min_val = problem_expressed1[i]
+                .min(problem_expressed2[i])
+                .min(problem_expressed3[i]);
+            let max_val = problem_expressed1[i]
+                .max(problem_expressed2[i])
+                .max(problem_expressed3[i]);
+            assert_eq!(
+                limits[i],
+                min_val..=max_val,
+                "Mismatch for problem dimension {}",
+                i
+            );
         }
     }
 }

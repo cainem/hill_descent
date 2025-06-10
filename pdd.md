@@ -92,16 +92,17 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 
 ### 4.2. Space
 
-**4.2.1. N-Dimensionality:** 
-* The solution space is `n`-dimensional, corresponding to the `n` parameters ($x_1, ..., x_n$) being optimized.  
-* An organism's position in this space is determined by the expressed values of its `n` locus pairs.
+**4.2.1. N-Dimensionality (Parameter Space vs. Niching Space):** 
+* The total parameter space an organism possesses is `n`-dimensional, corresponding to the `n` parameters ($x_1, ..., x_n$) being optimized. This `n` includes both problem-specific parameters (e.g., neural network weights and biases) and evolvable system parameters (e.g., mutation rates, maximum age).
+* However, for the purpose of spatial niching and calculating an organism's `dimensions_key`, only the subset of these `n` parameters that are **problem-specific** are considered. Let $n_p$ be the number of these problem-specific parameters.
+* An organism's position in the *niching space* (which is $n_p$-dimensional and used for region assignment) is determined by the expressed values of these $n_p$ problem-specific parameters. The `dimensions_key` reflects this position.
 
 **4.2.2. Regions (n-orthotopes):** 
-* The space is divided into up to `Z` regions, where `Z` is a configurable constant ($Z \ge n^2$).  
-* Regions are n-dimensional hyperrectangles (n-orthotopes).  
+* The *niching space* (which is $n_p$-dimensional, as defined by the problem-specific parameters) is divided into up to `Z` regions. `Z` is a configurable constant, and a typical guideline might be $Z \ge n_p^2$.
+* Regions are $n_p$-dimensional hyperrectangles (n-orthotopes).  
 * Division process:  
-    * Initially, a bounding box is determined (see Section 4.2.3).  
-    * This bounding box is recursively divided by halving it in each of the `n` dimensions.  
+    * Initially, a bounding box encompassing the ranges of the $n_p$ problem-specific parameters across the population is determined (see Section 4.2.3).  
+    * This bounding box is recursively divided by halving it along each of these $n_p$ problem-specific dimensions.  
     * Let `x` be the number of currently populated n-orthotopes.  
     * Headroom for further division exists if $x \cdot 2^n < Z$.  
     * Division also stops if $x = \hat{P}$, where $\hat{P}$ is the number of distinct points in space occupied by organisms. Distinct points are defined by precise (bit-wise) equality of their n-dimensional coordinates. Further division is considered pointless at this stage.  
