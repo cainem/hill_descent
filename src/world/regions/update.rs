@@ -7,9 +7,6 @@ pub enum RegionResult {
 }
 
 impl Regions {
-
-
-
     pub fn update(&mut self, organisms: &Organisms, dimensions: &Dimensions) {
         // Call the update_step method to perform the update logic
         let result = self.update_step(organisms, dimensions);
@@ -30,7 +27,6 @@ impl Regions {
 
     fn update_step(&mut self, organisms: &Organisms, dimensions: &Dimensions) -> RegionResult {
         // delete all of the current regions / empty the btreemap
-
 
         // for each organism work out the region keys by seeing which dimension range they fall in
         // this can be worked out by calling get_intervals on the dimension in question

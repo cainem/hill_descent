@@ -4,6 +4,7 @@ use rand::Rng;
 pub mod asexual_reproduction;
 pub mod calculate_crossovers;
 pub mod compute_expressed;
+pub mod compute_expressed_hash;
 pub mod new_random_phenotype;
 pub mod sexual_reproduction;
 
@@ -18,6 +19,8 @@ pub struct Phenotype {
     expressed: Vec<f64>,
     /// System parameters extracted from the first seven expressed values.
     system_parameters: SystemParameters,
+    /// Hash of the expressed parameter values.
+    expressed_hash: u64,
 }
 
 impl Phenotype {
@@ -32,11 +35,13 @@ impl Phenotype {
         }
         // Extract the first seven expressed values as system parameters
         let system_parameters = SystemParameters::new(&expressed[0..7]);
+        let expressed_hash = Self::compute_expressed_hash(&expressed);
         Self {
             gamete1,
             gamete2,
             expressed, // Stores all expressed values
             system_parameters,
+            expressed_hash,
         }
     }
 
@@ -63,6 +68,11 @@ impl Phenotype {
     /// Returns a reference to the system parameters (m1..m5).
     pub fn system_parameters(&self) -> &SystemParameters {
         &self.system_parameters
+    }
+
+    /// Returns the hash of the expressed parameter values.
+    pub fn expressed_hash(&self) -> u64 {
+        self.expressed_hash
     }
 }
 
@@ -102,5 +112,13 @@ mod tests {
         // This assumes compute_expressed returns one value per locus pair.
         assert_eq!(ph.expressed_values().len(), g1_loci_values.len());
         let _ = ph.system_parameters(); // Access to ensure it was created without panic
+
+        // Assert that expressed_hash is correctly calculated and set
+        let expected_hash = Phenotype::compute_expressed_hash(ph.expressed_values());
+        assert_eq!(
+            ph.expressed_hash(),
+            expected_hash,
+            "Expressed hash should match the re-calculated hash"
+        );
     }
 }
