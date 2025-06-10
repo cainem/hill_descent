@@ -26,7 +26,7 @@ where
     // The trait bound specifying the function's signature
     F: Fn(&[f64]) -> Vec<f64>,
 {
-    let world = World::new(_params, _global_constants, function);
+    let _world = World::new(_params, _global_constants, function);
 
     todo!()
 }

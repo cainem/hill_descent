@@ -21,7 +21,7 @@ pub struct Phenotype {
     system_parameters: SystemParameters,
     /// Hash of the expressed parameter values.
     expressed_hash: u64,
-    dimensions_key: Option<Vec<f64>>,
+    dimensions_key: Option<Vec<usize>>,
     last_score: Option<f64>,
 }
 

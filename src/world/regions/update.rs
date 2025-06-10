@@ -16,7 +16,7 @@ impl Regions {
             RegionResult::DoubleRegions => {
                 // Logic for doubling regions if needed
             }
-            RegionResult::ExpandDimension(dimensions_to_expand) => {
+            RegionResult::ExpandDimension(_dimensions_to_expand) => {
                 // Logic for expanding dimensions based on the provided indices
             }
             RegionResult::Complete => {
@@ -25,7 +25,7 @@ impl Regions {
         }
     }
 
-    fn update_step(&mut self, organisms: &Organisms, dimensions: &Dimensions) -> RegionResult {
+    fn update_step(&mut self, _organisms: &Organisms, _dimensions: &Dimensions) -> RegionResult {
         // delete all of the current regions / empty the btreemap
 
         // for each organism work out the region keys by seeing which dimension range they fall in

@@ -5,6 +5,8 @@ pub mod dimension;
 pub mod double_regions;
 pub mod new;
 
+pub use calculate_dimensions_key::{CalculateDimensionsKeyResult, calculate_dimensions_key};
+
 #[derive(Debug, Clone)]
 pub struct Dimensions {
     dimensions: Vec<Dimension>,
