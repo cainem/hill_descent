@@ -3,6 +3,7 @@ use crate::world::dimensions::dimension::Dimension;
 pub mod dimension;
 pub mod double_regions;
 pub mod new;
+pub mod calculate_dimensions_key;
 
 #[derive(Debug, Clone)]
 pub struct Dimensions {
