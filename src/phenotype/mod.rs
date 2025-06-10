@@ -7,6 +7,7 @@ pub mod compute_expressed;
 pub mod compute_expressed_hash;
 pub mod new_random_phenotype;
 pub mod sexual_reproduction;
+pub mod update_dimensions_key;
 
 /// A Phenotype is constructed from a pair of gametes.
 #[derive(Debug, Clone, PartialEq)]
