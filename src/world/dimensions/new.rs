@@ -8,10 +8,10 @@ impl Dimensions {
         parameter_bounds: &[RangeInclusive<f64>],
         global_constants: &GlobalConstants,
     ) -> Self {
-        if global_constants.max_regions() == 0 {
-            // This case should be prevented by GlobalConstants::new panic, but as a safeguard:
-            panic!("max_regions must be greater than 0.");
-        }
+        assert!(
+            global_constants.max_regions() > 0,
+            "max_regions must be greater than 0."
+        );
 
         let mut created_dimensions: Vec<Dimension> = parameter_bounds
             .iter()

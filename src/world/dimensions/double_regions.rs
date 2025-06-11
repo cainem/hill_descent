@@ -9,6 +9,7 @@ impl Dimensions {
     /// Specifically:
     /// - If the current number of regions is already a power of two, it's doubled.
     /// - Otherwise, it's increased to the next highest power of two.
+    ///
     /// For example, if `number_of_divisions` is 0 (1 region), it becomes 1 (2 regions).
     /// If it's 1 (2 regions), it becomes 3 (4 regions).
     /// If it's 2 (3 regions), it becomes 3 (4 regions).

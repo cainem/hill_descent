@@ -13,6 +13,18 @@ pub struct Organisms {
     organisms: Vec<Phenotype>,
 }
 
+impl Organisms {
+    /// Returns an iterator over the phenotypes.
+    pub fn iter(&self) -> std::slice::Iter<'_, Phenotype> {
+        self.organisms.iter()
+    }
+
+    /// Returns the number of organisms.
+    pub fn count(&self) -> usize {
+        self.organisms.len()
+    }
+}
+
 #[cfg(test)]
 impl Organisms {
     /// Creates a new `Organisms` instance directly from a vector of phenotypes.

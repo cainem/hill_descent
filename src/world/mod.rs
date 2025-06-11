@@ -41,7 +41,7 @@ where
         let spacial_limits = organisms.find_spacial_limits();
         // Pass global_constants to Dimensions::new, and spacial_limits by reference
         let mut dimensions = Dimensions::new(&spacial_limits, &global_constants);
-        let mut regions = Regions::default();
+        let mut regions = Regions::new(&global_constants);
 
         regions.update(&mut organisms, &mut dimensions);
 

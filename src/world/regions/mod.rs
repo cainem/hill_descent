@@ -5,17 +5,29 @@ use region::Region;
 pub mod region;
 pub mod update;
 
-#[derive(Debug, Clone, Default)]
+use crate::parameters::global_constants::GlobalConstants;
+
+#[derive(Debug, Clone)]
 pub struct Regions {
-    _regions: BTreeMap<Vec<usize>, Region>,
+    regions: BTreeMap<Vec<usize>, Region>,
 }
 
 impl Regions {
+    pub fn new(global_constants: &GlobalConstants) -> Self {
+        if global_constants.max_regions() == 0 {
+            // This panic is consistent with Dimensions::new behaviour
+            panic!("max_regions must be greater than 0 for Regions initialization.");
+        }
+        Self {
+            regions: BTreeMap::new(),
+        }
+    }
+
     pub fn get_region(&self, key: &Vec<usize>) -> Option<&Region> {
-        self._regions.get(key)
+        self.regions.get(key)
     }
 
     pub fn regions(&self) -> &BTreeMap<Vec<usize>, Region> {
-        &self._regions
+        &self.regions
     }
 }

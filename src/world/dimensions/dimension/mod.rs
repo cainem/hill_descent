@@ -1,5 +1,6 @@
 use std::ops::{Range, RangeInclusive};
 
+pub mod expand_bounds;
 pub mod get_interval;
 pub mod new;
 
@@ -23,6 +24,12 @@ impl Dimension {
     /// Sets the number of times the dimension has been divided.
     pub fn set_number_of_divisions(&mut self, new_divisions: usize) {
         self.number_of_divisions = new_divisions;
+    }
+
+    /// Returns the number of intervals the dimension is divided into.
+    pub fn num_intervals(&self) -> usize {
+        // Number of intervals is 2^d, where d is the number of divisions.
+        2_usize.pow(self.number_of_divisions as u32)
     }
 }
 
