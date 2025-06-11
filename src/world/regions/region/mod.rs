@@ -2,13 +2,16 @@ use crate::Phenotype;
 
 #[derive(Debug, Clone)]
 pub struct Region {
-    // Consider if these fields should be public or have getters/setters if needed externally
+    _min_score: Option<f64>,
+    _carrying_capacity: Option<usize>,
     organisms: Vec<Phenotype>, // Renamed for consistency, or keep _organisms if preferred internal style
 }
 
 impl Region {
     pub fn new() -> Self {
         Self {
+            _min_score: None,
+            _carrying_capacity: None,
             organisms: Vec::new(),
         }
     }

@@ -16,7 +16,9 @@ impl Organisms {
         }
 
         // Get the first phenotype to determine the number of problem-specific dimensions.
-        let first_phenotype_problem_values = self.organisms[0].expression_problem_values();
+        let first_phenotype = &self.organisms[0];
+        let first_phenotype_problem_values =
+            first_phenotype.phenotype().expression_problem_values();
         if first_phenotype_problem_values.is_empty() {
             // No problem-specific parameters to find limits for.
             return Vec::new();
@@ -30,7 +32,7 @@ impl Organisms {
             .collect();
 
         for phenotype in self.organisms.iter().skip(1) {
-            let problem_expressed_values = phenotype.expression_problem_values();
+            let problem_expressed_values = phenotype.phenotype().expression_problem_values();
             assert_eq!(
                 problem_expressed_values.len(),
                 num_problem_dimensions,

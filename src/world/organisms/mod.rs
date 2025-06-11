@@ -5,17 +5,20 @@ pub mod update_all_dimensions_keys;
 pub use generate_random_phenotypes::generate_random_phenotypes;
 pub mod distinct_locations_count;
 pub mod find_spacial_limits;
+pub mod organism;
 
-use crate::Phenotype;
+#[allow(unused_imports)]
+use crate::{Phenotype, world::organisms::organism::Organism};
 
+/// Represents a collection of `Organism` instances within the world.
 #[derive(Debug, Clone)]
 pub struct Organisms {
-    organisms: Vec<Phenotype>,
+    organisms: Vec<Organism>,
 }
 
 impl Organisms {
-    /// Returns an iterator over the phenotypes.
-    pub fn iter(&self) -> std::slice::Iter<'_, Phenotype> {
+    /// Returns an iterator over the organisms.
+    pub fn iter(&self) -> std::slice::Iter<'_, Organism> {
         self.organisms.iter()
     }
 
@@ -31,7 +34,7 @@ impl Organisms {
     /// This is intended for testing purposes only.
     pub(crate) fn new_from_phenotypes(phenotypes: Vec<Phenotype>) -> Self {
         Self {
-            organisms: phenotypes,
+            organisms: phenotypes.into_iter().map(Organism::new).collect(),
         }
     }
 }

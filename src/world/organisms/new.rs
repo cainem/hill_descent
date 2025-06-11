@@ -1,26 +1,24 @@
 use super::generate_random_phenotypes;
 use crate::parameters::global_constants::GlobalConstants;
-use crate::parameters::parameter_enhancement::enhance_parameters;
 use crate::world::organisms::Organisms;
+use crate::world::organisms::organism::Organism;
 use rand::Rng;
 use std::ops::RangeInclusive;
 
 impl Organisms {
     pub fn new(
+        initial_value_bounds: &[RangeInclusive<f64>],
+        global_constants: &GlobalConstants,
         rng: &mut impl Rng,
-        user_defined_parameter_bounds: &[RangeInclusive<f64>],
-        global_constants: &GlobalConstants, // Changed to reference
     ) -> Self {
-        let enhanced_parameter_bounds = enhance_parameters(user_defined_parameter_bounds);
-
         let phenotypes = generate_random_phenotypes(
             rng,
-            &enhanced_parameter_bounds,
+            initial_value_bounds, // These are already enhanced by the caller of Organisms::new
             global_constants.population_size(),
         );
 
         Self {
-            organisms: phenotypes,
+            organisms: phenotypes.into_iter().map(Organism::new).collect(),
         }
     }
 }
@@ -36,10 +34,10 @@ mod tests {
     #[test]
     fn given_valid_inputs_when_new_called_then_creates_organisms_correctly() {
         let mut rng = StepRng::new(0, 1);
-        let user_bounds: [RangeInclusive<f64>; 1] = [0.0..=1.0];
+        let user_bounds: Vec<RangeInclusive<f64>> = (0..NUM_SYSTEM_PARAMETERS).map(|i| (i as f64)..=((i+1) as f64)).collect();
         let global_constants_instance = GlobalConstants::new(10, 100);
 
-        let organisms = Organisms::new(&mut rng, &user_bounds, &global_constants_instance);
+        let organisms = Organisms::new(&user_bounds, &global_constants_instance, &mut rng);
 
         assert_eq!(
             organisms.organisms.len(),

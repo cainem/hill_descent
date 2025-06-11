@@ -36,7 +36,7 @@ where
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
         let mut organisms =
-            Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
+            Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
 
         let spacial_limits = organisms.find_spacial_limits();
         // Pass global_constants to Dimensions::new, and spacial_limits by reference

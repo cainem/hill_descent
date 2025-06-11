@@ -15,7 +15,9 @@ impl Organisms {
     /// * `Err(usize)` with the dimension index of the first failure encountered.
     pub fn update_all_dimensions_keys(&mut self, dimensions: &Dimensions) -> Result<(), usize> {
         for phenotype in self.organisms.iter_mut() {
-            phenotype.update_dimensions_key(dimensions)?;
+            phenotype
+                .phenotype_mut()
+                .update_dimensions_key(dimensions)?;
         }
         Ok(())
     }
@@ -64,7 +66,7 @@ mod tests {
         let result = organisms.update_all_dimensions_keys(&dimensions);
         assert_eq!(result, Ok(()));
         for p in organisms.organisms.iter() {
-            assert!(p.dimensions_key().is_some());
+            assert!(p.phenotype().dimensions_key().is_some());
         }
     }
 
@@ -107,6 +109,6 @@ mod tests {
         assert_eq!(result, Err(0));
 
         // Check state: The phenotype that was set up to fail should have no key.
-        assert_eq!(organisms.organisms[1].dimensions_key(), None);
+        assert_eq!(organisms.organisms[1].phenotype().dimensions_key(), None);
     }
 }
