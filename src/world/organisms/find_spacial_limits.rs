@@ -1,5 +1,4 @@
 use super::Organisms;
-use crate::NUM_SYSTEM_PARAMETERS;
 use std::ops::RangeInclusive;
 
 impl Organisms {
@@ -17,31 +16,26 @@ impl Organisms {
         }
 
         // Get the first phenotype to determine the number of problem-specific dimensions.
-        let first_phenotype_expressed = self.organisms[0].expressed_values();
-        if first_phenotype_expressed.len() <= NUM_SYSTEM_PARAMETERS {
+        let first_phenotype_problem_values = self.organisms[0].expression_problem_values();
+        if first_phenotype_problem_values.is_empty() {
             // No problem-specific parameters to find limits for.
             return Vec::new();
         }
-        let num_problem_dimensions = first_phenotype_expressed.len() - NUM_SYSTEM_PARAMETERS;
+        let num_problem_dimensions = first_phenotype_problem_values.len();
 
         // Initialize limits using only problem-specific parameters from the first phenotype.
-        let mut limits: Vec<RangeInclusive<f64>> = first_phenotype_expressed
-            [NUM_SYSTEM_PARAMETERS..]
+        let mut limits: Vec<RangeInclusive<f64>> = first_phenotype_problem_values
             .iter()
             .map(|&val| val..=val)
             .collect();
 
         for phenotype in self.organisms.iter().skip(1) {
-            let expressed_values = phenotype.expressed_values();
+            let problem_expressed_values = phenotype.expression_problem_values();
             assert_eq!(
-                expressed_values.len(),
-                first_phenotype_expressed.len(),
-                "Inconsistent total number of dimensions in phenotypes"
+                problem_expressed_values.len(),
+                num_problem_dimensions,
+                "Inconsistent number of problem dimensions in phenotypes"
             );
-
-            // Iterate only over problem-specific dimensions.
-            let problem_expressed_values = &expressed_values[NUM_SYSTEM_PARAMETERS..];
-            assert_eq!(problem_expressed_values.len(), num_problem_dimensions);
             assert_eq!(
                 limits.len(),
                 num_problem_dimensions,
@@ -61,7 +55,7 @@ impl Organisms {
 #[cfg(test)]
 mod tests {
     // Required to bring the impl Organisms block into scope for Organisms struct defined in parent mod
-    use crate::NUM_SYSTEM_PARAMETERS; // Added import for tests
+
     use crate::gamete::Gamete;
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
@@ -116,10 +110,9 @@ mod tests {
         let phenotype = create_test_phenotype(phenotype_vals, &mut rng);
 
         // We expect limits only for the problem-specific parameters.
-        // Clone phenotype for expressed_values access if phenotype is moved later.
+        // Clone phenotype for access if phenotype is moved later.
         let cloned_phenotype = phenotype.clone();
-        let expected_problem_expressed_values =
-            &cloned_phenotype.expressed_values()[NUM_SYSTEM_PARAMETERS..];
+        let expected_problem_expressed_values = cloned_phenotype.expression_problem_values();
 
         let organisms_collection = super::Organisms::new_from_phenotypes(vec![phenotype]);
         let limits = organisms_collection.find_spacial_limits();
@@ -142,19 +135,19 @@ mod tests {
         let vals1 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 10.0, -5.0];
         let phenotype1 = create_test_phenotype(vals1, &mut rng_ph1);
         let cloned_phenotype1 = phenotype1.clone();
-        let problem_expressed1 = &cloned_phenotype1.expressed_values()[NUM_SYSTEM_PARAMETERS..];
+        let problem_expressed1 = cloned_phenotype1.expression_problem_values();
 
         let mut rng_ph2 = StepRng::new(0, 1);
         let vals2 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 2.0, 0.0];
         let phenotype2 = create_test_phenotype(vals2, &mut rng_ph2);
         let cloned_phenotype2 = phenotype2.clone();
-        let problem_expressed2 = &cloned_phenotype2.expressed_values()[NUM_SYSTEM_PARAMETERS..];
+        let problem_expressed2 = cloned_phenotype2.expression_problem_values();
 
         let mut rng_ph3 = StepRng::new(0, 1);
         let vals3 = &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0, 6.0, -2.0];
         let phenotype3 = create_test_phenotype(vals3, &mut rng_ph3);
         let cloned_phenotype3 = phenotype3.clone();
-        let problem_expressed3 = &cloned_phenotype3.expressed_values()[NUM_SYSTEM_PARAMETERS..];
+        let problem_expressed3 = cloned_phenotype3.expression_problem_values();
 
         let organisms_collection =
             super::Organisms::new_from_phenotypes(vec![phenotype1, phenotype2, phenotype3]);

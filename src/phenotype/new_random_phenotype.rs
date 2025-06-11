@@ -66,14 +66,20 @@ mod tests {
         let phenotype = Phenotype::new_random_phenotype(&mut rng, &parameter_bounds);
         assert_eq!(phenotype.gamete1().len(), 7);
         assert_eq!(phenotype.gamete2().len(), 7);
-        assert_eq!(phenotype.expressed_values().len(), 7);
+        assert_eq!(
+            phenotype.expression_problem_values().len() + crate::NUM_SYSTEM_PARAMETERS,
+            7
+        );
         assert!(phenotype.system_parameters().m1() >= 0.0); // Basic check
 
         let parameter_bounds_more = create_default_bounds(10);
         let phenotype_more = Phenotype::new_random_phenotype(&mut rng, &parameter_bounds_more);
         assert_eq!(phenotype_more.gamete1().len(), 10);
         assert_eq!(phenotype_more.gamete2().len(), 10);
-        assert_eq!(phenotype_more.expressed_values().len(), 10);
+        assert_eq!(
+            phenotype_more.expression_problem_values().len() + crate::NUM_SYSTEM_PARAMETERS,
+            10
+        );
     }
 
     #[test]

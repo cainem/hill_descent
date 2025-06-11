@@ -128,9 +128,15 @@ impl Phenotype {
         (&self.gamete1, &self.gamete2)
     }
 
-    /// Returns the expressed parameter values.
-    pub fn expressed_values(&self) -> &[f64] {
-        &self.expressed
+    /// Returns the expressed parameter values excluding system parameters.
+    pub fn expression_problem_values(&self) -> &[f64] {
+        if self.expressed.len() < NUM_SYSTEM_PARAMETERS {
+            // This case should ideally not happen if Phenotype::new ensures sufficient length.
+            // However, returning an empty slice is safer than panicking here.
+            &[]
+        } else {
+            &self.expressed[NUM_SYSTEM_PARAMETERS..]
+        }
     }
 
     /// Returns a reference to the system parameters (m1..m5).
@@ -181,14 +187,14 @@ mod tests {
         let ph = Phenotype::new(g1.clone(), g2.clone(), &mut rng);
         assert_eq!(ph.gametes(), (&g1, &g2));
         // Assert that expressed values and system parameters are also set.
-        // The length of expressed_values should match the number of loci in the gametes.
+        // The length of expressed values should match the number of loci in the gametes.
         // This assumes compute_expressed returns one value per locus pair.
-        assert_eq!(ph.expressed_values().len(), g1_loci_values.len());
+        assert_eq!(ph.expressed.len(), g1_loci_values.len()); // Check total expressed length
         let _ = ph.system_parameters(); // Access to ensure it was created without panic
 
         // Assert that expressed_hash is correctly calculated and set
         let expected_hash =
-            Phenotype::compute_expressed_hash(ph.expressed_values(), crate::NUM_SYSTEM_PARAMETERS);
+            Phenotype::compute_expressed_hash(&ph.expressed, crate::NUM_SYSTEM_PARAMETERS);
         assert_eq!(
             ph.expressed_hash(),
             expected_hash,

@@ -1,4 +1,3 @@
-use crate::NUM_SYSTEM_PARAMETERS;
 use crate::phenotype::Phenotype;
 use crate::world::dimensions::Dimensions;
 use crate::world::dimensions::calculate_dimensions_key::{
@@ -29,11 +28,7 @@ impl Phenotype {
     ) -> Result<(), usize> {
         // System parameters are the first NUM_SYSTEM_PARAMETERS values in `expressed`.
         // The remaining values are for the problem's dimensions.
-        let problem_expressed_values = if self.expressed.len() > NUM_SYSTEM_PARAMETERS {
-            &self.expressed[NUM_SYSTEM_PARAMETERS..]
-        } else {
-            &[] // No problem-specific parameters
-        };
+        let problem_expressed_values = self.expression_problem_values();
 
         let actual_dimensions = dimensions_container.get_dimensions();
 

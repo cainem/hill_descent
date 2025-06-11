@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{NUM_SYSTEM_PARAMETERS, world::organisms::Organisms};
+use crate::world::organisms::Organisms;
 
 impl Organisms {
     /// Computes the number of distinct spatial locations among all organisms.
@@ -15,16 +15,16 @@ impl Organisms {
         let mut distinct_locations = HashSet::new();
 
         for phenotype in &self.organisms {
-            let expressed_values = phenotype.expressed_values();
-            if expressed_values.len() > NUM_SYSTEM_PARAMETERS {
-                // Convert f64s to u64s for hashing, skip system parameters
-                let location_coords: Vec<u64> = expressed_values[NUM_SYSTEM_PARAMETERS..]
+            let problem_expressed_values = phenotype.expression_problem_values();
+            if !problem_expressed_values.is_empty() {
+                // Convert f64s to u64s for hashing
+                let location_coords: Vec<u64> = problem_expressed_values
                     .iter()
                     .map(|&val| val.to_bits())
                     .collect();
                 distinct_locations.insert(location_coords);
             } else {
-                // Organism has no spatial parameters or only system parameters.
+                // Organism has no spatial parameters.
                 // Count this as one unique "empty" spatial location.
                 distinct_locations.insert(Vec::new());
             }
