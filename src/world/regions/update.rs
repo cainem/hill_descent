@@ -8,10 +8,12 @@ pub enum RegionResult {
 
 impl Regions {
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
-        // Call the update_step method to perform the update logic
+        // get total number of distinct locations for organisms
+        let distinct_locations_count = organisms.distinct_locations_count();
 
+        // empty all of the regions in the btreemap (if the regions don't need to double or the dimensions expand we can reuse them)
         loop {
-            let result = self.update_step(organisms, dimensions);
+            let result = self.update_step(organisms, dimensions, distinct_locations_count);
 
             // Handle the result of the update step
             match result {
@@ -35,17 +37,13 @@ impl Regions {
         &mut self,
         _organisms: &mut Organisms,
         _dimensions: &mut Dimensions,
+        _distinct_locations_count: usize,
     ) -> RegionResult {
-        // clear the btreemap
-
         // for each organism work out the region keys by seeing which dimension range they fall in
         // this can be worked out by calling get_intervals on the dimension in question
 
-        // assign the organisms to their appropriate regions tracking the number of distinct locations within each region
-        // (multiple organisms can have the same location)
-        // track dimensions that are not big enough to hold any organism
-        // if there are any dimensions that are not big enough to hold any organism then we need to expand the dimensions
-        // return ExpandDimensions with the dimensions that need to be expanded
+        // assign the organisms to their appropriate regions
+        // if a dimension is not big enough to hold any organisms return immediately with ExpandDimension
 
         // if the number of populated regions is greater that max_regions / 2 then we are finished return Complete
         // if the number of regions equals the number of distinct organism locations then we are finished return Complete
