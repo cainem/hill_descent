@@ -1,5 +1,7 @@
 use crate::Phenotype;
 
+pub mod update_region_key;
+
 #[derive(Debug, Clone)]
 pub struct Organism {
     _region_key: Option<Vec<usize>>,

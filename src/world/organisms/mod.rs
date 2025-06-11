@@ -1,6 +1,6 @@
 pub mod generate_random_phenotypes;
 pub mod new;
-pub mod update_all_dimensions_keys;
+pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
 pub mod distinct_locations_count;

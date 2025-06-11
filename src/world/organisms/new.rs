@@ -34,7 +34,9 @@ mod tests {
     #[test]
     fn given_valid_inputs_when_new_called_then_creates_organisms_correctly() {
         let mut rng = StepRng::new(0, 1);
-        let user_bounds: Vec<RangeInclusive<f64>> = (0..NUM_SYSTEM_PARAMETERS).map(|i| (i as f64)..=((i+1) as f64)).collect();
+        let user_bounds: Vec<RangeInclusive<f64>> = (0..NUM_SYSTEM_PARAMETERS)
+            .map(|i| (i as f64)..=((i + 1) as f64))
+            .collect();
         let global_constants_instance = GlobalConstants::new(10, 100);
 
         let organisms = Organisms::new(&user_bounds, &global_constants_instance, &mut rng);

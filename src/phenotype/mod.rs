@@ -11,7 +11,6 @@ pub mod compute_expressed;
 pub mod compute_expressed_hash;
 pub mod new_random_phenotype;
 pub mod sexual_reproduction;
-pub mod update_dimensions_key;
 
 /// A Phenotype is constructed from a pair of gametes.
 #[derive(Debug, Clone, PartialEq)]
@@ -26,8 +25,6 @@ pub struct Phenotype {
     system_parameters: SystemParameters,
     /// Hash of the expressed parameter values.
     expressed_hash: u64,
-    dimensions_key: Option<Vec<usize>>,
-    last_score: Option<f64>,
 }
 
 impl Phenotype {
@@ -51,14 +48,7 @@ impl Phenotype {
             expressed,
             system_parameters,
             expressed_hash,
-            dimensions_key: None,
-            last_score: None,
         }
-    }
-
-    /// Sets the dimensions key.
-    pub fn set_dimensions_key(&mut self, key: Option<Vec<usize>>) {
-        self.dimensions_key = key;
     }
 
     #[cfg(test)]
@@ -108,8 +98,6 @@ impl Phenotype {
             expressed: expressed_values,
             system_parameters,
             expressed_hash,
-            dimensions_key: None,
-            last_score: None,
         }
     }
 
@@ -147,11 +135,6 @@ impl Phenotype {
     /// Returns the hash of the expressed parameter values.
     pub fn expressed_hash(&self) -> u64 {
         self.expressed_hash
-    }
-
-    /// Returns the dimensions key, if it has been calculated.
-    pub fn dimensions_key(&self) -> Option<&[usize]> {
-        self.dimensions_key.as_deref()
     }
 }
 
