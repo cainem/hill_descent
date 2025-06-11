@@ -7,26 +7,36 @@ pub enum RegionResult {
 }
 
 impl Regions {
-    pub fn update(&mut self, organisms: &Organisms, dimensions: &Dimensions) {
+    pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
         // Call the update_step method to perform the update logic
-        let result = self.update_step(organisms, dimensions);
 
-        // Handle the result of the update step
-        match result {
-            RegionResult::DoubleRegions => {
-                // Logic for doubling regions if needed
-            }
-            RegionResult::ExpandDimension(_dimensions_to_expand) => {
-                // Logic for expanding dimensions based on the provided indices
-            }
-            RegionResult::Complete => {
-                // Logic for completing the update process
+        loop {
+            let result = self.update_step(organisms, dimensions);
+
+            // Handle the result of the update step
+            match result {
+                RegionResult::DoubleRegions => {
+                    // empty to btreemap
+                    // Logic for doubling regions if needed
+                }
+                RegionResult::ExpandDimension(_dimensions_to_expand) => {
+                    // empty the btreemap
+                    // Logic for expanding dimensions based on the provided indices
+                }
+                RegionResult::Complete => {
+                    // Logic for completing the update process
+                    // break out of loop when complete
+                }
             }
         }
     }
 
-    fn update_step(&mut self, _organisms: &Organisms, _dimensions: &Dimensions) -> RegionResult {
-        // delete all of the current regions / empty the btreemap
+    fn update_step(
+        &mut self,
+        _organisms: &mut Organisms,
+        _dimensions: &mut Dimensions,
+    ) -> RegionResult {
+        // clear the btreemap
 
         // for each organism work out the region keys by seeing which dimension range they fall in
         // this can be worked out by calling get_intervals on the dimension in question

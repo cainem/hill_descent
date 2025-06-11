@@ -35,14 +35,15 @@ where
         world_function: F,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
-        let organisms = Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
+        let mut organisms =
+            Organisms::new(&mut rng, user_defined_parameter_bounds, &global_constants);
 
         let spacial_limits = organisms.find_spacial_limits();
         // Pass global_constants to Dimensions::new, and spacial_limits by reference
-        let dimensions = Dimensions::new(&spacial_limits, &global_constants);
+        let mut dimensions = Dimensions::new(&spacial_limits, &global_constants);
         let mut regions = Regions::default();
 
-        regions.update(&organisms, &dimensions);
+        regions.update(&mut organisms, &mut dimensions);
 
         World {
             _dimensions: dimensions,

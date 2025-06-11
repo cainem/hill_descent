@@ -55,43 +55,25 @@ impl Phenotype {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::phenotype::tests::create_test_gamete; // Using existing pub(crate) helper
-    use crate::world::dimensions::Dimensions; // Changed from dimension::Dimension and new::new_dimensions
+    use crate::NUM_SYSTEM_PARAMETERS;
     use crate::world::dimensions::dimension::Dimension;
-    use rand::thread_rng;
     use std::ops::RangeInclusive;
 
-    // Helper to create a Phenotype with specific expressed values for testing.
-    fn create_phenotype_for_test(expressed_values_full: Vec<f64>) -> Phenotype {
-        assert!(
-            expressed_values_full.len() >= NUM_SYSTEM_PARAMETERS,
-            "Not enough expressed values for system parameters."
-        );
+    // Helper function to create a Phenotype instance for testing purposes.
+    // It initializes a Phenotype with specified expressed values using the test constructor.
+    // The dimensions_key is explicitly set to None for test predictability.
+    fn create_phenotype_for_test(expressed_values: Vec<f64>) -> Phenotype {
+        // Ensure there are enough values for system parameters for Phenotype::new_for_test.
+        if expressed_values.len() < NUM_SYSTEM_PARAMETERS {
+            panic!(
+                "Test setup error: expressed_values length {} is less than NUM_SYSTEM_PARAMETERS {}",
+                expressed_values.len(),
+                NUM_SYSTEM_PARAMETERS
+            );
+        }
 
-        // Create dummy gametes. The actual content doesn't matter as much as `expressed` for this test.
-        // Phenotype::new will compute its own expressed values based on these gametes.
-        // We then overwrite `expressed` for precise control in the test.
-        let num_loci = expressed_values_full.len();
-        let g1_vals: Vec<f64> = (0..num_loci)
-            .map(|i| expressed_values_full[i] / 2.0)
-            .collect();
-        let g2_vals: Vec<f64> = (0..num_loci)
-            .map(|i| expressed_values_full[i] / 2.0)
-            .collect();
-
-        let gamete1 = create_test_gamete(&g1_vals);
-        let gamete2 = create_test_gamete(&g2_vals);
-
-        let mut rng = thread_rng();
-        let mut phenotype = Phenotype::new(gamete1, gamete2, &mut rng);
-
-        // Overwrite expressed values and related fields for the test
-        phenotype.expressed = expressed_values_full;
-        phenotype.system_parameters = crate::parameters::system_parameters::SystemParameters::new(
-            &phenotype.expressed[0..NUM_SYSTEM_PARAMETERS],
-        );
-        phenotype.expressed_hash = Phenotype::compute_expressed_hash(&phenotype.expressed);
-        phenotype.dimensions_key = None; // Ensure it starts as None for tests
+        let mut phenotype = Phenotype::new_for_test(expressed_values);
+        phenotype.set_dimensions_key(None); // Ensure it starts as None for tests
         phenotype
     }
 
@@ -201,7 +183,8 @@ mod tests {
         phenotype.system_parameters = crate::parameters::system_parameters::SystemParameters::new(
             &phenotype.expressed[0..NUM_SYSTEM_PARAMETERS],
         );
-        phenotype.expressed_hash = Phenotype::compute_expressed_hash(&phenotype.expressed);
+        phenotype.expressed_hash =
+            Phenotype::compute_expressed_hash(&phenotype.expressed, NUM_SYSTEM_PARAMETERS);
 
         let result = phenotype.update_dimensions_key(&dimensions); // Using the same dimensions object
 

@@ -1,5 +1,9 @@
-use crate::{gamete::Gamete, parameters::system_parameters::SystemParameters};
-use rand::Rng;
+use crate::{
+    NUM_SYSTEM_PARAMETERS, gamete::Gamete, parameters::system_parameters::SystemParameters,
+};
+use rand::Rng; // Retain Rng for Phenotype::new, though not used in new_for_test directly.
+
+// Note: Locus, LocusAdjustment, DirectionOfTravel, Parameter imports moved into new_for_test
 
 pub mod asexual_reproduction;
 pub mod calculate_crossovers;
@@ -30,23 +34,82 @@ impl Phenotype {
     /// Creates a new Phenotype from two gametes, computing expressed values using the given RNG.
     pub fn new<R: Rng>(gamete1: Gamete, gamete2: Gamete, rng: &mut R) -> Self {
         let expressed = compute_expressed::compute_expressed(&gamete1, &gamete2, rng);
-        if expressed.len() < 7 {
+        if expressed.len() < NUM_SYSTEM_PARAMETERS {
             panic!(
-                "Cannot create Phenotype: expressed values (genes) length {} is less than required 7 for SystemParameters. Gametes need to provide at least 7 loci.",
-                expressed.len()
+                "Cannot create Phenotype: expressed values (genes) length {} is less than required {} for SystemParameters. Gametes need to provide at least {} loci.",
+                expressed.len(),
+                NUM_SYSTEM_PARAMETERS,
+                NUM_SYSTEM_PARAMETERS
             );
         }
-        // Extract the first seven expressed values as system parameters
-        let system_parameters = SystemParameters::new(&expressed[0..7]);
-        let expressed_hash = Self::compute_expressed_hash(&expressed);
+        let expressed_hash = Self::compute_expressed_hash(&expressed, NUM_SYSTEM_PARAMETERS);
+        let system_parameters = SystemParameters::new(&expressed[0..NUM_SYSTEM_PARAMETERS]);
+
         Self {
             gamete1,
             gamete2,
-            expressed, // Stores all expressed values
+            expressed,
             system_parameters,
             expressed_hash,
-            dimensions_key: None, // Optional field for dimensions key, can be set later
-            last_score: None,     // Optional field for last score, can be set later
+            dimensions_key: None,
+            last_score: None,
+        }
+    }
+
+    /// Sets the dimensions key.
+    pub fn set_dimensions_key(&mut self, key: Option<Vec<usize>>) {
+        self.dimensions_key = key;
+    }
+
+    #[cfg(test)]
+    /// Creates a new `Phenotype` instance specifically for testing purposes.
+    ///
+    /// This constructor takes a vector of `f64` representing the desired expressed values.
+    /// It computes the `system_parameters` and `expressed_hash` based on these values,
+    /// using `NUM_SYSTEM_PARAMETERS` to differentiate system vs. spatial parameters for hashing.
+    /// Dummy gametes are created internally as they are required by the struct but their
+    /// specific genetic content is not relevant when `expressed_values` are provided directly.
+    ///
+    /// # Panics
+    /// Panics if `expressed_values.len()` is less than `NUM_SYSTEM_PARAMETERS`.
+    pub fn new_for_test(expressed_values: Vec<f64>) -> Self {
+        use crate::{
+            locus::{
+                Locus,
+                locus_adjustment::{DirectionOfTravel, LocusAdjustment},
+            },
+            parameters::parameter::Parameter,
+        };
+        if expressed_values.len() < NUM_SYSTEM_PARAMETERS {
+            panic!(
+                "Cannot create test Phenotype: expressed values length {} is less than required {}",
+                expressed_values.len(),
+                NUM_SYSTEM_PARAMETERS
+            );
+        }
+        let expressed_hash = Self::compute_expressed_hash(&expressed_values, NUM_SYSTEM_PARAMETERS);
+        let system_parameters = SystemParameters::new(&expressed_values[0..NUM_SYSTEM_PARAMETERS]);
+
+        // Dummy gametes for test instance, ensuring they have enough loci for expressed_values
+        // The actual content of gametes doesn't matter here as `expressed_values` is directly used.
+        let min_loci = expressed_values.len().max(NUM_SYSTEM_PARAMETERS);
+        // Create dummy Locus objects for Gamete creation
+        let dummy_parameter = Parameter::new(0.0);
+        let dummy_adjustment =
+            LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Add, false);
+        let dummy_locus = Locus::new(dummy_parameter, dummy_adjustment, false);
+        let dummy_gamete_loci = vec![dummy_locus; min_loci];
+        let gamete1 = Gamete::new(dummy_gamete_loci.clone());
+        let gamete2 = Gamete::new(dummy_gamete_loci);
+
+        Self {
+            gamete1,
+            gamete2,
+            expressed: expressed_values,
+            system_parameters,
+            expressed_hash,
+            dimensions_key: None,
+            last_score: None,
         }
     }
 
@@ -124,7 +187,8 @@ mod tests {
         let _ = ph.system_parameters(); // Access to ensure it was created without panic
 
         // Assert that expressed_hash is correctly calculated and set
-        let expected_hash = Phenotype::compute_expressed_hash(ph.expressed_values());
+        let expected_hash =
+            Phenotype::compute_expressed_hash(ph.expressed_values(), crate::NUM_SYSTEM_PARAMETERS);
         assert_eq!(
             ph.expressed_hash(),
             expected_hash,
