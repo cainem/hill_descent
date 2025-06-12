@@ -26,6 +26,11 @@ impl Organism {
         &self.phenotype
     }
 
+    /// Returns a clone of the organism's phenotype Rc.
+    pub fn get_phenotype_rc(&self) -> Rc<Phenotype> {
+        Rc::clone(&self.phenotype)
+    }
+
     /// Returns the region key of the organism, if set.
     pub fn region_key(&self) -> Option<&Vec<usize>> {
         self._region_key.as_ref()

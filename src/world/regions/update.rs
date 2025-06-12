@@ -1,3 +1,4 @@
+use crate::world::organisms::organism::update_region_key::OrganismUpdateRegionKeyResult;
 use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
 
 pub enum RegionResult {
@@ -35,22 +36,38 @@ impl Regions {
 
     fn update_step(
         &mut self,
-        _organisms: &mut Organisms,
-        _dimensions: &mut Dimensions,
-        _distinct_locations_count: usize,
+        organisms: &mut Organisms,
+        dimensions: &mut Dimensions,
+        distinct_locations_count: usize,
     ) -> RegionResult {
-        // for each organism work out the region keys by seeing which dimension range they fall in
-        // this can be worked out by calling get_intervals on the dimension in question
+        // Attempt to update region keys for all organisms based on the current dimensions.
+        match organisms.update_all_region_keys(dimensions) {
+            OrganismUpdateRegionKeyResult::Success => {
+                // All organisms' region keys updated successfully.
+                // Populate the regions with organisms based on their new keys.
+                self.add_phenotypes(organisms);
 
-        _organisms.update_all_region_keys(_dimensions);
+                let num_populated_regions = self.regions().len();
 
-        // assign the organisms to their appropriate regions
-        // if a dimension is not big enough to hold any organisms return immediately with ExpandDimension
-
-        // if the number of populated regions is greater that max_regions / 2 then we are finished return Complete
-        // if the number of regions equals the number of distinct organism locations then we are finished return Complete
-        // else return DoubleRegions
-
-        todo!();
+                // Decide the next step based on region population and distinct locations:
+                // - If regions are sufficiently populated or all distinct locations have a region, the update is complete.
+                // - Otherwise, regions may need to be doubled (e.g., by splitting a dimension further).
+                if num_populated_regions > self.max_regions / 2 {
+                    RegionResult::Complete
+                } else if distinct_locations_count > 0
+                    && num_populated_regions == distinct_locations_count
+                {
+                    // (Ensure distinct_locations_count > 0 to avoid premature completion with no organisms)
+                    RegionResult::Complete
+                } else {
+                    // Otherwise, regions need to be doubled (e.g., by splitting a dimension).
+                    RegionResult::DoubleRegions
+                }
+            }
+            OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) => {
+                // If any organism fails, we need to expand the dimension at the given index
+                RegionResult::ExpandDimension(dimension_index)
+            }
+        }
     }
 }

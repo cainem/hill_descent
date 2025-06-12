@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use region::Region;
 
+pub mod add_phenotypes;
 pub mod region;
 pub mod update;
 
@@ -10,6 +11,7 @@ use crate::parameters::global_constants::GlobalConstants;
 #[derive(Debug, Clone)]
 pub struct Regions {
     regions: BTreeMap<Vec<usize>, Region>,
+    max_regions: usize,
 }
 
 impl Regions {
@@ -20,6 +22,7 @@ impl Regions {
         }
         Self {
             regions: BTreeMap::new(),
+            max_regions: global_constants.max_regions(),
         }
     }
 
