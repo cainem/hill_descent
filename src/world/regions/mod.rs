@@ -9,6 +9,8 @@ pub mod prune_empty_regions;
 pub mod region;
 pub mod reset;
 pub mod update;
+pub mod update_all_region_min_scores;
+pub mod update_carrying_capacities;
 
 use crate::parameters::global_constants::GlobalConstants;
 
