@@ -4,6 +4,7 @@ use crate::world::organisms::Organisms;
 use crate::world::organisms::organism::Organism;
 use rand::Rng;
 use std::ops::RangeInclusive;
+use std::rc::Rc;
 
 impl Organisms {
     pub fn new(
@@ -18,7 +19,10 @@ impl Organisms {
         );
 
         Self {
-            organisms: phenotypes.into_iter().map(Organism::new).collect(),
+            organisms: phenotypes
+                .into_iter()
+                .map(|p| Organism::new(Rc::new(p)))
+                .collect(),
         }
     }
 }

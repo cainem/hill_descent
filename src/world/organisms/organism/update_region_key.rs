@@ -50,6 +50,7 @@ mod tests {
     use crate::phenotype::Phenotype;
     use crate::world::dimensions::dimension::Dimension;
     use std::ops::RangeInclusive;
+    use std::rc::Rc;
 
     // Helper function to create an Organism instance for testing purposes.
     fn create_organism_for_test(expressed_values: Vec<f64>) -> Organism {
@@ -63,7 +64,7 @@ mod tests {
         }
 
         let phenotype = Phenotype::new_for_test(expressed_values);
-        let mut organism = Organism::new(phenotype);
+        let mut organism = Organism::new(Rc::new(phenotype));
         organism.set_region_key(None); // Ensure it starts as None for tests
         organism
     }

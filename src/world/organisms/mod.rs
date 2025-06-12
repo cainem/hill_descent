@@ -32,9 +32,13 @@ impl Organisms {
 impl Organisms {
     /// Creates a new `Organisms` instance directly from a vector of phenotypes.
     /// This is intended for testing purposes only.
-    pub(crate) fn new_from_phenotypes(phenotypes: Vec<Phenotype>) -> Self {
+    pub(crate) fn new_from_phenotypes(phenotypes: Vec<crate::phenotype::Phenotype>) -> Self {
+        use std::rc::Rc;
         Self {
-            organisms: phenotypes.into_iter().map(Organism::new).collect(),
+            organisms: phenotypes
+                .into_iter()
+                .map(|p| Organism::new(Rc::new(p)))
+                .collect(),
         }
     }
 }

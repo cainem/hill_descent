@@ -32,6 +32,7 @@ mod tests {
     // Removed: use crate::world::dimensions::new_dimensions;
     use rand::thread_rng;
     use std::ops::RangeInclusive;
+    use std::rc::Rc;
 
     // Helper to create basic dimensions for testing
     fn create_test_dimensions_for_organisms(num_dims: usize, max_regions: usize) -> Dimensions {
@@ -81,7 +82,7 @@ mod tests {
         // Create a phenotype that will be made to fail.
         let failing_p_phenotype = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
         let mut failing_organism =
-            crate::world::organisms::organism::Organism::new(failing_p_phenotype.clone());
+            crate::world::organisms::organism::Organism::new(Rc::new(failing_p_phenotype.clone()));
 
         // To make failing_organism fail, we create dimensions where its naturally-expressed value is out of bounds.
         // `new_random_phenotype` with default enhancement creates problem parameter values between 0.0 and 1.0.

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::Phenotype;
 
 pub mod update_region_key;
@@ -6,12 +8,12 @@ pub mod update_region_key;
 pub struct Organism {
     _region_key: Option<Vec<usize>>,
     _score: Option<f64>,
-    phenotype: Phenotype,
+    phenotype: Rc<Phenotype>,
 }
 
 impl Organism {
     /// Creates a new `Organism` with the given phenotype.
-    pub fn new(phenotype: Phenotype) -> Self {
+    pub fn new(phenotype: Rc<Phenotype>) -> Self {
         Self {
             _region_key: None,
             _score: None,
@@ -22,11 +24,6 @@ impl Organism {
     /// Returns a reference to the organism's phenotype.
     pub fn phenotype(&self) -> &Phenotype {
         &self.phenotype
-    }
-
-    /// Returns a mutable reference to the organism's phenotype.
-    pub fn phenotype_mut(&mut self) -> &mut Phenotype {
-        &mut self.phenotype
     }
 
     /// Returns the region key of the organism, if set.

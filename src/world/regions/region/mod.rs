@@ -1,10 +1,12 @@
+use std::rc::Rc;
+
 use crate::Phenotype;
 
 #[derive(Debug, Clone)]
 pub struct Region {
     _min_score: Option<f64>,
     _carrying_capacity: Option<usize>,
-    organisms: Vec<Phenotype>, // Renamed for consistency, or keep _organisms if preferred internal style
+    organisms: Vec<Rc<Phenotype>>, // Renamed for consistency, or keep _organisms if preferred internal style
 }
 
 impl Region {
@@ -18,7 +20,7 @@ impl Region {
 
     // Method to add a phenotype to the region.
     // Takes ownership of the phenotype, assuming phenotypes are cloned before being added.
-    pub fn add_phenotype(&mut self, phenotype: Phenotype) {
+    pub fn add_phenotype(&mut self, phenotype: Rc<Phenotype>) {
         self.organisms.push(phenotype);
     }
 
@@ -28,7 +30,7 @@ impl Region {
     }
 
     // Optional: A way to get a slice of the organisms if needed for read-only access
-    pub fn get_organisms(&self) -> &[Phenotype] {
+    pub fn get_organisms(&self) -> &[Rc<Phenotype>] {
         &self.organisms
     }
 }
