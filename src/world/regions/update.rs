@@ -4,51 +4,14 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms};
 impl super::Regions {
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
         loop {
-            // Reset regions for the new iteration, but don't deallocate them.
-            self.reset();
-
             match organisms.update_all_region_keys(dimensions) {
                 OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) => {
-                    dimensions.expand_bounds(dimension_index);
-                    // The dimension change invalidates all existing region keys.
-                    // Clear all regions so they can be rebuilt in the next iteration.
-                    self.regions.clear();
+                    self.handle_out_of_bounds(dimensions, dimension_index);
                     continue;
                 }
                 OrganismUpdateRegionKeyResult::Success => {
-                    // Populate the reset regions with organisms based on their new keys.
-                    self.add_phenotypes(organisms);
-                    // Remove any regions that are no longer populated.
-                    self.regions.retain(|_, region| !region.is_empty());
-
-                    let num_populated_regions = self.regions.len();
-                    let distinct_locations = organisms.distinct_locations_count();
-
-                    // If there are no organisms, no further processing is needed.
-                    if distinct_locations == 0 {
-                        break; // No organisms to region or divide.
-                    }
-
-                    // PDD 4.2.2: Division stops if x = P_hat (populated regions == distinct locations)
-                    // Ensure distinct_locations > 0 to avoid premature completion with no organisms.
-                    if distinct_locations > 0 && num_populated_regions == distinct_locations {
-                        break; // Stable state: all distinct locations have their own region.
-                    }
-
-                    // Stop dividing if the number of *potential* regions has met or exceeded the maximum.
-                    if dimensions.get_total_possible_regions() >= self.max_regions {
+                    if self.handle_successful_update(organisms, dimensions) {
                         break;
-                    }
-
-                    // Attempt to refine granularity by dividing a dimension.
-                    if dimensions.divide_next_dimension() {
-                        // The dimension change invalidates all existing region keys.
-                        // Clear all regions so they can be rebuilt in the next iteration.
-                        self.regions.clear();
-                        continue;
-                    } else {
-                        // No more divisions possible.
-                        break; // Stable state: cannot refine further.
                     }
                 }
             }
