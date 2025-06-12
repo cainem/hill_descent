@@ -1,3 +1,5 @@
+pub mod reset;
+
 use std::rc::Rc;
 
 use crate::Phenotype;
@@ -18,8 +20,10 @@ impl Region {
         }
     }
 
-    // Method to add a phenotype to the region.
-    // Takes ownership of the phenotype, assuming phenotypes are cloned before being added.
+    /// Adds a phenotype to the region's collection of organisms.
+    ///
+    /// This method takes a `Rc<Phenotype>` to allow for shared ownership of the
+    /// phenotype data, avoiding unnecessary clones.
     pub fn add_phenotype(&mut self, phenotype: Rc<Phenotype>) {
         self.organisms.push(phenotype);
     }

@@ -4,6 +4,7 @@ use region::Region;
 
 pub mod add_phenotypes;
 pub mod region;
+pub mod reset;
 pub mod update;
 
 use crate::parameters::global_constants::GlobalConstants;
