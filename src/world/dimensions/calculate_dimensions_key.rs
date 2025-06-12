@@ -66,7 +66,7 @@ mod tests {
         ];
         let expressed_values = vec![7.5, 60.0];
         let result = calculate_dimensions_key(&dimensions, &expressed_values);
-        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![1, 2]));
+        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![2, 3]));
     }
 
     #[test]

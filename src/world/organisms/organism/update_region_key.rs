@@ -106,7 +106,7 @@ mod tests {
         let result = organism.update_region_key(&dimensions);
 
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(&vec![1, 2]));
+        assert_eq!(organism.region_key(), Some(&vec![2, 3]));
     }
 
     #[test]

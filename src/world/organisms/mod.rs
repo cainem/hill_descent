@@ -34,6 +34,8 @@ impl Organisms {
 
 #[cfg(test)]
 impl Organisms {
+    // Note: get_organisms was moved to the main impl block
+
     /// Creates a new `Organisms` instance directly from a vector of phenotypes.
     /// This is intended for testing purposes only.
     pub(crate) fn new_from_phenotypes(phenotypes: Vec<crate::phenotype::Phenotype>) -> Self {
@@ -44,5 +46,16 @@ impl Organisms {
                 .map(|p| Organism::new(Rc::new(p)))
                 .collect(),
         }
+    }
+
+    pub fn new_from_organisms(organisms: Vec<Organism>) -> Self {
+        Self { organisms }
+    }
+}
+
+impl Organisms {
+    // This was moved from the #[cfg(test)] block to be generally available
+    pub fn get_organisms(&self) -> &Vec<Organism> {
+        &self.organisms
     }
 }

@@ -14,8 +14,8 @@ impl Organisms {
     pub fn distinct_locations_count(&self) -> usize {
         let mut distinct_locations = HashSet::new();
 
-        for phenotype in &self.organisms {
-            let problem_expressed_values = phenotype.phenotype().expression_problem_values();
+        for organism in &self.organisms {
+            let problem_expressed_values = organism.phenotype().expression_problem_values();
             if !problem_expressed_values.is_empty() {
                 // Convert f64s to u64s for hashing
                 let location_coords: Vec<u64> = problem_expressed_values

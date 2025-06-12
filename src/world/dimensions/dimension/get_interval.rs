@@ -23,33 +23,39 @@ impl Dimension {
             return None;
         }
 
-        // Handle special case: single point range
-        if start == end {
+        // Handle special case: single point range or no divisions.
+        if start == end || divisions == 0 {
             return Some(0);
         }
 
-        // Handle special case: no divisions (just one interval)
-        if divisions == 0 {
-            return Some(0);
+        // The number of intervals is `divisions + 1`.
+        let num_intervals = (divisions + 1) as f64;
+        let interval_size = (end - start) / num_intervals;
+
+        // Handle case where range is tiny and interval_size is zero.
+        if interval_size == 0.0 {
+            // If size is 0, all values are effectively at the start,
+            // except for the exact end value.
+            return if value == end {
+                Some(divisions)
+            } else {
+                Some(0)
+            };
         }
 
-        // Calculate the size of each interval
-        let interval_size = (end - start) / divisions as f64;
+        // Calculate which interval the value falls into.
+        let pre_clamp_interval_float = (value - start) / interval_size;
+        let mut interval = pre_clamp_interval_float.floor() as usize;
 
-        // Handle the case when value is exactly at the end of the range
-        if value == end {
-            return Some(divisions);
-        }
-
-        // Calculate which interval the value falls into
-        let interval = ((value - start) / interval_size).floor() as usize;
-
-        // Safety check in case of floating-point errors
+        // Clamp the interval to the max index, which is `divisions`.
+        // This handles the `value == end` case correctly, as it might calculate
+        // to `divisions + 1` due to floating point representation, and ensures
+        // it falls into the last interval.
         if interval > divisions {
-            Some(divisions)
-        } else {
-            Some(interval)
+            interval = divisions;
         }
+
+        Some(interval)
     }
 }
 
@@ -58,20 +64,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_interval_basic() {
-        // Range 0..=10 with 5 divisions (6 intervals)
-        // Intervals: [0,2), [2,4), [4,6), [6,8), [8,10), [10,10]
-        let dimension = Dimension {
+    fn test_get_interval_basic_and_boundaries() {
+        // Range 0..=10 with 1 division (2 intervals of size 5)
+        // Intervals: [0, 5), [5, 10]
+        let dimension1 = Dimension {
             range: 0.0..=10.0,
-            number_of_divisions: 5,
+            number_of_divisions: 1,
         };
+        assert_eq!(dimension1.get_interval(0.0), Some(0));
+        assert_eq!(dimension1.get_interval(4.999), Some(0));
+        assert_eq!(dimension1.get_interval(5.0), Some(1));
+        assert_eq!(dimension1.get_interval(10.0), Some(1));
 
-        assert_eq!(dimension.get_interval(0.0), Some(0)); // Start of range
-        assert_eq!(dimension.get_interval(1.9), Some(0)); // First interval
-        assert_eq!(dimension.get_interval(2.0), Some(1)); // Start of second interval
-        assert_eq!(dimension.get_interval(5.5), Some(2)); // Middle interval
-        assert_eq!(dimension.get_interval(9.9), Some(4)); // Last interval (except end point)
-        assert_eq!(dimension.get_interval(10.0), Some(5)); // End of range (special case)
+        // Range 0..=10 with 3 divisions (4 intervals of size 2.5)
+        // Intervals: [0, 2.5), [2.5, 5), [5, 7.5), [7.5, 10]
+        let dimension2 = Dimension {
+            range: 0.0..=10.0,
+            number_of_divisions: 3,
+        };
+        assert_eq!(dimension2.get_interval(0.0), Some(0));
+        assert_eq!(dimension2.get_interval(2.4), Some(0));
+        assert_eq!(dimension2.get_interval(2.5), Some(1));
+        assert_eq!(dimension2.get_interval(6.0), Some(2));
+        assert_eq!(dimension2.get_interval(7.5), Some(3));
+        assert_eq!(dimension2.get_interval(10.0), Some(3));
     }
 
     #[test]
@@ -135,9 +151,9 @@ mod tests {
         assert_eq!(dimension.get_interval(10.0), Some(2)); // End boundary
 
         // Test close to but not at boundaries
-        assert_eq!(dimension.get_interval(4.999), Some(0)); // Just before middle boundary
+        assert_eq!(dimension.get_interval(4.999), Some(1)); // Just before middle boundary
         assert_eq!(dimension.get_interval(5.001), Some(1)); // Just after middle boundary
-        assert_eq!(dimension.get_interval(9.999), Some(1)); // Just before end boundary
+        assert_eq!(dimension.get_interval(9.999), Some(2)); // Just before end boundary
     }
 
     #[test]
@@ -149,7 +165,9 @@ mod tests {
         };
 
         assert_eq!(dimension.get_interval(-10.0), Some(0)); // Start of range
-        assert_eq!(dimension.get_interval(-7.5), Some(2)); // Middle of range
+        // With interval_size = 5.0/6.0 = 0.833...
+        // (-7.5 - (-10.0)) / interval_size = 2.5 / 0.833... = 3.0. floor() = 3.
+        assert_eq!(dimension.get_interval(-7.5), Some(3)); // Middle of range, falls into interval 3
         assert_eq!(dimension.get_interval(-5.0), Some(5)); // End of range
 
         // Out of bounds
@@ -184,14 +202,14 @@ mod tests {
         };
 
         // Test with values that might have floating point precision issues
-        assert_eq!(dimension.get_interval(0.1), Some(1));
-        assert_eq!(dimension.get_interval(0.2), Some(2));
-        // Due to floating point representation, the literal 0.3 is slightly less than
-        // the mathematical value, so it falls into the interval below.
-        assert_eq!(dimension.get_interval(0.3), Some(2));
+        assert_eq!(dimension.get_interval(0.1), Some(1)); // (0.1 / (1/11)) = 1.1 -> floor(1.1) = 1
+        assert_eq!(dimension.get_interval(0.2), Some(2)); // (0.2 / (1/11)) = 2.2 -> floor(2.2) = 2
 
-        // However, adding the literal 0.1 three times results in a value slightly
-        // greater than 0.3, so it falls into the correct interval.
+        // For value = 0.3, (0.3 / (1.0/11.0)) = 3.3. floor(3.3) = 3.
+        assert_eq!(dimension.get_interval(0.3), Some(3));
+
+        // For value = 0.1 + 0.1 + 0.1 (which might be ~0.30000000000000004)
+        // (0.30000000000000004 / (1.0/11.0)) approx 3.3000000000000007 -> floor = 3
         let value = 0.1 + 0.1 + 0.1;
         assert_eq!(dimension.get_interval(value), Some(3));
     }

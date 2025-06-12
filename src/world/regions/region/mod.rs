@@ -33,6 +33,26 @@ impl Region {
     pub fn get_organisms(&self) -> &[Rc<Phenotype>] {
         &self.organisms
     }
+
+    // Setter for carrying capacity
+    pub fn set_carrying_capacity(&mut self, capacity: Option<usize>) {
+        self._carrying_capacity = capacity;
+    }
+
+    // Setter for min_score
+    pub fn set_min_score(&mut self, score: Option<f64>) {
+        self._min_score = score;
+    }
+
+    // Getter for carrying capacity
+    pub fn carrying_capacity(&self) -> Option<usize> {
+        self._carrying_capacity
+    }
+
+    // Getter for min_score
+    pub fn min_score(&self) -> Option<f64> {
+        self._min_score
+    }
 }
 
 // Implementing Default for convenience if Region::new() with defaults is common

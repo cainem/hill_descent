@@ -103,10 +103,11 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 * Division process:  
     * Initially, a bounding box encompassing the ranges of the $n_p$ problem-specific parameters across the population is determined (see Section 4.2.3).  
     * This bounding box is recursively divided by halving it along each of these $n_p$ problem-specific dimensions.  
-    * Let `x` be the number of currently populated n-orthotopes.  
-    * Headroom for further division exists if $x \cdot 2^n < Z$.  
-    * Division also stops if $x = \hat{P}$, where $\hat{P}$ is the number of distinct points in space occupied by organisms. Distinct points are defined by precise (bit-wise) equality of their n-dimensional coordinates. Further division is considered pointless at this stage.  
-    * Unoccupied regions resulting from division are of no interest.
+  *   Let `x` be the number of currently populated n-orthotopes.
+    *   The division process has two primary termination conditions:
+        1.  **Stability:** Division stops if `x` equals `$\hat{P}$`, where `$\hat{P}$` is the number of distinct points in space occupied by organisms. At this point, each distinct location has its own region, and further division would not separate any more organisms.
+        2.  **Budget Exhaustion:** Division stops if `x` reaches the maximum allowed number of regions, `Z`. This ensures that the computational budget for regions is spent on separating actual groups of organisms, rather than creating a high-resolution grid in empty space. This is a refinement of the original concept to prevent premature termination when organisms are clustered.
+    *   Unoccupied regions resulting from division are of no interest.
 
 **4.2.3. Bounding Box:** 
 * An n-dimensional hyperrectangle that encompasses all organisms in the population.  
