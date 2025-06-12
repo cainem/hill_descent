@@ -22,6 +22,10 @@ impl Organisms {
         self.organisms.iter()
     }
 
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Organism> {
+        self.organisms.iter_mut()
+    }
+
     /// Returns the number of organisms.
     pub fn count(&self) -> usize {
         self.organisms.len()

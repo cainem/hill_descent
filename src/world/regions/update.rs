@@ -42,6 +42,8 @@ impl Regions {
         // for each organism work out the region keys by seeing which dimension range they fall in
         // this can be worked out by calling get_intervals on the dimension in question
 
+        _organisms.update_all_region_keys(_dimensions);
+
         // assign the organisms to their appropriate regions
         // if a dimension is not big enough to hold any organisms return immediately with ExpandDimension
 

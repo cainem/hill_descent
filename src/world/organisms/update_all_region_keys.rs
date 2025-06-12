@@ -1,5 +1,7 @@
 use super::Organisms;
-use crate::world::dimensions::Dimensions;
+use crate::world::{
+    dimensions::Dimensions, organisms::organism::update_region_key::OrganismUpdateRegionKeyResult,
+};
 
 impl Organisms {
     /// Updates the region key for all organisms.
@@ -11,13 +13,22 @@ impl Organisms {
     /// * `dimensions`: The dimensions to use for calculating the keys.
     ///
     /// # Returns
-    /// * `Ok(())` if all organism region keys were updated successfully.
-    /// * `Err(usize)` with the dimension index of the first failure encountered.
-    pub fn update_all_region_keys(&mut self, dimensions: &Dimensions) -> Result<(), usize> {
+    /// * `OrganismUpdateRegionKeyResult::Success` if all organism region keys were updated successfully.
+    /// * `OrganismUpdateRegionKeyResult::OutOfBounds(usize)` with the dimension index of the first failure encountered.
+    pub fn update_all_region_keys(
+        &mut self,
+        dimensions: &Dimensions,
+    ) -> OrganismUpdateRegionKeyResult {
         for organism in self.organisms.iter_mut() {
-            organism.update_region_key(dimensions)?;
+            match organism.update_region_key(dimensions) {
+                OrganismUpdateRegionKeyResult::Success => continue,
+                OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) => {
+                    // If any organism fails, return the index of the failing dimension.
+                    return OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index);
+                }
+            }
         }
-        Ok(())
+        OrganismUpdateRegionKeyResult::Success
     }
 }
 
@@ -45,7 +56,10 @@ mod tests {
     fn given_no_organisms_when_update_all_region_keys_then_ok() {
         let mut organisms = Organisms::new_from_phenotypes(vec![]);
         let dimensions = create_test_dimensions_for_organisms(2, 4);
-        assert_eq!(organisms.update_all_region_keys(&dimensions), Ok(()));
+        assert!(matches!(
+            organisms.update_all_region_keys(&dimensions),
+            OrganismUpdateRegionKeyResult::Success
+        ));
     }
 
     #[test]
@@ -63,7 +77,7 @@ mod tests {
         let dimensions = create_test_dimensions_for_organisms(param_bounds.len(), 4);
 
         let result = organisms.update_all_region_keys(&dimensions);
-        assert_eq!(result, Ok(()));
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         for organism in organisms.organisms.iter() {
             assert!(organism.region_key().is_some());
         }
@@ -92,11 +106,10 @@ mod tests {
         let dimensions_that_cause_failure = Dimensions::new(&specific_bounds_for_failure, &gc);
 
         // Pre-check: ensure our setup is correct and failing_organism does fail.
-        assert!(
-            failing_organism
-                .update_region_key(&dimensions_that_cause_failure)
-                .is_err()
-        );
+        assert!(matches!(
+            failing_organism.update_region_key(&dimensions_that_cause_failure),
+            OrganismUpdateRegionKeyResult::OutOfBounds(_)
+        ));
 
         test_phenotypes.push(failing_p_phenotype); // Add the failing phenotype.
         test_phenotypes.push(Phenotype::new_random_phenotype(&mut rng, &full_bounds)); // Add another that should pass.
@@ -105,9 +118,15 @@ mod tests {
         let result = organisms.update_all_region_keys(&dimensions_that_cause_failure);
 
         // The main assertion: the collection-level update should fail.
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            OrganismUpdateRegionKeyResult::OutOfBounds(_)
+        ));
         // And it should report the index of the failing dimension (0 in this case).
-        assert_eq!(result, Err(0));
+        assert!(matches!(
+            result,
+            OrganismUpdateRegionKeyResult::OutOfBounds(0)
+        ));
 
         // Check state: The organism that was set up to fail should have no key.
         assert_eq!(organisms.organisms[1].region_key(), None);

@@ -4,6 +4,11 @@ use crate::world::dimensions::calculate_dimensions_key::{
 };
 use crate::world::organisms::organism::Organism;
 
+pub enum OrganismUpdateRegionKeyResult {
+    Success,
+    OutOfBounds(usize), // Index of the dimension that caused the error
+}
+
 impl Organism {
     /// Updates the `_region_key` of the organism based on its phenotype's expressed values
     /// (excluding system parameters) and the provided dimensions.
@@ -13,31 +18,33 @@ impl Organism {
     ///   definitions for each dimension of the problem space.
     ///
     /// # Returns
-    /// * `Ok(())` if the region key was successfully calculated and updated.
-    /// * `Err(usize)` if a value was out of bounds for a dimension, returning the
+    /// * `OrganismUpdateRegionKeyResult::Success` if the region key was successfully calculated and updated.
+    /// * `OrganismUpdateRegionKeyResult::OutOfBounds(usize)` if a value was out of bounds for a dimension, returning the
     ///   index of the failing dimension.
     ///
     /// # Panics
     /// * Panics if the number of problem-specific expressed values from the phenotype
     ///   does not match the number of dimensions defined in `dimensions_container`,
     ///   unless both are zero. This panic originates from `calculate_dimensions_key`.
-    pub fn update_region_key(&mut self, dimensions_container: &Dimensions) -> Result<(), usize> {
+    pub fn update_region_key(
+        &mut self,
+        dimensions_container: &Dimensions,
+    ) -> OrganismUpdateRegionKeyResult {
         // System parameters are the first NUM_SYSTEM_PARAMETERS values in `expressed`.
         // The remaining values are for the problem's dimensions.
         let problem_expressed_values = self.phenotype().expression_problem_values();
-
         let actual_dimensions = dimensions_container.get_dimensions();
 
         match calculate_dimensions_key(actual_dimensions, problem_expressed_values) {
             CalculateDimensionsKeyResult::Success(key) => {
                 self.set_region_key(Some(key));
-                Ok(())
+                OrganismUpdateRegionKeyResult::Success
             }
             CalculateDimensionsKeyResult::Failure {
                 dimension_index, ..
             } => {
                 self.set_region_key(None); // Clear previous key on failure
-                Err(dimension_index)
+                OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index)
             }
         }
     }
@@ -98,7 +105,7 @@ mod tests {
 
         let result = organism.update_region_key(&dimensions);
 
-        assert!(result.is_ok());
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         assert_eq!(organism.region_key(), Some(&vec![1, 2]));
     }
 
@@ -112,8 +119,10 @@ mod tests {
 
         let result = organism.update_region_key(&dimensions);
 
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), 0); // Fails on the first dimension (index 0)
+        assert!(matches!(
+            result,
+            OrganismUpdateRegionKeyResult::OutOfBounds(0)
+        )); // Fails on the first dimension (index 0)
         assert!(organism.region_key().is_none());
     }
 
@@ -127,7 +136,7 @@ mod tests {
 
         let result = organism.update_region_key(&dimensions);
 
-        assert!(result.is_ok());
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         assert_eq!(organism.region_key(), Some(&vec![2])); // Should be in the last interval
     }
 
@@ -140,7 +149,7 @@ mod tests {
 
         let result = organism.update_region_key(&dimensions);
 
-        assert!(result.is_ok());
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         assert_eq!(organism.region_key(), Some(&vec![]));
     }
 }
