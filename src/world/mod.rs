@@ -11,18 +11,19 @@ const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 pub mod dimensions;
 pub mod organisms;
 pub mod regions;
+pub mod world_function;
 
 #[derive(Debug, Clone)]
 pub struct World<F>
 where
     F: Fn(&[f64]) -> Vec<f64>,
 {
-    _dimensions: Dimensions,
-    _organisms: Organisms,
-    _regions: Regions,
-    _global_constants: GlobalConstants,
-    _rng: SmallRng,
-    _world_function: F,
+    dimensions: Dimensions,
+    organisms: Organisms,
+    regions: Regions,
+    global_constants: GlobalConstants,
+    rng: SmallRng,
+    world_function: F,
 }
 
 impl<F> World<F>
@@ -85,12 +86,12 @@ where
         regions.update(&mut organisms, &mut dimensions);
 
         World {
-            _dimensions: dimensions,
-            _organisms: organisms,
-            _regions: regions,
-            _global_constants: global_constants,
-            _rng: rng,
-            _world_function: world_function,
+            dimensions,
+            organisms,
+            regions,
+            global_constants,
+            rng,
+            world_function,
         }
     }
 }
@@ -110,7 +111,7 @@ mod tests {
 
     fn get_default_test_bounds() -> Vec<RangeInclusive<f64>> {
         // Initialize with a small, valid range to avoid overflow in the random number generator.
-        let problem_parameters = vec![Parameter::with_bounds(0.0, -10.0, 10.0)];
+        let problem_parameters = [Parameter::with_bounds(0.0, -10.0, 10.0)];
         let problem_bounds: Vec<RangeInclusive<f64>> = problem_parameters
             .iter()
             .map(|p| p.bounds().clone())
@@ -124,35 +125,31 @@ mod tests {
         let bounds = get_default_test_bounds();
         let global_constants = GlobalConstants::new(10, 100);
 
-        let world = World::new(
-            bounds.as_slice(),
-            global_constants.clone(),
-            test_world_function,
-        );
+        let world = World::new(bounds.as_slice(), global_constants, test_world_function);
 
         // 1. Check if the number of organisms matches the configuration.
         assert_eq!(
-            world._organisms.count(),
+            world.organisms.count(),
             global_constants.population_size(),
             "The number of organisms should match the specified population size."
         );
 
         // 2. Check if regions have been created and are not empty.
         assert!(
-            !world._regions.regions().is_empty(),
+            !world.regions.regions().is_empty(),
             "Regions should be initialized and not empty."
         );
 
         // 3. Check if all organisms have been assigned to a region.
         let all_organisms_have_region_key =
-            world._organisms.iter().all(|o| o.region_key().is_some());
+            world.organisms.iter().all(|o| o.region_key().is_some());
         assert!(
             all_organisms_have_region_key,
             "All organisms must have a region key after world initialization."
         );
 
         // 4. Verify that the number of populated regions corresponds to the organisms' locations.
-        let populated_region_count = world._regions.regions().len();
+        let populated_region_count = world.regions.regions().len();
         assert!(
             populated_region_count > 0
                 && populated_region_count <= global_constants.population_size(),

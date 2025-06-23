@@ -5,4 +5,7 @@ edition = "2024"
 
 [dependencies]
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
-rand = { version = "0.8", features = ["small_rng"] }
+rand = { version = "0.9.1", features = ["small_rng"] }
+
+[lints.rust]
+unused = "allow"

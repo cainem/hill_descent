@@ -16,15 +16,15 @@ impl LocusAdjustment {
         rng: &mut impl Rng,
         value_bounds_for_locus: &RangeInclusive<f64>,
     ) -> Self {
-        let direction_of_travel = if rng.r#gen::<bool>() {
+        let direction_of_travel = if rng.random::<bool>() {
             DirectionOfTravel::Add
         } else {
             DirectionOfTravel::Subtract
         };
-        let doubling_or_halving_flag = rng.r#gen::<bool>();
+        let doubling_or_halving_flag = rng.random::<bool>();
         let locus_span = *value_bounds_for_locus.end() - *value_bounds_for_locus.start();
         let max_adj_val = (locus_span.abs() * Self::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
-        let random_adj_val = rng.gen_range(0.0..=max_adj_val);
+        let random_adj_val = rng.random_range(0.0..=max_adj_val);
         let adjustment_value = Parameter::with_bounds(random_adj_val, 0.0, max_adj_val);
         LocusAdjustment::new(
             adjustment_value,

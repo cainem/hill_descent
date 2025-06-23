@@ -14,7 +14,7 @@ impl Locus {
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
         // Direction mutation (m4)
-        if rng.gen_bool(sys.m4()) {
+        if rng.random_bool(sys.m4()) {
             new_direction = match new_direction {
                 DirectionOfTravel::Add => DirectionOfTravel::Subtract,
                 DirectionOfTravel::Subtract => DirectionOfTravel::Add,
@@ -22,11 +22,11 @@ impl Locus {
             new_double_flag = !new_double_flag;
         }
         // Doubling flag mutation (m3)
-        if rng.gen_bool(sys.m3()) {
+        if rng.random_bool(sys.m3()) {
             new_double_flag = !new_double_flag;
         }
         // Adjustment value mutation (m5)
-        if rng.gen_bool(sys.m5()) {
+        if rng.random_bool(sys.m5()) {
             if new_double_flag {
                 new_adj_val.set(new_adj_val.get() * 2.0);
             } else {
@@ -37,10 +37,10 @@ impl Locus {
         let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
-            if rng.gen_bool(sys.m2()) {
+            if rng.random_bool(sys.m2()) {
                 new_apply_flag = false;
             }
-        } else if rng.gen_bool(sys.m1()) {
+        } else if rng.random_bool(sys.m1()) {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true

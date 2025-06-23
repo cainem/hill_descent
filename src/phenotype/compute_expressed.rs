@@ -18,7 +18,7 @@ pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -
         let ca = a.adjustment().checksum() as f64 / max_u64;
         let cb = b.adjustment().checksum() as f64 / max_u64;
         let midpoint = (ca + cb) / 2.0;
-        let r = rng.gen_range(0.0..1.0);
+        let r = rng.random_range(0.0..1.0);
         let value = if a.adjustment().checksum() == b.adjustment().checksum() {
             if r < 0.5 {
                 a.value().get()
