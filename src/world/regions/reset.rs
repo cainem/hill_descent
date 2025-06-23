@@ -1,3 +1,16 @@
+impl super::Regions {
+    /// Resets all regions for the next iteration of the simulation.
+    ///
+    /// This method iterates through all the regions and calls their respective
+    /// `reset` methods. This clears their organism lists and resets transient
+    /// stats like carrying capacity, while persistent stats like min_score are kept.
+    pub fn reset(&mut self) {
+        for region in self.regions.values_mut() {
+            region.reset();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;
@@ -46,25 +59,14 @@ mod tests {
             reset_region.is_empty(),
             "Post-condition: region should be empty"
         );
-        assert!(
-            reset_region.min_score().is_none(),
-            "Post-condition: min_score should be None"
+        assert_eq!(
+            reset_region.min_score(),
+            Some(0.5),
+            "Post-condition: min_score should be preserved"
         );
         assert!(
             reset_region.carrying_capacity().is_none(),
             "Post-condition: carrying_capacity should be None"
         );
-    }
-}
-
-impl super::Regions {
-    /// Resets all regions for the next iteration of the simulation.
-    ///
-    /// This method iterates through all the regions and calls their respective
-    /// `reset` methods, clearing their organism lists and resetting their stats.
-    pub fn reset(&mut self) {
-        for region in self.regions.values_mut() {
-            region.reset();
-        }
     }
 }

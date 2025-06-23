@@ -1,11 +1,10 @@
 impl super::Region {
     /// Resets the region for the next iteration of the simulation.
     ///
-    /// This clears the list of organisms and resets the minimum score and
-    /// carrying capacity to their default `None` state.
+    /// This clears the list of organisms and resets the carrying capacity to its
+    /// default `None` state. The minimum score is persistent and not reset.
     pub fn reset(&mut self) {
         self.organisms.clear();
-        self.set_min_score(None);
         self.set_carrying_capacity(None);
     }
 
@@ -54,9 +53,10 @@ mod tests {
 
         // Then
         assert!(region.is_empty(), "Post-condition: region should be empty");
-        assert!(
-            region.min_score().is_none(),
-            "Post-condition: min_score should be None"
+        assert_eq!(
+            region.min_score(),
+            Some(0.5),
+            "Post-condition: min_score should be preserved"
         );
         assert!(
             region.carrying_capacity().is_none(),
