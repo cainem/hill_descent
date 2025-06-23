@@ -10,7 +10,7 @@ pub enum OrganismUpdateRegionKeyResult {
 }
 
 impl Organism {
-    /// Updates the `_region_key` of the organism based on its phenotype's expressed values
+    /// Updates the `region_key` of the organism based on its phenotype's expressed values
     /// (excluding system parameters) and the provided dimensions.
     ///
     /// # Arguments
