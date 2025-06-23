@@ -28,6 +28,11 @@ impl Organisms {
     pub fn count(&self) -> usize {
         self.organisms.len()
     }
+
+    // This was moved from the #[cfg(test)] block to be generally available
+    pub fn get_organisms(&self) -> &Vec<Organism> {
+        &self.organisms
+    }
 }
 
 #[cfg(test)]
@@ -48,12 +53,5 @@ impl Organisms {
 
     pub fn new_from_organisms(organisms: Vec<Organism>) -> Self {
         Self { organisms }
-    }
-}
-
-impl Organisms {
-    // This was moved from the #[cfg(test)] block to be generally available
-    pub fn get_organisms(&self) -> &Vec<Organism> {
-        &self.organisms
     }
 }
