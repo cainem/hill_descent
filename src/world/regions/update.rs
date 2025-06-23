@@ -6,16 +6,15 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms};
 impl super::Regions {
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
         loop {
-            match organisms.update_all_region_keys(dimensions) {
-                OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) => {
-                    self.handle_out_of_bounds(dimensions, dimension_index);
-                    continue;
-                }
-                OrganismUpdateRegionKeyResult::Success => {
-                    if self.handle_successful_update(organisms, dimensions) {
-                        break;
-                    }
-                }
+            if let OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) =
+                organisms.update_all_region_keys(dimensions)
+            {
+                self.handle_out_of_bounds(dimensions, dimension_index);
+                continue;
+            }
+
+            if self.handle_successful_update(organisms, dimensions) {
+                break;
             }
         }
         // Update min scores for regions first, then carrying capacities

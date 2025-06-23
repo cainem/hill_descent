@@ -86,11 +86,11 @@ mod tests {
     fn given_system_params_and_multiple_spatial_when_compute_expressed_hash_then_hashes_spatial_part_only()
      {
         let mut values = vec![0.0; NUM_SYSTEM_PARAMETERS];
-        values.extend_from_slice(&[1.0, 2.5, -3.14]);
+        values.extend_from_slice(&[1.0, 2.5, -std::f64::consts::PI]);
 
         let hash1 = Phenotype::compute_expressed_hash(&values, NUM_SYSTEM_PARAMETERS);
 
-        let spatial_part = [1.0, 2.5, -3.14];
+        let spatial_part = [1.0, 2.5, -std::f64::consts::PI];
         let expected_hash = Phenotype::compute_expressed_hash(&spatial_part, 0);
 
         assert_eq!(hash1, expected_hash);

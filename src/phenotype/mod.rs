@@ -144,7 +144,7 @@ mod tests {
     use crate::locus::Locus;
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
-    use rand::thread_rng;
+    use rand::rngs::mock::StepRng;
 
     pub(crate) fn create_test_locus(val: f64) -> Locus {
         let param = Parameter::new(val);
@@ -166,7 +166,7 @@ mod tests {
         let g2_loci_values = &[3.0, 4.0, 0.1, 0.5, 0.001, 100.0, 2.0, 10.0, 11.0]; // 9 loci
         let g1 = create_test_gamete(g1_loci_values);
         let g2 = create_test_gamete(g2_loci_values);
-        let mut rng = thread_rng();
+        let mut rng = StepRng::new(0, 1);
         let ph = Phenotype::new(g1.clone(), g2.clone(), &mut rng);
         assert_eq!(ph.gametes(), (&g1, &g2));
         // Assert that expressed values and system parameters are also set.

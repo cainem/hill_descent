@@ -41,7 +41,7 @@ mod tests {
     // Removed: use crate::parameters::Parameter;
     use crate::parameters::global_constants::GlobalConstants;
     // Removed: use crate::world::dimensions::new_dimensions;
-    use rand::thread_rng;
+    use rand::{SeedableRng, rngs::StdRng};
     use std::ops::RangeInclusive;
     use std::rc::Rc;
 
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn given_organisms_all_update_successfully_when_update_all_region_keys_then_ok() {
-        let mut rng = thread_rng();
+        let mut rng = StdRng::seed_from_u64(42);
         let param_bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0, 0.0..=1.0]; // For problem space
         let full_bounds =
             crate::parameters::parameter_enhancement::enhance_parameters(&param_bounds);
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn given_one_organism_fails_update_when_update_all_region_keys_then_err() {
-        let mut rng = thread_rng();
+        let mut rng = StdRng::seed_from_u64(42);
         let problem_param_bounds: Vec<RangeInclusive<f64>> = vec![0.0..=10.0, 0.0..=10.0];
         let full_bounds =
             crate::parameters::parameter_enhancement::enhance_parameters(&problem_param_bounds);

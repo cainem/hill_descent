@@ -19,13 +19,8 @@ pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -
         let cb = b.adjustment().checksum() as f64 / max_u64;
         let midpoint = (ca + cb) / 2.0;
         let r = rng.random_range(0.0..1.0);
-        let value = if a.adjustment().checksum() == b.adjustment().checksum() {
-            if r < 0.5 {
-                a.value().get()
-            } else {
-                b.value().get()
-            }
-        } else if r <= midpoint {
+        let checksums_are_equal = a.adjustment().checksum() == b.adjustment().checksum();
+        let value = if (checksums_are_equal && r < 0.5) || (!checksums_are_equal && r <= midpoint) {
             a.value().get()
         } else {
             b.value().get()
@@ -44,7 +39,6 @@ mod tests {
     use crate::parameters::parameter::Parameter;
     use crate::phenotype::tests::{create_test_gamete, create_test_locus};
     use rand::rngs::mock::StepRng;
-    use rand::thread_rng;
 
     #[test]
     fn given_equal_checksums_rng_chooses_first_when_compute_expressed_then_returns_first_value() {
@@ -107,7 +101,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Gametes must have same number of loci")]
     fn given_mismatched_gamete_lengths_when_compute_expressed_then_panics() {
-        let mut rng = thread_rng();
+        let mut rng = StepRng::new(0, 1);
         let l = create_test_locus(1.0);
         let g1 = Gamete::new(vec![l.clone()]);
         let g2 = Gamete::new(vec![l.clone(), create_test_locus(2.0)]);

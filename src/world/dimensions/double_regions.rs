@@ -73,10 +73,10 @@ mod tests {
             initial_divisions.len(),
             "Number of dimensions must match length of initial_divisions vector"
         );
-        let mut dims = Vec::new();
-        for i in 0..num_dims {
-            dims.push(Dimension::new(0.0..=1.0, initial_divisions[i]));
-        }
+        let dims = initial_divisions
+            .into_iter()
+            .map(|divs| Dimension::new(0.0..=1.0, divs))
+            .collect();
         Dimensions {
             dimensions: dims,
             last_division_index,
