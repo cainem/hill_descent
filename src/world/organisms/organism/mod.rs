@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::{phenotype::Phenotype, world::world_function::WorldFunction};
 
 pub mod update_region_key;
+pub mod run;
 
 #[derive(Debug, Clone)]
 pub struct Organism {
