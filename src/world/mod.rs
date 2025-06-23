@@ -38,8 +38,8 @@ impl World {
     ///   bounds for the problem-specific parameters to be optimized.
     /// * `global_constants` - A struct containing system-wide constants like `population_size`
     ///   and `max_regions`.
-    /// * `world_function` - The fitness function `F` that takes an organism's expressed
-    ///   phenotype (`&[f64]`) and returns a vector of output values.
+    /// * `world_function` - An `Rc<dyn WorldFunction>` that serves as the fitness function `F`.
+    ///   This trait object allows for dynamic dispatch to different fitness implementations.
     ///
     /// # Returns
     ///
@@ -111,6 +111,8 @@ mod tests {
         fn run(&self, phenotype: &[f64]) -> Vec<f64> {
             phenotype.to_vec()
         }
+
+        fn configure(&mut self, _phenotype_values: &[f64]) {}
     }
 
     fn get_test_bounds(num_problem_dims: usize) -> Vec<RangeInclusive<f64>> {

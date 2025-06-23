@@ -58,6 +58,8 @@ mod test_update_carrying_capacities {
         fn run(&self, _v: &[f64]) -> Vec<f64> {
             vec![0.0]
         }
+
+        fn configure(&mut self, _phenotype_values: &[f64]) {}
     }
 
     // HELPER FUNCTIONS (copied from src/world/regions/update.rs test module)

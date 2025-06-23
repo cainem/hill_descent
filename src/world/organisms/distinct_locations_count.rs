@@ -48,6 +48,8 @@ mod tests {
         fn run(&self, _p: &[f64]) -> Vec<f64> {
             vec![0.0]
         }
+
+        fn configure(&mut self, _phenotype_values: &[f64]) {}
     }
 
     // Helper function to create a Phenotype for testing, allowing overrides
