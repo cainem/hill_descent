@@ -18,7 +18,7 @@ use crate::parameters::global_constants::GlobalConstants;
 pub struct Regions {
     regions: BTreeMap<Vec<usize>, Region>,
     max_regions: usize,
-    population_size: usize, // Added population_size
+    population_size: usize,
 }
 
 impl Regions {
