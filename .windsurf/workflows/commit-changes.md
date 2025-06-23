@@ -7,6 +7,6 @@ run `cargo test --quiet` to make sure all of the tests pass. Fix broken tests an
 run `cargo clippy` and make sure there are no lint errors. Fix lint errors found, repeating the `cargo clippy` to ensure any fixes
 run `cargo clippy --tests` and make sure there are no lint errors. Fix lint errors found, repeating the `cargo clippy` to ensure any fixes
 make sure that the comments for any added or amended structs/functions are upto date and relevant, removing any that are not.
-run `cargo fmt` to format the code correctly
+run `cargo fmt` to format the code correctlys
 use git to stage all unstaged files
 use git to commit the changes with an appropriate summary of the work carried out try and restrict the commit message to 200 characters if possible

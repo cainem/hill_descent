@@ -37,7 +37,18 @@ impl Organisms {
 mod tests {
     use super::*;
     use crate::NUM_SYSTEM_PARAMETERS;
-    use crate::phenotype::Phenotype; // Ensure Phenotype is in scope for test helpers // For create_phenotype_with_spatial_coords
+    use crate::phenotype::Phenotype;
+    use crate::world::world_function::WorldFunction;
+    use std::fmt;
+    use std::rc::Rc;
+
+    #[derive(Debug)]
+    struct TestFn;
+    impl WorldFunction for TestFn {
+        fn run(&self, _p: &[f64]) -> Vec<f64> {
+            vec![0.0]
+        }
+    }
 
     // Helper function to create a Phenotype for testing, allowing overrides
     fn create_test_phenotype_with_override(
@@ -63,7 +74,6 @@ mod tests {
     #[test]
     fn given_no_organisms_when_distinct_locations_count_then_returns_zero() {
         let organisms_collection = Organisms {
-            // This is OK as Vec::new() can be Vec<Organism>
             organisms: Vec::new(),
         };
         assert_eq!(organisms_collection.distinct_locations_count(), 0);
@@ -72,7 +82,8 @@ mod tests {
     #[test]
     fn given_one_organism_when_distinct_locations_count_then_returns_one() {
         let p = create_phenotype_with_spatial_coords(&[1.0, 2.0]);
-        let organisms_collection = Organisms::new_from_phenotypes(vec![p]);
+        let world_fn = Rc::new(TestFn);
+        let organisms_collection = Organisms::new_from_phenotypes(vec![p], world_fn);
         assert_eq!(organisms_collection.distinct_locations_count(), 1);
     }
 
@@ -80,7 +91,8 @@ mod tests {
     fn given_multiple_organisms_at_same_location_when_distinct_locations_count_then_returns_one() {
         let p1 = create_phenotype_with_spatial_coords(&[1.0, 2.0]);
         let p2 = create_phenotype_with_spatial_coords(&[1.0, 2.0]);
-        let organisms_collection = Organisms::new_from_phenotypes(vec![p1, p2]);
+        let world_fn = Rc::new(TestFn);
+        let organisms_collection = Organisms::new_from_phenotypes(vec![p1, p2], world_fn);
         assert_eq!(organisms_collection.distinct_locations_count(), 1);
     }
 
@@ -91,7 +103,8 @@ mod tests {
         let p2 = create_phenotype_with_spatial_coords(&[3.0, 4.0]);
         let p3 = create_phenotype_with_spatial_coords(&[1.0, 2.0]); // Duplicate of p1
         let p4 = create_phenotype_with_spatial_coords(&[5.0, 6.0]);
-        let organisms_collection = Organisms::new_from_phenotypes(vec![p1, p2, p3, p4]);
+        let world_fn = Rc::new(TestFn);
+        let organisms_collection = Organisms::new_from_phenotypes(vec![p1, p2, p3, p4], world_fn);
         assert_eq!(organisms_collection.distinct_locations_count(), 3);
     }
 
@@ -105,7 +118,8 @@ mod tests {
             })
             .collect();
         // All organisms will have an empty spatial key Vec<f64>
-        let organisms_collection = Organisms::new_from_phenotypes(phenotypes);
+        let world_fn = Rc::new(TestFn);
+        let organisms_collection = Organisms::new_from_phenotypes(phenotypes, world_fn);
         assert_eq!(
             organisms_collection.distinct_locations_count(),
             1,
@@ -128,7 +142,8 @@ mod tests {
         expressed2.extend_from_slice(&[1.0, 2.0]); // Same spatial params
         phenotypes.push(create_test_phenotype_with_override(Some(expressed2), None));
 
-        let organisms_collection = Organisms::new_from_phenotypes(phenotypes);
+        let world_fn = Rc::new(TestFn);
+        let organisms_collection = Organisms::new_from_phenotypes(phenotypes, world_fn);
         assert_eq!(
             organisms_collection.distinct_locations_count(),
             1,

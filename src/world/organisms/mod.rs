@@ -36,22 +36,32 @@ impl Organisms {
 }
 
 #[cfg(test)]
-impl Organisms {
-    // Note: get_organisms was moved to the main impl block
+mod tests {
+    use super::Organisms;
+    use crate::phenotype::Phenotype;
+    use crate::world::organisms::Organism;
+    use crate::world::world_function::WorldFunction;
+    use std::rc::Rc;
 
-    /// Creates a new `Organisms` instance directly from a vector of phenotypes.
-    /// This is intended for testing purposes only.
-    pub(crate) fn new_from_phenotypes(phenotypes: Vec<crate::phenotype::Phenotype>) -> Self {
-        use std::rc::Rc;
-        Self {
-            organisms: phenotypes
-                .into_iter()
-                .map(|p| Organism::new(Rc::new(p)))
-                .collect(),
+    impl Organisms {
+        // Note: get_organisms was moved to the main impl block
+
+        /// Creates a new `Organisms` instance directly from a vector of phenotypes.
+        /// This is intended for testing purposes only.
+        pub(crate) fn new_from_phenotypes(
+            phenotypes: Vec<crate::phenotype::Phenotype>,
+            world_function: Rc<dyn WorldFunction>,
+        ) -> Self {
+            Self {
+                organisms: phenotypes
+                    .into_iter()
+                    .map(|p| Organism::new(Rc::new(p), world_function.clone()))
+                    .collect(),
+            }
         }
-    }
 
-    pub fn new_from_organisms(organisms: Vec<Organism>) -> Self {
-        Self { organisms }
+        pub fn new_from_organisms(organisms: Vec<Organism>) -> Self {
+            Self { organisms }
+        }
     }
 }

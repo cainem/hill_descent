@@ -2,6 +2,7 @@ use super::generate_random_phenotypes;
 use crate::parameters::global_constants::GlobalConstants;
 use crate::world::organisms::Organisms;
 use crate::world::organisms::organism::Organism;
+use crate::world::world_function::WorldFunction;
 use rand::Rng;
 use std::ops::RangeInclusive;
 use std::rc::Rc;
@@ -11,6 +12,7 @@ impl Organisms {
         initial_value_bounds: &[RangeInclusive<f64>],
         global_constants: &GlobalConstants,
         rng: &mut impl Rng,
+        world_function: Rc<dyn WorldFunction>,
     ) -> Self {
         let phenotypes = generate_random_phenotypes(
             rng,
@@ -21,7 +23,7 @@ impl Organisms {
         Self {
             organisms: phenotypes
                 .into_iter()
-                .map(|p| Organism::new(Rc::new(p)))
+                .map(|p| Organism::new(Rc::new(p), world_function.clone()))
                 .collect(),
         }
     }
@@ -32,8 +34,19 @@ mod tests {
     use super::*;
     use crate::NUM_SYSTEM_PARAMETERS;
     use crate::parameters::GlobalConstants;
+    use crate::world::world_function::WorldFunction;
     use rand::rngs::mock::StepRng;
+    use std::fmt;
     use std::ops::RangeInclusive; // For validating enhanced bounds length
+    use std::rc::Rc;
+
+    #[derive(Debug)]
+    struct TestFn;
+    impl WorldFunction for TestFn {
+        fn run(&self, _p: &[f64]) -> Vec<f64> {
+            vec![0.0]
+        }
+    }
 
     #[test]
     fn given_valid_inputs_when_new_called_then_creates_organisms_correctly() {
@@ -42,8 +55,10 @@ mod tests {
             .map(|i| (i as f64)..=((i + 1) as f64))
             .collect();
         let global_constants_instance = GlobalConstants::new(10, 100);
+        let world_fn = Rc::new(TestFn);
 
-        let organisms = Organisms::new(&user_bounds, &global_constants_instance, &mut rng);
+        let organisms =
+            Organisms::new(&user_bounds, &global_constants_instance, &mut rng, world_fn);
 
         assert_eq!(
             organisms.organisms.len(),

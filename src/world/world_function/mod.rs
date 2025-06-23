@@ -1,11 +1,5 @@
-pub struct WorldFunction;
+use std::fmt::Debug;
 
-impl WorldFunction {
-    pub fn configure(&mut self, parameters: &[f64]) {
-        todo!()
-    }
-
-    pub fn run(&self, inputs: &[f64]) -> f64 {
-        todo!()
-    }
+pub trait WorldFunction: Debug {
+    fn run(&self, phenotype: &[f64]) -> Vec<f64>;
 }

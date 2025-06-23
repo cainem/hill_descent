@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::Phenotype;
+use crate::{phenotype::Phenotype, world::world_function::WorldFunction};
 
 pub mod update_region_key;
 
@@ -9,15 +9,17 @@ pub struct Organism {
     region_key: Option<Vec<usize>>,
     score: Option<f64>,
     phenotype: Rc<Phenotype>,
+    world_function: Rc<dyn WorldFunction>,
 }
 
 impl Organism {
     /// Creates a new `Organism` with the given phenotype.
-    pub fn new(phenotype: Rc<Phenotype>) -> Self {
+    pub fn new(phenotype: Rc<Phenotype>, world_function: Rc<dyn WorldFunction>) -> Self {
         Self {
             region_key: None,
             score: None,
             phenotype,
+            world_function,
         }
     }
 

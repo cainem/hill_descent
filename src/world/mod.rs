@@ -1,10 +1,12 @@
 use crate::parameters::global_constants::GlobalConstants;
 use crate::world::dimensions::Dimensions;
+use crate::world::world_function::WorldFunction;
 use organisms::Organisms;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 use regions::Regions; // Required for SmallRng::from_seed
 use std::ops::RangeInclusive;
+use std::rc::Rc;
 
 const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 
@@ -14,22 +16,16 @@ pub mod regions;
 pub mod world_function;
 
 #[derive(Debug, Clone)]
-pub struct World<F>
-where
-    F: Fn(&[f64]) -> Vec<f64>,
-{
+pub struct World {
     dimensions: Dimensions,
     organisms: Organisms,
     regions: Regions,
     global_constants: GlobalConstants,
     rng: SmallRng,
-    world_function: F,
+    world_function: Rc<dyn WorldFunction>,
 }
 
-impl<F> World<F>
-where
-    F: Fn(&[f64]) -> Vec<f64>,
-{
+impl World {
     /// Creates a new `World` instance, initializing the entire simulation environment.
     ///
     /// This function orchestrates the setup of the world based on the initial parameters,
@@ -72,11 +68,15 @@ where
     pub fn new(
         user_defined_parameter_bounds: &[RangeInclusive<f64>],
         global_constants: GlobalConstants,
-        world_function: F,
+        world_function: Rc<dyn WorldFunction>,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
-        let mut organisms =
-            Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
+        let mut organisms = Organisms::new(
+            user_defined_parameter_bounds,
+            &global_constants,
+            &mut rng,
+            world_function.clone(),
+        );
 
         let spacial_limits = organisms.find_spacial_limits();
         let mut dimensions = Dimensions::new(&spacial_limits, &global_constants);
@@ -99,81 +99,66 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::NUM_SYSTEM_PARAMETERS;
+    use crate::parameters::global_constants::GlobalConstants;
+    use crate::world::world_function::WorldFunction;
+    use std::ops::RangeInclusive;
+    use std::rc::Rc;
 
-    use crate::parameters::parameter::Parameter;
-    use crate::parameters::parameter_enhancement::enhance_parameters;
-
-    // A simple fitness function for testing purposes.
-    fn test_world_function(phenotype: &[f64]) -> Vec<f64> {
-        // Return the sum of the phenotype values as a single output.
-        vec![phenotype.iter().sum()]
+    #[derive(Debug)]
+    struct TestFn;
+    impl WorldFunction for TestFn {
+        fn run(&self, phenotype: &[f64]) -> Vec<f64> {
+            phenotype.to_vec()
+        }
     }
 
-    fn get_default_test_bounds() -> Vec<RangeInclusive<f64>> {
-        // Initialize with a small, valid range to avoid overflow in the random number generator.
-        let problem_parameters = [Parameter::with_bounds(0.0, -10.0, 10.0)];
-        let problem_bounds: Vec<RangeInclusive<f64>> = problem_parameters
-            .iter()
-            .map(|p| p.bounds().clone())
-            .collect();
-
-        enhance_parameters(&problem_bounds)
+    fn get_test_bounds(num_problem_dims: usize) -> Vec<RangeInclusive<f64>> {
+        let system_bounds = (0..NUM_SYSTEM_PARAMETERS).map(|i| (i as f64)..=((i + 1) as f64));
+        let problem_bounds = (0..num_problem_dims).map(|i| ((i + 10) as f64)..=((i + 11) as f64));
+        system_bounds.chain(problem_bounds).collect()
     }
 
     #[test]
     fn given_valid_inputs_when_new_is_called_then_world_is_initialized_correctly() {
-        let bounds = get_default_test_bounds();
-        let global_constants = GlobalConstants::new(10, 100);
+        let num_problem_dims = 2;
+        let bounds = get_test_bounds(num_problem_dims);
+        let gc = GlobalConstants::new(10, 100);
+        let world_fn = Rc::new(TestFn);
 
-        let world = World::new(bounds.as_slice(), global_constants, test_world_function);
+        let world = World::new(&bounds, gc, world_fn);
 
-        // 1. Check if the number of organisms matches the configuration.
-        assert_eq!(
-            world.organisms.count(),
-            global_constants.population_size(),
-            "The number of organisms should match the specified population size."
-        );
+        assert_eq!(world.organisms.count(), 10);
+        assert_eq!(world.global_constants.population_size(), 10);
+        assert_eq!(world.global_constants.max_regions(), 100);
 
-        // 2. Check if regions have been created and are not empty.
-        assert!(
-            !world.regions.regions().is_empty(),
-            "Regions should be initialized and not empty."
-        );
+        // Verify that the number of dimensions matches the problem space dimensions.
+        assert_eq!(world.dimensions.num_dimensions(), num_problem_dims);
 
-        // 3. Check if all organisms have been assigned to a region.
-        let all_organisms_have_region_key =
-            world.organisms.iter().all(|o| o.region_key().is_some());
-        assert!(
-            all_organisms_have_region_key,
-            "All organisms must have a region key after world initialization."
-        );
-
-        // 4. Verify that the number of populated regions corresponds to the organisms' locations.
-        let populated_region_count = world.regions.regions().len();
-        assert!(
-            populated_region_count > 0
-                && populated_region_count <= global_constants.population_size(),
-            "The number of populated regions should be greater than 0 but not more than the population size."
-        );
+        // Check that regions have been created and organisms assigned.
+        // With a small population and large max_regions, we expect at least one region.
+        assert!(!world.regions.regions().is_empty());
+        // Every organism should have a region key after initialization.
+        for organism in world.organisms.iter() {
+            assert!(organism.region_key().is_some());
+        }
     }
 
     #[test]
     #[should_panic(expected = "Max regions cannot be zero.")]
     fn given_zero_max_regions_when_new_is_called_then_it_panics() {
-        let bounds = get_default_test_bounds();
-        // GlobalConstants::new panics if max_regions is 0.
-        let global_constants = GlobalConstants::new(10, 0);
-
-        World::new(bounds.as_slice(), global_constants, test_world_function);
+        let bounds = get_test_bounds(0);
+        let gc = GlobalConstants::new(10, 0);
+        let world_fn = Rc::new(TestFn);
+        World::new(&bounds, gc, world_fn);
     }
 
     #[test]
     #[should_panic(expected = "Population size cannot be zero.")]
     fn given_zero_population_size_when_new_is_called_then_it_panics() {
-        let bounds = get_default_test_bounds();
-        // GlobalConstants::new panics if population_size is 0.
-        let global_constants = GlobalConstants::new(0, 100);
-
-        World::new(bounds.as_slice(), global_constants, test_world_function);
+        let bounds = get_test_bounds(0);
+        let gc = GlobalConstants::new(0, 100);
+        let world_fn = Rc::new(TestFn);
+        World::new(&bounds, gc, world_fn);
     }
 }

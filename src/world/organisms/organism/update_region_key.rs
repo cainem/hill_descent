@@ -56,11 +56,24 @@ mod tests {
     use crate::NUM_SYSTEM_PARAMETERS;
     use crate::phenotype::Phenotype;
     use crate::world::dimensions::dimension::Dimension;
+    use crate::world::world_function::WorldFunction;
+    use std::fmt;
     use std::ops::RangeInclusive;
     use std::rc::Rc;
 
+    #[derive(Debug)]
+    struct TestFn;
+    impl WorldFunction for TestFn {
+        fn run(&self, _p: &[f64]) -> Vec<f64> {
+            vec![0.0]
+        }
+    }
+
     // Helper function to create an Organism instance for testing purposes.
-    fn create_organism_for_test(expressed_values: Vec<f64>) -> Organism {
+    fn create_organism_for_test(
+        expressed_values: Vec<f64>,
+        world_fn: Rc<dyn WorldFunction>,
+    ) -> Organism {
         // Ensure there are enough values for system parameters for Phenotype::new_for_test.
         if expressed_values.len() < NUM_SYSTEM_PARAMETERS {
             panic!(
@@ -71,7 +84,7 @@ mod tests {
         }
 
         let phenotype = Phenotype::new_for_test(expressed_values);
-        let mut organism = Organism::new(Rc::new(phenotype));
+        let mut organism = Organism::new(Rc::new(phenotype), world_fn);
         organism.set_region_key(None); // Ensure it starts as None for tests
         organism
     }
@@ -93,11 +106,15 @@ mod tests {
 
     #[test]
     fn given_valid_inputs_when_update_region_key_then_success_and_key_updated() {
-        let mut organism = create_organism_for_test(vec![
-            0.1, 0.5, 0.001, 0.001, 0.001, 100.0,
-            2.0, // System params (NUM_SYSTEM_PARAMETERS)
-            7.5, 60.0, // Problem params
-        ]);
+        let world_fn = Rc::new(TestFn);
+        let mut organism = create_organism_for_test(
+            vec![
+                0.1, 0.5, 0.001, 0.001, 0.001, 100.0,
+                2.0, // System params (NUM_SYSTEM_PARAMETERS)
+                7.5, 60.0, // Problem params
+            ],
+            world_fn,
+        );
         let dimensions = create_test_dimensions(vec![
             (0.0..=10.0, 2),  // Dimension for 7.5. Index 1
             (0.0..=100.0, 4), // Dimension for 60.0. Index 2
@@ -111,10 +128,14 @@ mod tests {
 
     #[test]
     fn given_value_out_of_bounds_when_update_region_key_then_failure_and_key_is_none() {
-        let mut organism = create_organism_for_test(vec![
-            0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params
-            12.0, 50.0, // Problem params. 12.0 is out of bounds for the first dimension.
-        ]);
+        let world_fn = Rc::new(TestFn);
+        let mut organism = create_organism_for_test(
+            vec![
+                0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params
+                12.0, 50.0, // Problem params. 12.0 is out of bounds for the first dimension.
+            ],
+            world_fn,
+        );
         let dimensions = create_test_dimensions(vec![(0.0..=10.0, 2), (0.0..=100.0, 4)]);
 
         let result = organism.update_region_key(&dimensions);
@@ -128,10 +149,14 @@ mod tests {
 
     #[test]
     fn given_value_on_upper_bound_when_update_region_key_then_success_and_key_is_last_index() {
-        let mut organism = create_organism_for_test(vec![
-            0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0,  // System params
-            10.0, // Problem param on the boundary
-        ]);
+        let world_fn = Rc::new(TestFn);
+        let mut organism = create_organism_for_test(
+            vec![
+                0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0,  // System params
+                10.0, // Problem param on the boundary
+            ],
+            world_fn,
+        );
         let dimensions = create_test_dimensions(vec![(0.0..=10.0, 2)]); // 2 divisions -> 3 intervals [0, 5), [5, 10), [10, 10]
 
         let result = organism.update_region_key(&dimensions);
@@ -142,9 +167,13 @@ mod tests {
 
     #[test]
     fn given_no_problem_params_when_update_region_key_then_success_and_key_is_empty() {
-        let mut organism = create_organism_for_test(vec![
-            0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params only
-        ]);
+        let world_fn = Rc::new(TestFn);
+        let mut organism = create_organism_for_test(
+            vec![
+                0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params only
+            ],
+            world_fn,
+        );
         let dimensions = create_test_dimensions(vec![]); // No dimensions
 
         let result = organism.update_region_key(&dimensions);
