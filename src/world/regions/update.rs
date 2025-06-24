@@ -30,23 +30,10 @@ mod tests {
     use crate::world::dimensions::Dimensions;
     use crate::world::organisms::Organisms;
     use crate::world::regions::Regions;
-    use crate::world::world_function::WorldFunction;
     use std::collections::BTreeMap;
-    use std::fmt;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
     // Note: NUM_SYSTEM_PARAMETERS is not directly used here as default_system_parameters provides a concrete Vec.
     // It's defined in src/lib.rs and its value (7) is consistent with Phenotype requirements.
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _p: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     // HELPER FUNCTIONS
 
@@ -62,22 +49,16 @@ mod tests {
         Phenotype::new_for_test(expressed_values)
     }
 
-    fn create_test_organisms_from_problem_values(
-        all_problem_values: Vec<Vec<f64>>,
-        world_function: Rc<dyn WorldFunction>,
-    ) -> Organisms {
+    fn create_test_organisms_from_problem_values(all_problem_values: Vec<Vec<f64>>) -> Organisms {
         let phenotypes: Vec<Phenotype> = all_problem_values
             .into_iter()
             .map(|pv| create_phenotype_with_problem_values(&pv))
             .collect();
-        Organisms::new_from_phenotypes(phenotypes, world_function)
+        Organisms::new_from_phenotypes(phenotypes)
     }
 
-    fn create_test_organisms_single(
-        p_values: &[f64],
-        world_function: Rc<dyn WorldFunction>,
-    ) -> Organisms {
-        create_test_organisms_from_problem_values(vec![p_values.to_vec()], world_function)
+    fn create_test_organisms_single(p_values: &[f64]) -> Organisms {
+        create_test_organisms_from_problem_values(vec![p_values.to_vec()])
     }
 
     fn create_test_regions_and_gc(
@@ -113,8 +94,7 @@ mod tests {
     #[test]
     fn given_no_organisms_when_update_then_completes_with_no_regions() {
         let (mut regions, _gc) = create_test_regions_and_gc(4, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_from_problem_values(vec![], world_fn);
+        let mut organisms = create_test_organisms_from_problem_values(vec![]);
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0], &_gc);
 
         regions.update(&mut organisms, &mut dimensions);
@@ -126,8 +106,7 @@ mod tests {
     #[test]
     fn given_one_organism_fits_initial_dimensions_when_update_then_completes_with_one_region() {
         let (mut regions, _gc) = create_test_regions_and_gc(4, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_single(&[0.5, 0.5], world_fn); // 2 problem dimensions
+        let mut organisms = create_test_organisms_single(&[0.5, 0.5]); // 2 problem dimensions
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
         // Dimensions::new with max_regions = 4 and 2 dims divides each dim once.
@@ -147,8 +126,7 @@ mod tests {
     #[test]
     fn given_organism_out_of_bounds_when_update_then_dimension_expands_and_organism_is_regioned() {
         let (mut regions, _gc) = create_test_regions_and_gc(4, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_single(&[1.5, 0.5], world_fn);
+        let mut organisms = create_test_organisms_single(&[1.5, 0.5]);
         let initial_bounds_dim0 = 0.0..=1.0;
         let initial_bounds_dim1 = 0.0..=1.0;
         let mut dimensions = create_test_dimensions(
@@ -174,14 +152,11 @@ mod tests {
     {
         let max_r = 16;
         let (mut regions, _gc) = create_test_regions_and_gc(max_r, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_from_problem_values(
-            vec![
-                vec![0.2, 0.2], // Org1
-                vec![0.8, 0.8], // Org2
-            ],
-            world_fn,
-        );
+        let mut organisms = create_test_organisms_from_problem_values(vec![
+            vec![0.2, 0.2], // Org1
+            vec![0.8, 0.8], // Org2
+        ]);
+
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
         regions.update(&mut organisms, &mut dimensions);
@@ -199,11 +174,13 @@ mod tests {
     {
         let max_r = 4;
         let (mut regions, _gc) = create_test_regions_and_gc(max_r, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_from_problem_values(
-            vec![vec![0.1], vec![0.3], vec![0.5], vec![0.7], vec![0.9]],
-            world_fn,
-        );
+        let mut organisms = create_test_organisms_from_problem_values(vec![
+            vec![0.1],
+            vec![0.3],
+            vec![0.5],
+            vec![0.7],
+            vec![0.9],
+        ]);
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0], &_gc);
 
         regions.update(&mut organisms, &mut dimensions);
@@ -221,11 +198,11 @@ mod tests {
     fn given_organisms_all_at_same_location_when_update_then_completes_with_one_region_no_division()
     {
         let (mut regions, _gc) = create_test_regions_and_gc(16, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = create_test_organisms_from_problem_values(
-            vec![vec![0.5, 0.5], vec![0.5, 0.5], vec![0.5, 0.5]],
-            world_fn,
-        );
+        let mut organisms = create_test_organisms_from_problem_values(vec![
+            vec![0.5, 0.5],
+            vec![0.5, 0.5],
+            vec![0.5, 0.5],
+        ]);
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
         regions.update(&mut organisms, &mut dimensions);
@@ -250,23 +227,19 @@ mod tests {
      {
         let max_r = 8;
         let (mut regions, _gc) = create_test_regions_and_gc(max_r, 20);
-        let world_fn = Rc::new(TestFn);
         // All 10 organisms are in the bottom-left quadrant of a 1.0x1.0 space
-        let mut organisms = create_test_organisms_from_problem_values(
-            vec![
-                vec![0.1, 0.1],
-                vec![0.1, 0.2],
-                vec![0.2, 0.1],
-                vec![0.2, 0.2],
-                vec![0.3, 0.3],
-                vec![0.3, 0.4],
-                vec![0.4, 0.3],
-                vec![0.4, 0.4],
-                vec![0.15, 0.25],
-                vec![0.35, 0.15],
-            ],
-            world_fn,
-        );
+        let mut organisms = create_test_organisms_from_problem_values(vec![
+            vec![0.1, 0.1],
+            vec![0.1, 0.2],
+            vec![0.2, 0.1],
+            vec![0.2, 0.2],
+            vec![0.3, 0.3],
+            vec![0.3, 0.4],
+            vec![0.4, 0.3],
+            vec![0.4, 0.4],
+            vec![0.15, 0.25],
+            vec![0.35, 0.15],
+        ]);
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
         // The update loop terminates when the number of *potential* regions meets or exceeds
@@ -293,9 +266,7 @@ mod tests {
     #[test]
     fn given_no_problem_dimensions_when_update_then_completes_with_one_region_for_empty_key() {
         let (mut regions, _gc) = create_test_regions_and_gc(4, 10);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms_collection =
-            create_test_organisms_from_problem_values(vec![vec![]], world_fn);
+        let mut organisms_collection = create_test_organisms_from_problem_values(vec![vec![]]);
         // Manually set a score for the organism to test carrying capacity calculation
         organisms_collection
             .iter_mut()

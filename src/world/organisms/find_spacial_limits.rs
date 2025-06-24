@@ -61,20 +61,7 @@ mod tests {
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::phenotype::Phenotype;
-    use crate::world::world_function::WorldFunction;
     use rand::rngs::mock::StepRng;
-    use std::fmt;
-    use std::rc::Rc;
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _p: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     // Helper to create a Locus (simplified for testing purposes)
     fn create_test_locus(val: f64) -> Locus {
@@ -110,8 +97,7 @@ mod tests {
 
     #[test]
     fn given_empty_organisms_when_find_spacial_limits_then_returns_empty_vec() {
-        let world_fn = Rc::new(TestFn);
-        let organisms_collection = super::Organisms::new_from_phenotypes(Vec::new(), world_fn);
+        let organisms_collection = super::Organisms::new_from_phenotypes(Vec::new());
         let limits = organisms_collection.find_spacial_limits();
         assert!(limits.is_empty());
     }
@@ -128,8 +114,7 @@ mod tests {
         let cloned_phenotype = phenotype.clone();
         let expected_problem_expressed_values = cloned_phenotype.expression_problem_values();
 
-        let world_fn = Rc::new(TestFn);
-        let organisms_collection = super::Organisms::new_from_phenotypes(vec![phenotype], world_fn);
+        let organisms_collection = super::Organisms::new_from_phenotypes(vec![phenotype]);
         let limits = organisms_collection.find_spacial_limits();
 
         assert_eq!(
@@ -160,11 +145,8 @@ mod tests {
         let phenotype3_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 15.0, 150.0];
         let phenotype3 = create_test_phenotype(phenotype3_vals, &mut rng);
 
-        let world_fn = Rc::new(TestFn);
-        let organisms_collection = super::Organisms::new_from_phenotypes(
-            vec![phenotype1, phenotype2, phenotype3],
-            world_fn,
-        );
+        let organisms_collection =
+            super::Organisms::new_from_phenotypes(vec![phenotype1, phenotype2, phenotype3]);
         let limits = organisms_collection.find_spacial_limits();
 
         assert_eq!(limits.len(), 2, "Expected limits for 2 problem dimensions");

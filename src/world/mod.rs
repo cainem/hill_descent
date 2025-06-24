@@ -1,12 +1,12 @@
 use crate::parameters::global_constants::GlobalConstants;
 use crate::world::dimensions::Dimensions;
-use crate::world::world_function::WorldFunction;
 use organisms::Organisms;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 use regions::Regions; // Required for SmallRng::from_seed
 use std::ops::RangeInclusive;
 use std::rc::Rc;
+use world_function::WorldFunction;
 
 const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 
@@ -15,7 +15,7 @@ pub mod organisms;
 pub mod regions;
 pub mod world_function;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct World {
     dimensions: Dimensions,
     organisms: Organisms,
@@ -38,8 +38,6 @@ impl World {
     ///   bounds for the problem-specific parameters to be optimized.
     /// * `global_constants` - A struct containing system-wide constants like `population_size`
     ///   and `max_regions`.
-    /// * `world_function` - An `Rc<dyn WorldFunction>` that serves as the fitness function `F`.
-    ///   This trait object allows for dynamic dispatch to different fitness implementations.
     ///
     /// # Returns
     ///
@@ -68,15 +66,11 @@ impl World {
     pub fn new(
         user_defined_parameter_bounds: &[RangeInclusive<f64>],
         global_constants: GlobalConstants,
-        world_function: Rc<dyn WorldFunction>,
+        function: Rc<dyn WorldFunction>,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
-        let mut organisms = Organisms::new(
-            user_defined_parameter_bounds,
-            &global_constants,
-            &mut rng,
-            world_function.clone(),
-        );
+        let mut organisms =
+            Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
 
         let spacial_limits = organisms.find_spacial_limits();
         let mut dimensions = Dimensions::new(&spacial_limits, &global_constants);
@@ -91,7 +85,7 @@ impl World {
             regions,
             global_constants,
             rng,
-            world_function,
+            world_function: function,
         }
     }
 }
@@ -99,7 +93,6 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::NUM_SYSTEM_PARAMETERS;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
@@ -108,25 +101,21 @@ mod tests {
     #[derive(Debug)]
     struct TestFn;
     impl WorldFunction for TestFn {
-        fn run(&self, phenotype: &[f64]) -> Vec<f64> {
-            phenotype.to_vec()
+        fn run(&self, _v: &[f64]) -> Vec<f64> {
+            vec![0.0]
         }
 
         fn configure(&mut self, _phenotype_values: &[f64]) {}
     }
 
-    fn get_test_bounds(num_problem_dims: usize) -> Vec<RangeInclusive<f64>> {
-        let system_bounds = (0..NUM_SYSTEM_PARAMETERS).map(|i| (i as f64)..=((i + 1) as f64));
-        let problem_bounds = (0..num_problem_dims).map(|i| ((i + 10) as f64)..=((i + 11) as f64));
-        system_bounds.chain(problem_bounds).collect()
-    }
-
     #[test]
     fn given_valid_inputs_when_new_is_called_then_world_is_initialized_correctly() {
         let num_problem_dims = 2;
-        let bounds = get_test_bounds(num_problem_dims);
+        let bounds: Vec<RangeInclusive<f64>> = (0..num_problem_dims)
+            .map(|i| ((i + 10) as f64)..=((i + 11) as f64))
+            .collect();
         let gc = GlobalConstants::new(10, 100);
-        let world_fn = Rc::new(TestFn);
+        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
 
         let world = World::new(&bounds, gc, world_fn);
 
@@ -149,18 +138,18 @@ mod tests {
     #[test]
     #[should_panic(expected = "Max regions cannot be zero.")]
     fn given_zero_max_regions_when_new_is_called_then_it_panics() {
-        let bounds = get_test_bounds(0);
+        let bounds: Vec<RangeInclusive<f64>> = Vec::new();
         let gc = GlobalConstants::new(10, 0);
-        let world_fn = Rc::new(TestFn);
+        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
         World::new(&bounds, gc, world_fn);
     }
 
     #[test]
     #[should_panic(expected = "Population size cannot be zero.")]
     fn given_zero_population_size_when_new_is_called_then_it_panics() {
-        let bounds = get_test_bounds(0);
+        let bounds: Vec<RangeInclusive<f64>> = Vec::new();
         let gc = GlobalConstants::new(0, 100);
-        let world_fn = Rc::new(TestFn);
+        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
         World::new(&bounds, gc, world_fn);
     }
 }

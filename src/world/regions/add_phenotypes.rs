@@ -28,20 +28,9 @@ mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
         phenotype::Phenotype,
-        world::{organisms::Organisms, regions::Regions, world_function::WorldFunction},
+        world::{organisms::Organisms, regions::Regions},
     };
-    use std::fmt;
     use std::rc::Rc;
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _p: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     // Helper to create a Phenotype for testing
     // Phenotype::new_for_test requires at least NUM_SYSTEM_PARAMETERS (7) expressed values.
@@ -54,8 +43,7 @@ mod tests {
     fn given_empty_organisms_when_add_phenotypes_then_regions_unchanged() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let world_fn = Rc::new(TestFn);
-        let organisms = Organisms::new_from_phenotypes(vec![], world_fn);
+        let organisms = Organisms::new_from_phenotypes(vec![]);
 
         regions.add_phenotypes(&organisms);
 
@@ -68,9 +56,7 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
 
         let phenotypes_for_organisms = vec![mock_phenotype()];
-        let world_fn = Rc::new(TestFn);
-        let organisms_collection =
-            Organisms::new_from_phenotypes(phenotypes_for_organisms, world_fn);
+        let organisms_collection = Organisms::new_from_phenotypes(phenotypes_for_organisms);
         // Organisms created by new_from_phenotypes will have _region_key = None by default.
 
         regions.add_phenotypes(&organisms_collection);
@@ -84,9 +70,7 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let region_key1 = vec![1, 2, 3];
 
-        let world_fn = Rc::new(TestFn);
-        let mut organisms_collection =
-            Organisms::new_from_phenotypes(vec![mock_phenotype()], world_fn);
+        let mut organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let phenotype_rc_from_org = organisms_collection
             .iter()
             .next()
@@ -117,9 +101,8 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let region_key = vec![1];
 
-        let world_fn = Rc::new(TestFn);
         let mut organisms_collection =
-            Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()], world_fn);
+            Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut org_iter_mut = organisms_collection.iter_mut();
 
         let org1_mut = org_iter_mut.next().unwrap();
@@ -159,9 +142,8 @@ mod tests {
         let region_key1 = vec![1];
         let region_key2 = vec![2];
 
-        let world_fn = Rc::new(TestFn);
         let mut organisms_collection =
-            Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()], world_fn);
+            Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut iter_mut = organisms_collection.iter_mut();
 
         let organism1_mut = iter_mut.next().unwrap();
@@ -196,11 +178,8 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let region_key = vec![1, 0, 0];
 
-        let world_fn = Rc::new(TestFn);
-
         // First, add one organism to create the region and put one phenotype in it
-        let mut initial_organisms =
-            Organisms::new_from_phenotypes(vec![mock_phenotype()], world_fn.clone());
+        let mut initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let existing_phenotype_rc = initial_organisms.iter().next().unwrap().get_phenotype_rc();
         initial_organisms
             .iter_mut()
@@ -210,8 +189,7 @@ mod tests {
         regions.add_phenotypes(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
-        let mut new_organisms_to_add =
-            Organisms::new_from_phenotypes(vec![mock_phenotype()], world_fn.clone());
+        let mut new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let new_phenotype_rc = new_organisms_to_add
             .iter()
             .next()

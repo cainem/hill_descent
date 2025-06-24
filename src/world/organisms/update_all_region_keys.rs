@@ -34,33 +34,14 @@ impl Organisms {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::RangeInclusive;
-
     use super::*;
-    use crate::phenotype::Phenotype;
-    // Removed: use crate::phenotype::new_random_phenotype::new_random_phenotype;
-    // No longer using Parameter directly in these tests
-    // Removed: use crate::parameters::Parameter;
     use crate::GlobalConstants;
-    use crate::parameters::parameter_enhancement;
+    use crate::phenotype::Phenotype;
     use crate::world::dimensions::Dimensions;
-    use crate::world::organisms::Organism;
-    use crate::world::world_function::WorldFunction;
     use rand::SeedableRng;
     use rand::rngs::StdRng;
-    use rand::rngs::mock::StepRng;
-    use std::fmt;
+    use std::ops::RangeInclusive;
     use std::rc::Rc;
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _p: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     // Helper to create basic dimensions for testing
     fn create_test_dimensions_for_organisms(num_dims: usize, max_regions: usize) -> Dimensions {
@@ -71,8 +52,7 @@ mod tests {
 
     #[test]
     fn given_no_organisms_when_update_all_region_keys_then_ok() {
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = Organisms::new_from_phenotypes(vec![], world_fn);
+        let mut organisms = Organisms::new_from_phenotypes(vec![]);
         let dimensions = create_test_dimensions_for_organisms(2, 4);
         assert!(matches!(
             organisms.update_all_region_keys(&dimensions),
@@ -89,8 +69,7 @@ mod tests {
 
         let p1 = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
         let p2 = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
-        let world_fn = Rc::new(TestFn);
-        let mut organisms = Organisms::new_from_phenotypes(vec![p1, p2], world_fn);
+        let mut organisms = Organisms::new_from_phenotypes(vec![p1, p2]);
 
         // Dimensions where all default random phenotypes (0.0 to 1.0) should fit.
         let dimensions = create_test_dimensions_for_organisms(param_bounds.len(), 4);
@@ -114,11 +93,8 @@ mod tests {
 
         // Create a phenotype that will be made to fail.
         let failing_p_phenotype = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
-        let world_fn = Rc::new(TestFn);
-        let mut failing_organism = crate::world::organisms::organism::Organism::new(
-            Rc::new(failing_p_phenotype.clone()),
-            world_fn.clone(),
-        );
+        let mut failing_organism =
+            crate::world::organisms::organism::Organism::new(Rc::new(failing_p_phenotype.clone()));
 
         // To make failing_organism fail, we create dimensions where its naturally-expressed value is out of bounds.
         // `new_random_phenotype` with default enhancement creates problem parameter values between 0.0 and 1.0.
@@ -136,7 +112,7 @@ mod tests {
         test_phenotypes.push(failing_p_phenotype); // Add the failing phenotype.
         test_phenotypes.push(Phenotype::new_random_phenotype(&mut rng, &full_bounds)); // Add another that should pass.
 
-        let mut organisms = Organisms::new_from_phenotypes(test_phenotypes, world_fn);
+        let mut organisms = Organisms::new_from_phenotypes(test_phenotypes);
         let result = organisms.update_all_region_keys(&dimensions_that_cause_failure);
 
         // The main assertion: the collection-level update should fail.

@@ -38,20 +38,8 @@ mod tests {
     use crate::phenotype::Phenotype;
     use crate::world::organisms::{Organism, Organisms};
     use crate::world::regions::Region;
-    use crate::world::world_function::WorldFunction;
     use std::collections::BTreeMap;
-    use std::fmt;
     use std::rc::Rc;
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _p: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     fn default_system_parameters() -> Vec<f64> {
         vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
@@ -75,13 +63,9 @@ mod tests {
         (regions, global_constants)
     }
 
-    fn create_organism_with_score_and_key(
-        score: Option<f64>,
-        key: Option<Vec<usize>>,
-        world_fn: Rc<dyn WorldFunction>,
-    ) -> Organism {
+    fn create_organism_with_score_and_key(score: Option<f64>, key: Option<Vec<usize>>) -> Organism {
         let phenotype = Phenotype::new_for_test(default_system_parameters());
-        let mut organism = Organism::new(Rc::new(phenotype), world_fn);
+        let mut organism = Organism::new(Rc::new(phenotype));
         organism.set_score(score);
         organism.set_region_key(key);
         organism
@@ -98,19 +82,15 @@ mod tests {
             .unwrap()
             .set_min_score(Some(10.0));
 
-        let organisms = Organisms::new_from_organisms(Vec::new());
-
+        let organisms = Organisms::new_from_organisms(vec![]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(10.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(10.0));
     }
 
     #[test]
     fn given_organisms_no_scores_or_no_keys_when_update_min_scores_then_scores_are_unchanged() {
-        let (mut regions_struct, _gc_) = create_test_regions_and_gc(4, 10);
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
         regions_struct.regions.insert(key1.clone(), Region::new());
         regions_struct
@@ -119,18 +99,13 @@ mod tests {
             .unwrap()
             .set_min_score(Some(10.0));
 
-        let world_fn = Rc::new(TestFn);
-        let organism1 =
-            create_organism_with_score_and_key(None, Some(key1.clone()), world_fn.clone());
-        let organism2 = create_organism_with_score_and_key(Some(5.0), None, world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
+        let organism1 = create_organism_with_score_and_key(None, Some(key1.clone()));
+        let organism2 = create_organism_with_score_and_key(Some(5.0), None);
 
+        let organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(10.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(10.0));
     }
 
     #[test]
@@ -145,19 +120,13 @@ mod tests {
             .unwrap()
             .set_min_score(Some(10.0));
 
-        let world_fn = Rc::new(TestFn);
-        let organism1 =
-            create_organism_with_score_and_key(Some(-1.0), Some(key1.clone()), world_fn.clone());
-        let organism2 =
-            create_organism_with_score_and_key(Some(0.0), Some(key1.clone()), world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
+        let organism1 = create_organism_with_score_and_key(Some(0.0), Some(key1.clone()));
+        let organism2 = create_organism_with_score_and_key(Some(-5.0), Some(key1.clone()));
 
+        let organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(10.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(10.0));
     }
 
     #[test]
@@ -166,19 +135,13 @@ mod tests {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
         regions_struct.regions.insert(key1.clone(), Region::new());
-        let world_fn = Rc::new(TestFn);
-        let organism =
-            create_organism_with_score_and_key(Some(12.3), Some(key1.clone()), world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism]);
 
-        assert_eq!(regions_struct.regions.get(&key1).unwrap().min_score(), None);
+        let organism1 = create_organism_with_score_and_key(Some(5.0), Some(key1.clone()));
 
+        let organisms = Organisms::new_from_organisms(vec![organism1]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(12.3)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(5.0));
     }
 
     #[test]
@@ -187,24 +150,16 @@ mod tests {
         let key1 = vec![1];
         regions_struct.regions.insert(key1.clone(), Region::new());
 
-        let world_fn = Rc::new(TestFn);
-        let organism1 =
-            create_organism_with_score_and_key(Some(10.0), Some(key1.clone()), world_fn.clone());
-        let organism2 =
-            create_organism_with_score_and_key(Some(5.0), Some(key1.clone()), world_fn.clone());
-        let organism3 =
-            create_organism_with_score_and_key(Some(15.0), Some(key1.clone()), world_fn.clone());
-        let organism4 =
-            create_organism_with_score_and_key(Some(-2.0), Some(key1.clone()), world_fn.clone());
+        let organism1 = create_organism_with_score_and_key(Some(10.0), Some(key1.clone()));
+        let organism2 = create_organism_with_score_and_key(Some(5.0), Some(key1.clone()));
+        let organism3 = create_organism_with_score_and_key(Some(15.0), Some(key1.clone()));
+        let organism4 = create_organism_with_score_and_key(Some(0.0), Some(key1.clone()));
+
         let organisms =
             Organisms::new_from_organisms(vec![organism1, organism2, organism3, organism4]);
-
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(5.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(5.0));
     }
 
     #[test]
@@ -215,25 +170,17 @@ mod tests {
         regions_struct.regions.insert(key1.clone(), Region::new());
         regions_struct.regions.insert(key2.clone(), Region::new());
 
-        let world_fn = Rc::new(TestFn);
-        let organism1 =
-            create_organism_with_score_and_key(Some(10.0), Some(key1.clone()), world_fn.clone());
-        let organism2 =
-            create_organism_with_score_and_key(Some(20.0), Some(key2.clone()), world_fn.clone());
-        let organism3 =
-            create_organism_with_score_and_key(Some(5.0), Some(key1.clone()), world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism1, organism2, organism3]);
+        let organism1 = create_organism_with_score_and_key(Some(10.0), Some(key1.clone()));
+        let organism2 = create_organism_with_score_and_key(Some(5.0), Some(key1.clone()));
+        let organism3 = create_organism_with_score_and_key(Some(20.0), Some(key2.clone()));
+        let organism4 = create_organism_with_score_and_key(Some(25.0), Some(key2.clone()));
 
+        let organisms =
+            Organisms::new_from_organisms(vec![organism1, organism2, organism3, organism4]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(5.0)
-        );
-        assert_eq!(
-            regions_struct.regions.get(&key2).unwrap().min_score(),
-            Some(20.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(5.0));
+        assert_eq!(regions_struct.regions[&key2].min_score(), Some(20.0));
     }
 
     #[test]
@@ -245,19 +192,14 @@ mod tests {
             .regions
             .get_mut(&key1)
             .unwrap()
-            .set_min_score(Some(5.0));
+            .set_min_score(Some(2.0));
 
-        let world_fn = Rc::new(TestFn);
-        let organism =
-            create_organism_with_score_and_key(Some(10.0), Some(key1.clone()), world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism]);
+        let organism1 = create_organism_with_score_and_key(Some(10.0), Some(key1.clone()));
 
+        let organisms = Organisms::new_from_organisms(vec![organism1]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(5.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(2.0));
     }
 
     #[test]
@@ -271,16 +213,11 @@ mod tests {
             .unwrap()
             .set_min_score(Some(10.0));
 
-        let world_fn = Rc::new(TestFn);
-        let organism =
-            create_organism_with_score_and_key(Some(5.0), Some(key1.clone()), world_fn.clone());
-        let organisms = Organisms::new_from_organisms(vec![organism]);
+        let organism1 = create_organism_with_score_and_key(Some(5.0), Some(key1.clone()));
 
+        let organisms = Organisms::new_from_organisms(vec![organism1]);
         regions_struct.update_all_region_min_scores(&organisms);
 
-        assert_eq!(
-            regions_struct.regions.get(&key1).unwrap().min_score(),
-            Some(5.0)
-        );
+        assert_eq!(regions_struct.regions[&key1].min_score(), Some(5.0));
     }
 }

@@ -47,20 +47,8 @@ mod test_update_carrying_capacities {
     use crate::world::dimensions::Dimensions; // Not directly used by update_carrying_capacities tests but by helpers
     use crate::world::organisms::Organisms; // Not directly used by update_carrying_capacities tests but by helpers
     use crate::world::regions::{Region, Regions};
-    use crate::world::world_function::WorldFunction;
     use std::collections::BTreeMap;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
-
-    #[derive(Debug)]
-    struct TestFn;
-    impl WorldFunction for TestFn {
-        fn run(&self, _v: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
-    }
 
     // HELPER FUNCTIONS (copied from src/world/regions/update.rs test module)
     // These are general helpers that might be used by various tests related to regions.
@@ -77,23 +65,17 @@ mod test_update_carrying_capacities {
     }
 
     #[allow(dead_code)] // This helper might not be used by all test files that copy it
-    fn create_test_organisms_from_problem_values(
-        all_problem_values: Vec<Vec<f64>>,
-        world_function: Rc<dyn WorldFunction>,
-    ) -> Organisms {
+    fn create_test_organisms_from_problem_values(all_problem_values: Vec<Vec<f64>>) -> Organisms {
         let phenotypes: Vec<Phenotype> = all_problem_values
             .into_iter()
             .map(|pv| create_phenotype_with_problem_values(&pv))
             .collect();
-        Organisms::new_from_phenotypes(phenotypes, world_function)
+        Organisms::new_from_phenotypes(phenotypes)
     }
 
     #[allow(dead_code)] // This helper might not be used by all test files that copy it
-    fn create_test_organisms_single(
-        p_values: &[f64],
-        world_function: Rc<dyn WorldFunction>,
-    ) -> Organisms {
-        create_test_organisms_from_problem_values(vec![p_values.to_vec()], world_function)
+    fn create_test_organisms_single(p_values: &[f64]) -> Organisms {
+        create_test_organisms_from_problem_values(vec![p_values.to_vec()])
     }
 
     fn create_test_regions_and_gc(
