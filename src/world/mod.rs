@@ -5,7 +5,7 @@ use rand::SeedableRng;
 use rand::rngs::SmallRng;
 use regions::Regions; // Required for SmallRng::from_seed
 use std::ops::RangeInclusive;
-use std::rc::Rc;
+
 use world_function::WorldFunction;
 
 const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
@@ -23,7 +23,7 @@ pub struct World {
     regions: Regions,
     global_constants: GlobalConstants,
     rng: SmallRng,
-    world_function: Rc<dyn WorldFunction>,
+    world_function: Box<dyn WorldFunction>,
 }
 
 impl World {
@@ -67,7 +67,7 @@ impl World {
     pub fn new(
         user_defined_parameter_bounds: &[RangeInclusive<f64>],
         global_constants: GlobalConstants,
-        function: Rc<dyn WorldFunction>,
+        function: Box<dyn WorldFunction>,
     ) -> Self {
         let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
         let mut organisms =
@@ -97,7 +97,6 @@ mod tests {
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
 
     #[derive(Debug)]
     struct TestFn;
@@ -114,7 +113,7 @@ mod tests {
             .map(|i| ((i + 10) as f64)..=((i + 11) as f64))
             .collect();
         let gc = GlobalConstants::new(10, 100);
-        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
+        let world_fn: Box<dyn WorldFunction> = Box::new(TestFn);
 
         let world = World::new(&bounds, gc, world_fn);
 
@@ -139,7 +138,7 @@ mod tests {
     fn given_zero_max_regions_when_new_is_called_then_it_panics() {
         let bounds: Vec<RangeInclusive<f64>> = Vec::new();
         let gc = GlobalConstants::new(10, 0);
-        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
+        let world_fn: Box<dyn WorldFunction> = Box::new(TestFn);
         World::new(&bounds, gc, world_fn);
     }
 
@@ -148,7 +147,7 @@ mod tests {
     fn given_zero_population_size_when_new_is_called_then_it_panics() {
         let bounds: Vec<RangeInclusive<f64>> = Vec::new();
         let gc = GlobalConstants::new(0, 100);
-        let world_fn: Rc<dyn WorldFunction> = Rc::new(TestFn);
+        let world_fn: Box<dyn WorldFunction> = Box::new(TestFn);
         World::new(&bounds, gc, world_fn);
     }
 }

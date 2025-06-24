@@ -9,7 +9,7 @@ impl Organism {
         // Run the world function with the input for each phenotype
         let phenotype = self.get_phenotype_rc();
         let phenotype_expressed_values = phenotype.expression_problem_values();
-        let outputs = function.run(&phenotype_expressed_values, inputs);
+        let outputs = function.run(phenotype_expressed_values, inputs);
 
         // Evaluate outputs against known outputs
         // to determine the fitness of the phenotype in accordance with the pdd.md
