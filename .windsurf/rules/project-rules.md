@@ -4,6 +4,7 @@ trigger: always_on
 
 The code is to be written in rust.
 The code will be written in a windows environment.
+The pdd.md file holds the product definition file
 
 - Always prefer simple solutions
 - Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality before adding a new function or struct.
@@ -20,6 +21,6 @@ The code will be written in a windows environment.
 - Each function written should be fully unit tested with the tests existing in a
 - Tested means that it is to have full statement, branch and condition coverage. This only needs to true in the function to which they relate, full coverage of all code in called functions is not required (this will be assumed to be tested elsewhere)
 - There should be as little mocking used as possible. There is no I/O so the only mocking required is for the PRNG
-- The test names should clearly spell out the desired behavior and results, they should be in the form given_xxx_when_yyy_then_zzz where xxx are the precoditions, yyy are any conditions and zzz are the results
+- The test names should clearly spell out the desired behaviour and results, they should be in the form given_xxx_when_yyy_then_zzz where xxx are the preconditions, yyy are any conditions and zzz are the results
 - Every effort should be taken to make sure unit tests run in a timely manner whilst still providing the coverage
-- All units tests must be passing before committing to git.
+- Avoid unnecessary refactorings. Stick to the task at hand. You can recommend refactorings but do not do them until confirmed.
