@@ -13,6 +13,7 @@ const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 pub mod dimensions;
 pub mod organisms;
 pub mod regions;
+pub mod training_run;
 pub mod world_function;
 
 #[derive(Debug)]
@@ -101,11 +102,9 @@ mod tests {
     #[derive(Debug)]
     struct TestFn;
     impl WorldFunction for TestFn {
-        fn run(&self, _v: &[f64]) -> Vec<f64> {
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
             vec![0.0]
         }
-
-        fn configure(&mut self, _phenotype_values: &[f64]) {}
     }
 
     #[test]

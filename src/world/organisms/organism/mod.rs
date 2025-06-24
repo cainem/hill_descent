@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use crate::phenotype::Phenotype;
 
+pub mod run;
 pub mod update_region_key;
 
 #[derive(Debug, Clone)]

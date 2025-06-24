@@ -1,5 +1,6 @@
 pub mod generate_random_phenotypes;
 pub mod new;
+pub mod run;
 pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
