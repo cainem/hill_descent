@@ -93,8 +93,10 @@ mod tests {
 
         // Create a phenotype that will be made to fail.
         let failing_p_phenotype = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
-        let mut failing_organism =
-            crate::world::organisms::organism::Organism::new(Rc::new(failing_p_phenotype.clone()));
+        let mut failing_organism = crate::world::organisms::organism::Organism::new(
+            Rc::new(failing_p_phenotype.clone()),
+            0,
+        );
 
         // To make failing_organism fail, we create dimensions where its naturally-expressed value is out of bounds.
         // `new_random_phenotype` with default enhancement creates problem parameter values between 0.0 and 1.0.

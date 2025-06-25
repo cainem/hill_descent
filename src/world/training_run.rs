@@ -6,6 +6,8 @@ impl World {
 
         // update the min known scores for the regions based on the scores of the organisms
 
+        // age organisms and remove those that have exceeded their maximum age
+
         // update the carrying capacities of the known region
 
         // reproduce the organisms based populations and carrying capacities of the regions

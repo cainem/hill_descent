@@ -53,7 +53,7 @@ mod tests {
             Self {
                 organisms: phenotypes
                     .into_iter()
-                    .map(|p| Organism::new(Rc::new(p)))
+                    .map(|p| Organism::new(Rc::new(p), 0))
                     .collect(),
             }
         }

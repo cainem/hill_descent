@@ -8,6 +8,21 @@ use std::ops::RangeInclusive;
 use std::rc::Rc;
 
 impl Organisms {
+    /// Creates a new `Organisms` collection with a specified population size.
+    ///
+    /// This function generates a set of random phenotypes based on the provided bounds
+    /// and global constants. Each resulting organism is initialized with a random age,
+    /// determined by the `max_age` system parameter from its phenotype.
+    ///
+    /// # Arguments
+    ///
+    /// * `initial_value_bounds` - The bounds for the problem-specific parameters.
+    /// * `global_constants` - Global constants, including the population size.
+    /// * `rng` - A mutable reference to a random number generator.
+    ///
+    /// # Returns
+    ///
+    /// A new `Organisms` instance populated with newly created organisms.
     pub fn new(
         initial_value_bounds: &[RangeInclusive<f64>],
         global_constants: &GlobalConstants,
@@ -22,7 +37,18 @@ impl Organisms {
         Self {
             organisms: phenotypes
                 .into_iter()
-                .map(|p| Organism::new(Rc::new(p)))
+                .map(|p| {
+                    let max_age = p.system_parameters().max_age();
+                    let upper_bound = if max_age > 0.0 { max_age as usize } else { 0 };
+                    let age = if upper_bound > 0 {
+                        #[allow(deprecated)]
+                        rng.gen_range(0..=upper_bound)
+                    } else {
+                        0
+                    };
+
+                    Organism::new(Rc::new(p), age)
+                })
                 .collect(),
         }
     }
@@ -50,10 +76,15 @@ mod tests {
             initial_value_bounds.len() + NUM_SYSTEM_PARAMETERS
         );
         // This is implicitly tested by Phenotype::new_random_phenotype, which expects enhanced_parameter_bounds
-        for _phenotype in organisms.organisms {
-            // If Phenotype had a method like `num_loci()` or similar, we could assert it here.
-            // e.g., assert_eq!(phenotype.num_loci(), expected_loci_count);
-            // For now, we trust that Phenotype::new_random_phenotype used the enhanced_parameter_bounds correctly.
+        for organism in organisms.organisms {
+            // Check that the age is within the valid range.
+            let max_age = organism.phenotype().system_parameters().max_age();
+            assert!(
+                (organism.age() as f64) <= max_age,
+                "Organism age {} should be less than or equal to max_age {}",
+                organism.age(),
+                max_age
+            );
         }
     }
     // The following test was removed because GlobalConstants::new panics if population_size is 0,
