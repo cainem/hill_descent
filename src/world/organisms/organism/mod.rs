@@ -1,17 +1,32 @@
 use std::rc::Rc;
 
 use crate::phenotype::Phenotype;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod run;
 pub mod update_region_key;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Organism {
     region_key: Option<Vec<usize>>,
     phenotype: Rc<Phenotype>,
     score: Option<f64>,
     /// The age of the organism, in ticks.
     age: usize,
+    /// Thread-safe flag indicating whether the organism has been marked as dead.
+    is_dead: AtomicBool,
+}
+
+impl Clone for Organism {
+    fn clone(&self) -> Self {
+        Self {
+            region_key: self.region_key.clone(),
+            phenotype: Rc::clone(&self.phenotype),
+            score: self.score,
+            age: self.age,
+            is_dead: AtomicBool::new(self.is_dead.load(Ordering::Relaxed)),
+        }
+    }
 }
 
 impl Organism {
@@ -27,6 +42,7 @@ impl Organism {
             score: None,
             phenotype,
             age,
+            is_dead: AtomicBool::new(false),
         }
     }
 
@@ -69,6 +85,16 @@ impl Organism {
     pub fn increment_age(&mut self) {
         self.age += 1;
     }
+
+    /// Marks the organism as dead. Thread-safe.
+    pub fn mark_dead(&self) {
+        self.is_dead.store(true, Ordering::Relaxed);
+    }
+
+    /// Returns `true` if the organism has been marked as dead.
+    pub fn is_dead(&self) -> bool {
+        self.is_dead.load(Ordering::Relaxed)
+    }
 }
 
 #[cfg(test)]
@@ -87,6 +113,7 @@ mod tests {
         let phenotype = Rc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 5);
         assert_eq!(organism.age(), 5);
+        assert!(!organism.is_dead());
     }
 
     #[test]
@@ -97,5 +124,13 @@ mod tests {
         assert_eq!(organism.age(), 11);
         organism.increment_age();
         assert_eq!(organism.age(), 12);
+    }
+
+    #[test]
+    fn given_organism_when_mark_dead_then_is_dead_returns_true() {
+        let phenotype = Rc::new(create_test_phenotype());
+        let organism = Organism::new(phenotype, 0);
+        organism.mark_dead();
+        assert!(organism.is_dead());
     }
 }
