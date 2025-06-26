@@ -1,10 +1,12 @@
 use crate::world::organisms::Organisms;
+use crate::world::organisms::organism::Organism;
+use std::rc::Rc;
 
 impl super::Regions {
-    /// Adds phenotypes from the given `Organisms` collection to their respective regions.
+    /// Adds orgtypes from the given `Organisms` collection to their respective regions.
     ///
     /// Iterates through each organism in the `organisms` collection. If an organism
-    /// has a region key, its phenotype (as an `Rc<Phenotype>`) is added to the
+    /// has a region key, its orgtype (as an `Rc<Phenotype>`) is added to the
     /// corresponding `Region`. If a `Region` for a given key does not exist,
     /// it is created.
     ///
@@ -15,9 +17,9 @@ impl super::Regions {
     pub fn add_phenotypes(&mut self, organisms: &Organisms) {
         for organism in organisms.iter() {
             if let Some(key) = organism.region_key() {
-                let phenotype_rc = organism.get_phenotype_rc();
+                let organism_rc: Rc<Organism> = Rc::new(organism.clone());
                 let region = self.regions.entry(key.clone()).or_default();
-                region.add_phenotype(phenotype_rc);
+                region.add_phenotype(organism_rc);
             }
         }
     }
@@ -55,8 +57,8 @@ mod tests {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
 
-        let phenotypes_for_organisms = vec![mock_phenotype()];
-        let organisms_collection = Organisms::new_from_phenotypes(phenotypes_for_organisms);
+        let orgtypes_for_organisms = vec![mock_phenotype()];
+        let organisms_collection = Organisms::new_from_phenotypes(orgtypes_for_organisms);
         // Organisms created by new_from_phenotypes will have _region_key = None by default.
 
         regions.add_phenotypes(&organisms_collection);
@@ -65,13 +67,13 @@ mod tests {
     }
 
     #[test]
-    fn given_one_organism_with_region_key_when_add_phenotypes_then_region_created_with_phenotype() {
+    fn given_one_organism_with_region_key_when_add_phenotypes_then_region_created_with_orgtype() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
         let region_key1 = vec![1, 2, 3];
 
         let mut organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
-        let phenotype_rc_from_org = organisms_collection
+        let orgtype_rc_from_org = organisms_collection
             .iter()
             .next()
             .unwrap()
@@ -90,13 +92,13 @@ mod tests {
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 1);
         assert!(Rc::ptr_eq(
-            &region.get_organisms()[0],
-            &phenotype_rc_from_org
+            &region.get_organisms()[0].get_phenotype_rc(),
+            &orgtype_rc_from_org
         ));
     }
 
     #[test]
-    fn given_multiple_organisms_same_key_when_add_phenotypes_then_region_has_all_phenotypes() {
+    fn given_multiple_organisms_same_key_when_add_phenotypes_then_region_has_all_orgtypes() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
         let region_key = vec![1];
@@ -107,11 +109,11 @@ mod tests {
 
         let org1_mut = org_iter_mut.next().unwrap();
         org1_mut.set_region_key(Some(region_key.clone()));
-        let pheno1_rc_from_org = org1_mut.get_phenotype_rc();
+        let org1_rc_from_org = org1_mut.get_phenotype_rc();
 
         let org2_mut = org_iter_mut.next().unwrap();
         org2_mut.set_region_key(Some(region_key.clone()));
-        let pheno2_rc_from_org = org2_mut.get_phenotype_rc();
+        let org2_rc_from_org = org2_mut.get_phenotype_rc();
 
         regions.add_phenotypes(&organisms_collection);
 
@@ -121,16 +123,16 @@ mod tests {
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 2);
 
-        let region_phenotypes = region.get_organisms();
+        let region_orgtypes = region.get_organisms();
         assert!(
-            region_phenotypes
+            region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(p, &pheno1_rc_from_org))
+                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &org1_rc_from_org))
         );
         assert!(
-            region_phenotypes
+            region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(p, &pheno2_rc_from_org))
+                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &org2_rc_from_org))
         );
     }
 
@@ -148,11 +150,11 @@ mod tests {
 
         let organism1_mut = iter_mut.next().unwrap();
         organism1_mut.set_region_key(Some(region_key1.clone()));
-        let pheno1_rc_from_org = organism1_mut.get_phenotype_rc();
+        let org1_rc_from_org = organism1_mut.get_phenotype_rc();
 
         let organism2_mut = iter_mut.next().unwrap();
         organism2_mut.set_region_key(Some(region_key2.clone()));
-        let pheno2_rc_from_org = organism2_mut.get_phenotype_rc();
+        let org2_rc_from_org = organism2_mut.get_phenotype_rc();
 
         regions.add_phenotypes(&organisms_collection);
 
@@ -162,25 +164,31 @@ mod tests {
             .get_region(&region_key1)
             .expect("Region 1 should exist");
         assert_eq!(region1.organism_count(), 1);
-        assert!(Rc::ptr_eq(&region1.get_organisms()[0], &pheno1_rc_from_org));
+        assert!(Rc::ptr_eq(
+            &region1.get_organisms()[0].get_phenotype_rc(),
+            &org1_rc_from_org
+        ));
 
         let region2 = regions
             .get_region(&region_key2)
             .expect("Region 2 should exist");
         assert_eq!(region2.organism_count(), 1);
-        assert!(Rc::ptr_eq(&region2.get_organisms()[0], &pheno2_rc_from_org));
+        assert!(Rc::ptr_eq(
+            &region2.get_organisms()[0].get_phenotype_rc(),
+            &org2_rc_from_org
+        ));
     }
 
     #[test]
-    fn given_region_with_existing_phenotype_when_add_more_phenotypes_to_same_key_then_all_are_present()
-     {
+    fn given_region_with_existing_orgtype_when_add_more_orgtypes_to_same_key_then_all_are_present()
+    {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
         let region_key = vec![1, 0, 0];
 
-        // First, add one organism to create the region and put one phenotype in it
+        // First, add one organism to create the region and put one orgtype in it
         let mut initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
-        let existing_phenotype_rc = initial_organisms.iter().next().unwrap().get_phenotype_rc();
+        let existing_orgtype_rc = initial_organisms.iter().next().unwrap().get_phenotype_rc();
         initial_organisms
             .iter_mut()
             .next()
@@ -190,7 +198,7 @@ mod tests {
 
         // Now, prepare a new organism to be added to the same region
         let mut new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
-        let new_phenotype_rc = new_organisms_to_add
+        let new_orgtype_rc = new_organisms_to_add
             .iter()
             .next()
             .unwrap()
@@ -209,18 +217,18 @@ mod tests {
         let region = regions
             .get_region(&region_key)
             .expect("Region should exist");
-        assert_eq!(region.organism_count(), 2); // Should now have two phenotypes
+        assert_eq!(region.organism_count(), 2); // Should now have two orgtypes
 
-        let region_phenotypes = region.get_organisms();
+        let region_orgtypes = region.get_organisms();
         assert!(
-            region_phenotypes
+            region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(p, &existing_phenotype_rc))
+                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &existing_orgtype_rc))
         );
         assert!(
-            region_phenotypes
+            region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(p, &new_phenotype_rc))
+                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &new_orgtype_rc))
         );
     }
 }

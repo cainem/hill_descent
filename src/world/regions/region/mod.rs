@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use crate::Phenotype;
+use crate::world::organisms::organism::Organism;
 
 #[derive(Debug, Clone)]
 pub struct Region {
     min_score: Option<f64>,
     carrying_capacity: Option<usize>,
-    organisms: Vec<Rc<Phenotype>>,
+    organisms: Vec<Rc<Organism>>,
 }
 
 impl Region {
@@ -18,12 +18,12 @@ impl Region {
         }
     }
 
-    /// Adds a phenotype to the region's collection of organisms.
+    /// Adds an organism to the region.
     ///
-    /// This method takes a `Rc<Phenotype>` to allow for shared ownership of the
-    /// phenotype data, avoiding unnecessary clones.
-    pub fn add_phenotype(&mut self, phenotype: Rc<Phenotype>) {
-        self.organisms.push(phenotype);
+    /// Uses `Rc<Organism>` to allow shared ownership without unnecessary clones.
+    pub fn add_phenotype(&mut self, organism: Rc<Organism>) {
+        // kept name for minimal call-site changes; now stores organisms
+        self.organisms.push(organism);
     }
 
     // Optional: A way to get the number of organisms in the region
@@ -32,7 +32,7 @@ impl Region {
     }
 
     // Optional: A way to get a slice of the organisms if needed for read-only access
-    pub fn get_organisms(&self) -> &[Rc<Phenotype>] {
+    pub fn get_organisms(&self) -> &[Rc<Organism>] {
         &self.organisms
     }
 

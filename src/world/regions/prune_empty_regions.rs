@@ -12,11 +12,12 @@ mod tests {
 
     use crate::parameters::global_constants::GlobalConstants;
     use crate::phenotype::Phenotype;
+    use crate::world::organisms::organism::Organism;
     use crate::world::regions::Regions;
     use crate::world::regions::region::Region;
 
-    // Helper to create a test phenotype using Phenotype::new_for_test
-    fn create_test_phenotype() -> Rc<Phenotype> {
+    // Helper to create a test organism (with phenotype) using Phenotype::new_for_test
+    fn create_test_organism() -> Rc<Organism> {
         // Provide default system parameters as per MEMORY[f61e5e69-4a9e-4874-b29b-c77dd5f97ec4]
         // and MEMORY[0a820419-f45b-4e9d-8d4e-7c8901b664ed]
         let expressed_values = vec![
@@ -28,22 +29,23 @@ mod tests {
             100.0, // max_age
             2.0,   // crossover_points
         ];
-        Rc::new(Phenotype::new_for_test(expressed_values))
+        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
+        Rc::new(Organism::new(Rc::clone(&phenotype), 0))
     }
 
     #[test]
     fn given_regions_with_some_empty_when_prune_empty_regions_then_empty_regions_are_removed() {
         let gc = GlobalConstants::new(100, 10); // population_size, max_regions
         let mut regions = Regions::new(&gc);
-        let phenotype = create_test_phenotype();
+        let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_phenotype(Rc::clone(&phenotype));
+        region1.add_phenotype(Rc::clone(&organism_rc));
 
         let region2 = Region::new(); // Empty
 
         let mut region3 = Region::new();
-        region3.add_phenotype(Rc::clone(&phenotype));
+        region3.add_phenotype(Rc::clone(&organism_rc));
 
         regions.regions =
             BTreeMap::from([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
@@ -60,12 +62,12 @@ mod tests {
     fn given_regions_with_all_populated_when_prune_empty_regions_then_no_regions_are_removed() {
         let gc = GlobalConstants::new(100, 10);
         let mut regions = Regions::new(&gc);
-        let phenotype = create_test_phenotype();
+        let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_phenotype(Rc::clone(&phenotype));
+        region1.add_phenotype(Rc::clone(&organism_rc));
         let mut region2 = Region::new();
-        region2.add_phenotype(Rc::clone(&phenotype));
+        region2.add_phenotype(Rc::clone(&organism_rc));
 
         regions.regions = BTreeMap::from([(vec![0], region1), (vec![1], region2)]);
 
