@@ -8,7 +8,7 @@ use crate::Phenotype;
 pub struct Region {
     min_score: Option<f64>,
     carrying_capacity: Option<usize>,
-    organisms: Vec<Rc<Phenotype>>, // Renamed for consistency, or keep _organisms if preferred internal style
+    organisms: Vec<Rc<Phenotype>>,
 }
 
 impl Region {
