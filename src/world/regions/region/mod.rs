@@ -1,5 +1,3 @@
-pub mod reset;
-
 use std::rc::Rc;
 
 use crate::Phenotype;
@@ -36,6 +34,11 @@ impl Region {
     // Optional: A way to get a slice of the organisms if needed for read-only access
     pub fn get_organisms(&self) -> &[Rc<Phenotype>] {
         &self.organisms
+    }
+
+    /// Returns true if this region currently has no organisms.
+    pub fn is_empty(&self) -> bool {
+        self.organisms.is_empty()
     }
 
     // Setter for carrying capacity
