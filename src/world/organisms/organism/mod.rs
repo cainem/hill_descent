@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use crate::phenotype::Phenotype;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+pub mod increment_age;
 pub mod run;
 pub mod update_region_key;
 
@@ -11,8 +12,8 @@ pub struct Organism {
     region_key: Option<Vec<usize>>,
     phenotype: Rc<Phenotype>,
     score: Option<f64>,
-    /// The age of the organism, in ticks.
-    age: usize,
+    /// The age of the organism, in ticks (atomic for thread-safe increments).
+    age: AtomicUsize,
     /// Thread-safe flag indicating whether the organism has been marked as dead.
     is_dead: AtomicBool,
 }
@@ -23,7 +24,7 @@ impl Clone for Organism {
             region_key: self.region_key.clone(),
             phenotype: Rc::clone(&self.phenotype),
             score: self.score,
-            age: self.age,
+            age: AtomicUsize::new(self.age.load(Ordering::Relaxed)),
             is_dead: AtomicBool::new(self.is_dead.load(Ordering::Relaxed)),
         }
     }
@@ -41,7 +42,7 @@ impl Organism {
             region_key: None,
             score: None,
             phenotype,
-            age,
+            age: AtomicUsize::new(age),
             is_dead: AtomicBool::new(false),
         }
     }
@@ -76,14 +77,12 @@ impl Organism {
         self.score = score;
     }
 
-    /// Returns the age of the organism.
+    /// Returns the current age of the organism in ticks.
+    ///
+    /// This is a thread-safe operation that can be called from multiple threads.
+    /// The age is the number of time units the organism has been alive.
     pub fn age(&self) -> usize {
-        self.age
-    }
-
-    /// Increments the age of the organism by one.
-    pub fn increment_age(&mut self) {
-        self.age += 1;
+        self.age.load(Ordering::Relaxed)
     }
 
     /// Marks the organism as dead. Thread-safe.
@@ -119,7 +118,7 @@ mod tests {
     #[test]
     fn given_organism_when_increment_age_is_called_then_age_is_incremented() {
         let phenotype = Rc::new(create_test_phenotype());
-        let mut organism = Organism::new(phenotype, 10);
+        let organism = Organism::new(phenotype, 10);
         organism.increment_age();
         assert_eq!(organism.age(), 11);
         organism.increment_age();
@@ -131,6 +130,17 @@ mod tests {
         let phenotype = Rc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 0);
         organism.mark_dead();
+        assert!(organism.is_dead());
+    }
+
+    #[test]
+    fn given_organism_when_age_exceeds_max_age_then_organism_is_marked_dead() {
+        // Create expressed values with max_age set to 1.0 (index 5 of system parameters)
+        let mut expressed_values = vec![1.0; NUM_SYSTEM_PARAMETERS];
+        expressed_values[5] = 1.0;
+        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
+        let organism = Organism::new(phenotype, 1);
+        organism.increment_age(); // Age becomes 2, exceeding max_age
         assert!(organism.is_dead());
     }
 }
