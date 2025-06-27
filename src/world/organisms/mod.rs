@@ -1,4 +1,5 @@
 pub mod generate_random_phenotypes;
+pub mod increment_ages;
 pub mod new;
 pub mod run;
 pub mod update_all_region_keys;
@@ -33,6 +34,14 @@ impl Organisms {
     // This was moved from the #[cfg(test)] block to be generally available
     pub fn get_organisms(&self) -> &Vec<Organism> {
         &self.organisms
+    }
+
+    /// Removes all organisms that have been marked as dead.
+    ///
+    /// This performs an in-place, linear `retain` scan, so the cost is
+    /// O(live + dead) and no extra allocation is required.
+    pub fn retain_live(&mut self) {
+        self.organisms.retain(|o| !o.is_dead());
     }
 }
 

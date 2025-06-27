@@ -60,6 +60,11 @@ impl Region {
     pub fn min_score(&self) -> Option<f64> {
         self.min_score
     }
+
+    /// Removes any organisms that have been marked as dead from this region.
+    pub fn retain_live(&mut self) {
+        self.organisms.retain(|o| !o.is_dead());
+    }
 }
 
 // Implementing Default for convenience if Region::new() with defaults is common

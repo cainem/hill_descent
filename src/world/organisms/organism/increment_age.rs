@@ -16,3 +16,34 @@ impl Organism {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{NUM_SYSTEM_PARAMETERS, phenotype::Phenotype};
+    use std::rc::Rc;
+
+    fn phenotype_with_max_age(max_age: f64) -> Rc<Phenotype> {
+        let mut expressed = vec![1.0; NUM_SYSTEM_PARAMETERS];
+        expressed[5] = max_age;
+        Rc::new(Phenotype::new_for_test(expressed))
+    }
+
+    #[test]
+    fn given_organism_when_increment_age_then_age_increments() {
+        let phenotype = phenotype_with_max_age(100.0);
+        let organism = super::Organism::new(Rc::clone(&phenotype), 0);
+        organism.increment_age();
+        assert_eq!(organism.age(), 1);
+        assert!(!organism.is_dead());
+    }
+
+    #[test]
+    fn given_organism_when_age_exceeds_max_then_mark_dead() {
+        let phenotype = phenotype_with_max_age(0.0);
+        let organism = super::Organism::new(Rc::clone(&phenotype), 0);
+        organism.increment_age();
+        assert_eq!(organism.age(), 1);
+        assert!(organism.is_dead());
+    }
+}

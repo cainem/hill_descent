@@ -116,31 +116,10 @@ mod tests {
     }
 
     #[test]
-    fn given_organism_when_increment_age_is_called_then_age_is_incremented() {
-        let phenotype = Rc::new(create_test_phenotype());
-        let organism = Organism::new(phenotype, 10);
-        organism.increment_age();
-        assert_eq!(organism.age(), 11);
-        organism.increment_age();
-        assert_eq!(organism.age(), 12);
-    }
-
-    #[test]
     fn given_organism_when_mark_dead_then_is_dead_returns_true() {
         let phenotype = Rc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 0);
         organism.mark_dead();
-        assert!(organism.is_dead());
-    }
-
-    #[test]
-    fn given_organism_when_age_exceeds_max_age_then_organism_is_marked_dead() {
-        // Create expressed values with max_age set to 1.0 (index 5 of system parameters)
-        let mut expressed_values = vec![1.0; NUM_SYSTEM_PARAMETERS];
-        expressed_values[5] = 1.0;
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
-        let organism = Organism::new(phenotype, 1);
-        organism.increment_age(); // Age becomes 2, exceeding max_age
         assert!(organism.is_dead());
     }
 }
