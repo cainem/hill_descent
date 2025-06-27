@@ -1,3 +1,6 @@
+pub mod repopulate;
+mod reproduce;
+
 use std::rc::Rc;
 
 use crate::world::organisms::organism::Organism;
