@@ -10,8 +10,8 @@ impl World {
 
         // reproduce the organisms based populations and carrying capacities of the regions
 
-        // age organisms 
-        
+        // age organisms
+
         // remove those that have exceeded their maximum age
 
         // update the regions based on the new population

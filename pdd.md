@@ -157,10 +157,10 @@ The system proceeds in discrete rounds. Each round involves:
 
 **5.2.2. Ranking:** 
 * Perform a separate ranking of organisms within each populated region based on their fitness scores (lowest score is best).  
-* Tie-breaking rules for ranking:  
+* Tie-breaking rules for ranking:
     1.  Fitness score (lower is better).  
     2.  Age (older is ranked higher).  
-    3.  Order of encounter (first encountered is ranked higher).
+    • If both fitness and age are identical, ordering is considered **arbitrary**; no further rule is defined.
 
 **5.2.3. Reproduction (Occurs per Region):** 
 * For each region, determine the required number of offspring, `r`, to fill the gap. This is based on the difference between the number of organisms that will be left after removing those at $A_{max}$ and the region's carrying capacity $P_i$. Organisms at $A_{max}$ don't count towards current population for capacity but can still reproduce.  
