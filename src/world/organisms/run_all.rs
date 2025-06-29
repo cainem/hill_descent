@@ -23,6 +23,7 @@ mod tests {
     use crate::world::world_function::WorldFunction;
     use std::rc::Rc;
 
+    // Mock WorldFunction that returns a constant vector [1.0, 1.0] to simplify scoring.
     #[derive(Debug)]
     struct DummyFn;
     impl WorldFunction for DummyFn {

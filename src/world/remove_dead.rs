@@ -37,6 +37,7 @@ mod tests {
     use std::ops::RangeInclusive;
     use std::rc::Rc;
 
+    // Mock WorldFunction that returns 0.0 to create zero-score scenarios.
     #[derive(Debug)]
     struct DummyFn;
     impl WorldFunction for DummyFn {

@@ -99,6 +99,7 @@ mod tests {
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
 
+    // Mock WorldFunction that returns 0.0 to validate World initialization logic.
     #[derive(Debug)]
     struct TestFn;
     impl WorldFunction for TestFn {

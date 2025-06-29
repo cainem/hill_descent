@@ -36,6 +36,7 @@ mod tests {
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
 
+    // Mock WorldFunction that returns a single constant value (0.5) for deterministic tests.
     #[derive(Debug)]
     struct IdentityFn;
     impl WorldFunction for IdentityFn {
@@ -73,6 +74,7 @@ mod tests {
     #[test]
     fn given_perfect_match_when_training_run_then_best_score_equals_max() {
         // Arrange
+        // Mock WorldFunction that always returns the perfect matching value (1.0) for scoring tests.
         #[derive(Debug)]
         struct PerfectFn;
         impl WorldFunction for PerfectFn {
