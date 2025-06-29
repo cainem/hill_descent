@@ -2,6 +2,7 @@ pub mod generate_random_phenotypes;
 pub mod increment_ages;
 pub mod new;
 pub mod run;
+pub mod run_all;
 pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
