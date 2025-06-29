@@ -49,6 +49,18 @@ impl Organisms {
     pub fn extend(&mut self, mut others: Vec<Organism>) {
         self.organisms.append(&mut others);
     }
+
+    /// Creates an empty `Organisms` collection.
+    pub fn new_empty() -> Self {
+        Self {
+            organisms: Vec::new(),
+        }
+    }
+
+    /// Consumes the collection and returns the underlying vector.
+    pub fn into_inner(self) -> Vec<Organism> {
+        self.organisms
+    }
 }
 
 #[cfg(test)]

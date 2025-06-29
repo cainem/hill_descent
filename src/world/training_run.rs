@@ -2,20 +2,95 @@ use super::World;
 
 impl World {
     pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> f64 {
-        // run function with the input for each phenotype and update the organisms last score
+        // 1. Evaluate fitness for every organism
+        self.organisms
+            .run_all(self.world_function.as_ref(), inputs, known_outputs);
 
-        // update the min known scores for the regions based on the scores of the organisms
+        // 2. Generate offspring to fill regional deficits
+        let mut offspring = crate::world::organisms::Organisms::new_empty();
+        self.regions.repopulate(&mut self.rng, &mut offspring);
+        self.organisms.extend(offspring.into_inner());
 
-        // update the carrying capacities of the known region
+        // 4. Age organisms and cull those exceeding their max age
+        self.organisms.increment_ages();
+        self.remove_dead();
 
-        // reproduce the organisms based populations and carrying capacities of the regions
+        // 4. Re-evaluate spatial structure (bounding boxes, region keys, capacities).
+        // This call updates region min scores and carrying capacities internally.
+        self.regions
+            .update(&mut self.organisms, &mut self.dimensions);
 
-        // age organisms
+        // Return the best (highest) fitness score in the population for monitoring.
+        self.organisms
+            .iter()
+            .filter_map(|o| o.score())
+            .fold(0.0, f64::max)
+    }
+}
 
-        // remove those that have exceeded their maximum age
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::E0;
+    use crate::parameters::global_constants::GlobalConstants;
+    use crate::world::world_function::WorldFunction;
+    use std::ops::RangeInclusive;
 
-        // update the regions based on the new population
+    #[derive(Debug)]
+    struct IdentityFn;
+    impl WorldFunction for IdentityFn {
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+            vec![0.5] // deterministic output
+        }
+    }
 
-        todo!();
+    // given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment
+    #[test]
+    fn given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment() {
+        // Arrange
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(4, 16);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![0.0];
+        let known_outputs = vec![1.0];
+
+        // Act
+        let best_score = world.training_run(&inputs, &known_outputs);
+
+        // Assert
+        assert!(best_score > 0.0, "Best score should be positive");
+        assert!(
+            world
+                .organisms
+                .iter()
+                .all(|o| o.score().unwrap_or(0.0) > 0.0),
+            "All organisms should have positive scores"
+        );
+        assert!(world.organisms.count() > 0);
+    }
+
+    // given_perfect_match_when_training_run_then_best_score_equals_max
+    #[test]
+    fn given_perfect_match_when_training_run_then_best_score_equals_max() {
+        // Arrange
+        #[derive(Debug)]
+        struct PerfectFn;
+        impl WorldFunction for PerfectFn {
+            fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+                vec![1.0]
+            }
+        }
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(3, 8);
+        let mut world = World::new(&bounds, gc, Box::new(PerfectFn));
+        let inputs = vec![0.0];
+        let known_outputs = vec![1.0];
+
+        // Act
+        let best_score = world.training_run(&inputs, &known_outputs);
+
+        // Assert
+        let expected = 1.0 / E0;
+        assert!((best_score - expected).abs() < f64::EPSILON);
     }
 }
