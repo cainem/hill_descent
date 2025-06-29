@@ -8,10 +8,10 @@ pub mod handle_successful_update;
 pub mod prune_empty_regions;
 pub mod region;
 
+pub mod repopulate;
 pub mod update;
 pub mod update_all_region_min_scores;
 pub mod update_carrying_capacities;
-pub mod repopulate;
 
 use crate::parameters::global_constants::GlobalConstants;
 

@@ -43,6 +43,11 @@ impl Organisms {
     pub fn retain_live(&mut self) {
         self.organisms.retain(|o| !o.is_dead());
     }
+
+    /// Adds a batch of organisms to the collection.
+    pub fn extend(&mut self, mut others: Vec<Organism>) {
+        self.organisms.append(&mut others);
+    }
 }
 
 #[cfg(test)]
