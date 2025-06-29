@@ -7,6 +7,7 @@ pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
 pub use organism::Organism;
+pub mod best;
 pub mod distinct_locations_count;
 pub mod find_spacial_limits;
 pub mod organism;
