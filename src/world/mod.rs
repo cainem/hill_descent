@@ -15,6 +15,7 @@ pub mod get_best_orgnanism;
 pub mod organisms;
 pub mod regions;
 mod remove_dead;
+pub mod run_epoch;
 pub mod training_run;
 pub mod validate_training_sets;
 pub mod world_function;
