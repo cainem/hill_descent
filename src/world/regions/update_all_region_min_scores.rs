@@ -41,10 +41,6 @@ mod tests {
     use std::collections::BTreeMap;
     use std::rc::Rc;
 
-    fn default_system_parameters() -> Vec<f64> {
-        vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
-    }
-
     fn create_test_regions_and_gc(
         max_regions: usize,
         population_size: usize,

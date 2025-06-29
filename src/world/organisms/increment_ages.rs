@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn given_multiple_organisms_when_increment_ages_then_all_ages_increment() {
-        let mut orgs = create_test_organisms(3, 10.0);
+        let orgs = create_test_organisms(3, 10.0);
         orgs.increment_ages();
         assert!(orgs.iter().all(|o| o.age() == 1));
         assert!(orgs.iter().all(|o| !o.is_dead()));
@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn given_organism_exceeding_max_age_when_increment_ages_then_marked_dead() {
-        let mut orgs = create_test_organisms(1, 0.0);
+        let orgs = create_test_organisms(1, 0.0);
         orgs.increment_ages();
         let organism = orgs.iter().next().unwrap();
         assert_eq!(organism.age(), 1);

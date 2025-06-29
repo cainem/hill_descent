@@ -22,7 +22,6 @@ pub struct World {
     dimensions: Dimensions,
     organisms: Organisms,
     regions: Regions,
-    global_constants: GlobalConstants,
     rng: SmallRng,
     world_function: Box<dyn WorldFunction>,
 }
@@ -85,7 +84,6 @@ impl World {
             dimensions,
             organisms,
             regions,
-            global_constants,
             rng,
             world_function: function,
         }
@@ -119,8 +117,8 @@ mod tests {
         let world = World::new(&bounds, gc, world_fn);
 
         assert_eq!(world.organisms.count(), 10);
-        assert_eq!(world.global_constants.population_size(), 10);
-        assert_eq!(world.global_constants.max_regions(), 100);
+        assert_eq!(gc.population_size(), 10);
+        assert_eq!(gc.max_regions(), 100);
 
         // Verify that the number of dimensions matches the problem space dimensions.
         assert_eq!(world.dimensions.num_dimensions(), num_problem_dims);

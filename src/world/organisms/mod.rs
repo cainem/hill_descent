@@ -66,9 +66,9 @@ impl Organisms {
 #[cfg(test)]
 mod tests {
     use super::Organisms;
-    use crate::phenotype::Phenotype;
+
     use crate::world::organisms::Organism;
-    use crate::world::world_function::WorldFunction;
+
     use std::rc::Rc;
 
     impl Organisms {

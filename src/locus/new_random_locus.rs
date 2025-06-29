@@ -110,9 +110,7 @@ mod tests {
                     let final_dh_flag = locus.adjustment.doubling_or_halving_flag();
                     assert!(
                         !final_dh_flag,
-                        "D/H flag should be false. Seed {}, Locus val: {}, Adj direction: {:?}, Initial D/H would have been true",
-                        i,
-                        locus_candidate_val,
+                        "D/H flag should be false. Seed {i}, Adj direction: {:?}, Initial D/H would have been true",
                         initial_adjustment.direction_of_travel()
                     );
                     found_case = true;
@@ -150,9 +148,7 @@ mod tests {
                     let final_dh_flag = locus.adjustment.doubling_or_halving_flag();
                     assert!(
                         !final_dh_flag,
-                        "D/H flag should be false for halving out of bounds. Seed {}, Locus val: {}, Adj direction: {:?}, Initial D/H would have been true",
-                        i,
-                        locus_candidate_val,
+                        "D/H flag should be false for halving out of bounds. Seed, Adj direction: {:?}, Initial D/H would have been true",
                         initial_adjustment.direction_of_travel()
                     );
                     found_case = true;
@@ -191,11 +187,8 @@ mod tests {
                     let final_dh_flag = locus.adjustment.doubling_or_halving_flag();
                     assert!(
                         final_dh_flag,
-                        "D/H flag should be true. Seed {}, Locus val: {}, Adj direction: {:?}, Hypothetical: {}",
-                        i,
-                        locus_candidate_val,
-                        initial_adjustment.direction_of_travel(),
-                        hypothetical_val
+                        "D/H flag should be true. Seed {i}, Adj direction: {:?}, Hypothetical: {hypothetical_val}",
+                        initial_adjustment.direction_of_travel()
                     );
                     found_case = true;
                     break;
@@ -226,7 +219,7 @@ mod tests {
                 let mut final_rng = StdRng::seed_from_u64(i);
                 let locus = Locus::new_random_locus(&mut final_rng, &bounds); // Changed call
                 let final_dh_flag = locus.adjustment.doubling_or_halving_flag();
-                assert!(!final_dh_flag, "D/H flag should remain false. Seed {}", i);
+                assert!(!final_dh_flag, "D/H flag should remain false. Seed {i}");
                 found_case = true;
                 break;
             }

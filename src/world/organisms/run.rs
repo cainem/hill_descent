@@ -18,7 +18,6 @@ mod tests {
     use super::*;
     use crate::{E0, parameters::GlobalConstants, world::world_function::WorldFunction};
     use rand::rngs::mock::StepRng;
-    use std::ops::RangeInclusive;
 
     // A mock WorldFunction for testing purposes.
     #[derive(Debug)]

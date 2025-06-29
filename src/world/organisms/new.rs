@@ -60,7 +60,6 @@ mod tests {
     use crate::NUM_SYSTEM_PARAMETERS;
     use crate::parameters::GlobalConstants;
     use rand::rngs::mock::StepRng;
-    use std::ops::RangeInclusive; // For validating enhanced bounds length
 
     #[test]
     fn given_valid_inputs_when_new_called_then_creates_organisms_correctly() {

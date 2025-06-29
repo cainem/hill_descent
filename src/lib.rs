@@ -18,19 +18,12 @@ use world::world_function::WorldFunction;
 
 // this will take a list of parameters and return a world
 pub fn setup_world(
-    _params: &[RangeInclusive<f64>],
-    _global_constants: GlobalConstants,
+    params: &[RangeInclusive<f64>],
+    global_constants: GlobalConstants,
     // The new function parameter
     function: Box<dyn WorldFunction>,
 ) -> World {
-    let _world = World::new(_params, _global_constants, function);
-
-    todo!()
-}
-
-// this will need sample data
-pub fn training_run(_world: &mut World) {
-    todo!()
+    World::new(params, global_constants, function)
 }
 
 // pass in a sample of training runs and return the best parameters

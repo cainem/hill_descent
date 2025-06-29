@@ -19,7 +19,7 @@ impl Organism {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use crate::{NUM_SYSTEM_PARAMETERS, phenotype::Phenotype};
     use std::rc::Rc;
 
