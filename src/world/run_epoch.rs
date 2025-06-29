@@ -26,6 +26,7 @@ impl super::World {
 }
 
 #[cfg(test)]
+#[allow(clippy::useless_vec)]
 mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
