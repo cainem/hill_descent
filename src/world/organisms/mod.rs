@@ -12,6 +12,7 @@ pub mod find_spacial_limits;
 pub mod organism;
 
 /// Represents a collection of `Organism` instances within the world.
+// Collection wrapper providing convenience methods over a vector of Organism instances.
 #[derive(Debug, Clone)]
 pub struct Organisms {
     organisms: Vec<Organism>,

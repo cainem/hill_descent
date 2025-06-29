@@ -5,6 +5,7 @@ pub mod get_interval;
 pub mod new;
 
 #[derive(Debug, Clone)]
+// Represents a single axis in the simulation space with its bounds and division count.
 pub struct Dimension {
     range: RangeInclusive<f64>,
     number_of_divisions: usize,

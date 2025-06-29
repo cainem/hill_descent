@@ -14,6 +14,7 @@ pub mod sexual_reproduction;
 
 /// A Phenotype is constructed from a pair of gametes.
 #[derive(Debug, Clone, PartialEq)]
+// Derived traits and parameter values expressed from two gametes.
 pub struct Phenotype {
     /// The first gamete.
     gamete1: Gamete,

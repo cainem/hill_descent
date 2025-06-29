@@ -7,6 +7,7 @@ pub mod new;
 pub use calculate_dimensions_key::{CalculateDimensionsKeyResult, calculate_dimensions_key};
 
 #[derive(Debug, Clone)]
+// Holds the spatial dimensions (axes) of the world along with bookkeeping data.
 pub struct Dimensions {
     dimensions: Vec<Dimension>,
     last_division_index: usize,

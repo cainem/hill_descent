@@ -8,6 +8,7 @@ use self::locus_adjustment::LocusAdjustment;
 use crate::parameters::parameter::Parameter; // LocusAdjustment for struct
 
 #[derive(Debug, Clone, PartialEq)]
+// Genetic locus consisting of a value, a potential adjustment, and a flag indicating if adjustment applies.
 pub struct Locus {
     pub value: Parameter, // Represents LocusValue
     pub adjustment: LocusAdjustment,

@@ -11,6 +11,7 @@ pub enum DirectionOfTravel {
 
 /// A potential modification to a locus value.
 #[derive(Debug, Clone, PartialEq)]
+// Represents a potential modification to a locus value, including magnitude, direction, doubling/halving behaviour, and checksum.
 pub struct LocusAdjustment {
     adjustment_value: Parameter,
     direction_of_travel: DirectionOfTravel,

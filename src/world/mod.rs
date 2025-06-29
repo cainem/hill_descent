@@ -17,6 +17,8 @@ mod remove_dead;
 pub mod training_run;
 pub mod world_function;
 
+// Top-level simulation container holding dimensions, organisms, regions, RNG, and the evaluation function.
+
 #[derive(Debug)]
 pub struct World {
     dimensions: Dimensions,

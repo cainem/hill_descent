@@ -16,6 +16,7 @@ pub mod update_carrying_capacities;
 use crate::parameters::global_constants::GlobalConstants;
 
 #[derive(Debug, Clone)]
+// Container managing all Region instances and enforcing global constraints such as maximum regions and population size.
 pub struct Regions {
     regions: BTreeMap<Vec<usize>, Region>,
     max_regions: usize,

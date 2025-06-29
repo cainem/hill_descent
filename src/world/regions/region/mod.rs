@@ -5,6 +5,7 @@ use std::rc::Rc;
 use crate::world::organisms::organism::Organism;
 
 #[derive(Debug, Clone)]
+// Represents a single spatial subdivision that groups organisms and stores metadata like minimum score and carrying capacity.
 pub struct Region {
     min_score: Option<f64>,
     carrying_capacity: Option<usize>,

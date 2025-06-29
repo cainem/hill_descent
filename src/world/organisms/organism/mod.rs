@@ -8,6 +8,7 @@ pub mod run;
 pub mod update_region_key;
 
 #[derive(Debug)]
+// Simulation entity that holds phenotype, spatial key, fitness score, age, and alive/dead status.
 pub struct Organism {
     region_key: Option<Vec<usize>>,
     phenotype: Rc<Phenotype>,
