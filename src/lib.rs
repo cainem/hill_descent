@@ -1,4 +1,5 @@
 pub mod gamete;
+pub mod gen_hybrid_range;
 pub mod locus;
 pub mod parameters;
 pub mod phenotype;
