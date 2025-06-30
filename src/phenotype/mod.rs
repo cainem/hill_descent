@@ -133,6 +133,11 @@ impl Phenotype {
         &self.system_parameters
     }
 
+    /// Returns all expressed values (including system parameters).
+    pub fn expressed_values(&self) -> &[f64] {
+        &self.expressed
+    }
+
     /// Returns the hash of the expressed parameter values.
     pub fn expressed_hash(&self) -> u64 {
         self.expressed_hash

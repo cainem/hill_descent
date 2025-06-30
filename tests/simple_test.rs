@@ -25,12 +25,15 @@ impl WorldFunction for Quadratic {
 
 #[test]
 pub fn execute() {
-    let param_range = vec![RangeInclusive::new(f64::MIN/2.0, f64::MAX/2.0)];
+    let param_range = vec![RangeInclusive::new(f64::MIN / 2.0, f64::MAX / 2.0)];
     let global_constants = GlobalConstants::new(10, 4);
 
     let mut world = setup_world(&param_range, global_constants, Box::new(Quadratic));
 
-    for _i in 0..999 {
+    println!("{}\n", world.get_state());
+
+    for _i in 0..1 {
         dbg!(world.training_run(&[], &[0.0]));
+        println!("{}\n\n", world.get_state());
     }
 }
