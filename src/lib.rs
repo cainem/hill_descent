@@ -25,8 +25,3 @@ pub fn setup_world(
 ) -> World {
     World::new(params, global_constants, function)
 }
-
-// pass in a sample of training runs and return the best parameters
-pub fn get_best_parameters(_world: &World) -> Vec<f64> {
-    todo!()
-}
