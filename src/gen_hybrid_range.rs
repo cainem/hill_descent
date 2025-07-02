@@ -41,30 +41,35 @@ pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
         // bounds are far from zero.
         let max_abs = low.abs().max(high);
         if max_abs > RATIO_THRESHOLD {
-            // Generate a log-uniform value based on the largest magnitude,
-            // then randomly place it on the positive or negative side,
-            // respecting the original bounds.
-            let log_low = if low == 0.0 {
-                -307.0
+            // Extremely wide range that crosses zero – use a log-uniform strategy.
+            // We sample an exponent uniformly between the minimum f64 exponent (≈-307.65)
+            // and the exponent of the largest magnitude bound, pick a mantissa in [1,10),
+            // assign a random sign, and loop until the candidate sits inside the original
+            // bounds. This avoids clustering at the range’s endpoints.
+            let min_exp = f64::MIN_POSITIVE.log10(); // ≈ -307.653 at runtime
+            let max_exp = max_abs.log10();
+            // Choose sign deterministically via float sample
+            let sign = if rng.random_range(0.0..1.0) < 0.5 {
+                1.0
             } else {
-                low.abs().log10()
+                -1.0
             };
-            let log_high = if high == 0.0 {
-                -307.0
-            } else {
-                high.abs().log10()
-            };
-
-            // Choose an exponent from the combined magnitude range
-            let random_log_val = rng.random_range(log_low.min(log_high)..=log_low.max(log_high));
-            let value = 10.0_f64.powf(random_log_val);
-
-            // Randomly choose a side (positive or negative)
-            if rng.random_bool(0.5) && value <= high {
-                return value;
-            } else if -value >= low {
-                return -value;
+            for _ in 0..10_000 {
+                // exponent uniform in log space
+                let exponent = rng.random_range(min_exp..=max_exp);
+                // mantissa uniform in [1.0, 10.0)
+                let mantissa = rng.random_range(1.0..10.0);
+                let unsigned_val = mantissa * 10_f64.powf(exponent);
+                if !unsigned_val.is_finite() || unsigned_val > max_abs {
+                    continue; // skip INF/NaN or magnitudes outside desired bounds
+                }
+                let candidate = sign * unsigned_val;
+                if range.contains(&candidate) {
+                    return candidate;
+                }
             }
+            // Fallback – shouldn’t normally happen, but guarantees termination
+            return sign * max_abs.min(high);
         }
         // If the range is small (e.g., -10 to 20), fall through to linear.
     }
@@ -105,7 +110,31 @@ mod tests {
     use std::ops::RangeInclusive;
 
     #[test]
-    fn given_equal_bounds_when_gen_hybrid_range_then_returns_that_value() {
+    fn given_extreme_cross_zero_range_when_gen_hybrid_range_then_varied_values_within_bounds() {
+        let range: RangeInclusive<f64> = (-f64::MAX / 2.0)..=(f64::MAX / 2.0);
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut samples = Vec::with_capacity(1000);
+        for _ in 0..100 {
+            let v = gen_hybrid_range(&mut rng, range.clone());
+            assert!(range.contains(&v));
+            samples.push(v);
+        }
+        // Ensure we didn’t get stuck on the endpoints or a single sign.
+        assert!(samples.iter().any(|&v| v.is_sign_positive()));
+        assert!(samples.iter().any(|&v| v.is_sign_negative()));
+        let at_start = samples.iter().filter(|&&v| v == *range.start()).count();
+        let at_end = samples.iter().filter(|&&v| v == *range.end()).count();
+        // Allow at most 10% of values at each extreme.
+        assert!(
+            at_start < 100,
+            "too many values at lower bound: {}",
+            at_start
+        );
+        assert!(at_end < 100, "too many values at upper bound: {}", at_end);
+    }
+
+    #[test]
+    fn given_equal_bounds_when_gen_hybrid_range_then_returns_single_bound_value() {
         let mut rng = StdRng::seed_from_u64(42);
         let val = gen_hybrid_range(&mut rng, 5.0..=5.0);
         assert_eq!(val, 5.0);

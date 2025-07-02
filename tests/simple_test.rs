@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{io::Write, ops::RangeInclusive};
 
 use hill_descent::{
     parameters::GlobalConstants, setup_world, world::world_function::WorldFunction,
@@ -25,6 +25,9 @@ impl WorldFunction for Quadratic {
 
 #[test]
 pub fn execute() {
+    eprintln!("here");
+    std::io::stdout().flush().unwrap();
+
     let param_range = vec![RangeInclusive::new(f64::MIN / 2.0, f64::MAX / 2.0)];
     let global_constants = GlobalConstants::new(10, 4);
 

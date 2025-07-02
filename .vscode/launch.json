@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'hill_descent'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=hill_descent"
+                ],
+                "filter": {
+                    "name": "hill_descent",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'simple_test' x",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=simple_test",
+                    "--package=hill_descent"
+                ],
+                "filter": {
+                    "name": "simple_test",
+                    "kind": "test"
+                }
+            },
+            "args": [
+                "--",
+                "--nocapture"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        }
+    ]
+}
