@@ -19,6 +19,11 @@ impl Organism {
         let phenotype_expressed_values = phenotype.expression_problem_values();
         let outputs = function.run(phenotype_expressed_values, inputs);
 
+        debug_assert!(
+            outputs.iter().all(|&x| x.is_finite()),
+            "output must only contain finite numbers"
+        );
+
         if outputs.len() != known_outputs.len() {
             panic!(
                 "The number of outputs ({}) must match the number of known outputs ({}).",

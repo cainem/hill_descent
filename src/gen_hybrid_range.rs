@@ -125,12 +125,8 @@ mod tests {
         let at_start = samples.iter().filter(|&&v| v == *range.start()).count();
         let at_end = samples.iter().filter(|&&v| v == *range.end()).count();
         // Allow at most 10% of values at each extreme.
-        assert!(
-            at_start < 100,
-            "too many values at lower bound: {}",
-            at_start
-        );
-        assert!(at_end < 100, "too many values at upper bound: {}", at_end);
+        assert!(at_start < 100, "too many values at lower bound: {at_start}");
+        assert!(at_end < 100, "too many values at upper bound: {at_end}");
     }
 
     #[test]

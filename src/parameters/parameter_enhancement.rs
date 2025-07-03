@@ -28,7 +28,7 @@ pub fn enhance_parameters(
         // m5: Probability of LocusValue mutating
         0.0..=1.0, // m5_prob_locus_value_mutation
         // max_age: Maximum age of an organism
-        10.0..=1000.0, // max_age
+        2.0..=10.0, // max_age
         // crossover_points: Number of crossover points for sexual reproduction
         1.0..=10.0, // crossover_points
     ];
@@ -61,7 +61,7 @@ mod tests {
         // Check m5 bounds
         assert_eq!(enhanced_bounds[4], 0.0..=1.0);
         // Check max_age bounds
-        assert_eq!(enhanced_bounds[5], 10.0..=1000.0);
+        assert_eq!(enhanced_bounds[5], 2.0..=10.0);
         // Check crossover_points bounds
         assert_eq!(enhanced_bounds[6], 1.0..=10.0);
     }
@@ -112,8 +112,8 @@ mod tests {
         assert_eq!(enhanced_bounds[4].end(), &1.0);
 
         // max_age
-        assert_eq!(enhanced_bounds[5].start(), &10.0);
-        assert_eq!(enhanced_bounds[5].end(), &1000.0);
+        assert_eq!(enhanced_bounds[5].start(), &2.0);
+        assert_eq!(enhanced_bounds[5].end(), &10.0);
 
         // crossover_points
         assert_eq!(enhanced_bounds[6].start(), &1.0);

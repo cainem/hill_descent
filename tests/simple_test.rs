@@ -1,4 +1,4 @@
-use std::{io::Write, ops::RangeInclusive};
+use std::ops::RangeInclusive;
 
 use hill_descent::{
     parameters::GlobalConstants, setup_world, world::world_function::WorldFunction,
@@ -19,23 +19,33 @@ impl WorldFunction for Quadratic {
 
         let value = phenotype_expressed_values[0];
 
-        vec![(1.0 / ((value * value) * 2.0) + 1.0)]
+        //dbg!(value);
+
+        let mut score = (value * value * 2.0) + 1.0;
+
+        if score.is_infinite() && score.is_sign_negative() {
+            score = f64::MAX
+        }
+        if score.is_infinite() {
+            score = f64::MIN
+        }
+
+        //dbg!(score);
+
+        vec![score]
     }
 }
 
 #[test]
 pub fn execute() {
-    eprintln!("here");
-    std::io::stdout().flush().unwrap();
-
-    let param_range = vec![RangeInclusive::new(f64::MIN / 2.0, f64::MAX / 2.0)];
+    let param_range = vec![RangeInclusive::new(-100.0, 100.0)];
     let global_constants = GlobalConstants::new(10, 4);
 
     let mut world = setup_world(&param_range, global_constants, Box::new(Quadratic));
 
     println!("{}\n", world.get_state());
 
-    for _i in 0..1 {
+    for _i in 0..100 {
         dbg!(world.training_run(&[], &[0.0]));
         println!("{}\n\n", world.get_state());
     }
