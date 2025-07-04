@@ -16,6 +16,13 @@ impl super::Regions {
         organisms: &mut Organisms,
         dimensions: &mut Dimensions,
     ) -> bool {
+        // Before adding the current generation of organisms, clear the regions of any
+        // organisms from the previous generation. This ensures the region state is
+        // always in sync with the master organism list.
+        for region in self.regions.values_mut() {
+            region.clear_organisms();
+        }
+
         self.add_phenotypes(organisms);
         self.prune_empty_regions();
 

@@ -45,8 +45,12 @@ pub fn execute() {
 
     println!("{}\n", world.get_state());
 
-    for _i in 0..100 {
-        dbg!(world.training_run(&[], &[0.0]));
-        println!("{}\n\n", world.get_state());
+    for _i in 0..10000 {
+        dbg!(world.training_run(&[], &[1.0]));
+        //println!("{}\n\n", world.get_state());
     }
+
+    let best_organism = world.get_best_organism(&[&[0.0]], &[&[1.0]]);
+
+    dbg!(best_organism.phenotype().expression_problem_values());
 }

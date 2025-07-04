@@ -39,6 +39,11 @@ impl Region {
         &self.organisms
     }
 
+    /// Removes all organisms from the region.
+    pub fn clear_organisms(&mut self) {
+        self.organisms.clear();
+    }
+
     /// Returns true if this region currently has no organisms.
     pub fn is_empty(&self) -> bool {
         self.organisms.is_empty()
