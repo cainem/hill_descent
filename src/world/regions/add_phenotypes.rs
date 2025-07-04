@@ -103,7 +103,7 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let region_key = vec![1];
 
-        let mut organisms_collection =
+        let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut org_iter_mut = organisms_collection.iter();
 
@@ -144,7 +144,7 @@ mod tests {
         let region_key1 = vec![1];
         let region_key2 = vec![2];
 
-        let mut organisms_collection =
+        let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut iter_mut = organisms_collection.iter();
 

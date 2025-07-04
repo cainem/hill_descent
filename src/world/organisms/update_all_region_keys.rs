@@ -93,7 +93,7 @@ mod tests {
 
         // Create a phenotype that will be made to fail.
         let failing_p_phenotype = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
-        let mut failing_organism = crate::world::organisms::organism::Organism::new(
+        let failing_organism = crate::world::organisms::organism::Organism::new(
             Rc::new(failing_p_phenotype.clone()),
             0,
         );

@@ -36,7 +36,7 @@ mod tests {
         let initial_value_bounds = vec![0.0..=1.0];
         let global_constants = GlobalConstants::new(5, 10); // 5 organisms
         let mut rng = StepRng::new(0, 1);
-        let mut organisms = Organisms::new(&initial_value_bounds, &global_constants, &mut rng);
+        let organisms = Organisms::new(&initial_value_bounds, &global_constants, &mut rng);
 
         let inputs = vec![1.0, 2.0];
         let known_outputs = vec![0.5, 0.5];

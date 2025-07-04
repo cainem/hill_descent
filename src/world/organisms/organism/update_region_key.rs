@@ -71,7 +71,7 @@ mod tests {
         }
 
         let phenotype = Phenotype::new_for_test(expressed_values);
-        let mut organism = Organism::new(Rc::new(phenotype), 0);
+        let organism = Organism::new(Rc::new(phenotype), 0);
         organism.set_region_key(None); // Ensure it starts as None for tests
         organism
     }

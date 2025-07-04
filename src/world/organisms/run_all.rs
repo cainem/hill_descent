@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn given_multiple_organisms_when_run_all_then_every_score_is_set() {
-        let mut orgs = make_organisms(3);
+        let orgs = make_organisms(3);
         let inputs = vec![0.0, 0.0];
         let known_outputs = vec![1.0, 1.0];
         let wf = DummyFn;
