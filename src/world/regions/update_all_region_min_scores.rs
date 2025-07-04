@@ -13,7 +13,7 @@ impl Regions {
             if let (Some(key), Some(score)) = (organism.region_key(), organism.score()) {
                 // Only consider positive scores as per PDD (fitness includes e0)
                 if score > 0.0 {
-                    if let Some(region) = self.regions.get_mut(key) {
+                    if let Some(region) = self.regions.get_mut(&key) {
                         match region.min_score() {
                             Some(current_min) => {
                                 if score < current_min {

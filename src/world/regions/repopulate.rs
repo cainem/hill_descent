@@ -1,6 +1,10 @@
 use rand::Rng;
+use std::rc::Rc;
 
-use crate::world::{organisms::Organisms, regions::Regions};
+use crate::world::{
+    organisms::{Organisms, organism::Organism},
+    regions::Regions,
+};
 
 impl Regions {
     /// For every region, generate enough offspring to reach its carrying capacity
@@ -20,7 +24,9 @@ impl Regions {
                 }
                 let deficit = capacity - region.organism_count();
                 let offspring = region.reproduce(deficit, rng);
-                organisms.extend(offspring);
+                // wrap offspring in Rc before extending
+                let offspring_rc: Vec<Rc<Organism>> = offspring.into_iter().map(Rc::new).collect();
+                organisms.extend(offspring_rc);
             }
         }
     }
@@ -58,7 +64,7 @@ mod tests {
             .insert(region_key, create_region_with_two(5));
 
         let mut rng = StepRng::new(0, 1);
-        let mut offspring = Organisms::new_from_organisms(vec![]);
+        let mut offspring = Organisms::new_from_organisms(Vec::new());
         regions.repopulate(&mut rng, &mut offspring);
 
         // deficit requested was 3 but only 2 parents available; expect at least 2 offspring

@@ -5,9 +5,9 @@ impl Organisms {
     ///
     /// This method iterates through each organism and calls its respective `run` method,
     /// updating each one's fitness score based on the provided inputs and known outputs.
-    pub fn run(&mut self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
+    pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
         // run the world function with the input for each phenotype
-        for organism in self.iter_mut() {
+        for organism in self.iter() {
             organism.run(function, inputs, known_outputs);
         }
     }

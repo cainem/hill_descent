@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::phenotype::Phenotype;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 pub mod increment_age;
@@ -10,9 +11,9 @@ pub mod update_region_key;
 #[derive(Debug)]
 // Simulation entity that holds phenotype, spatial key, fitness score, age, and alive/dead status.
 pub struct Organism {
-    region_key: Option<Vec<usize>>,
+    region_key: Mutex<Option<Vec<usize>>>,
     phenotype: Rc<Phenotype>,
-    score: Option<f64>,
+    score: Mutex<Option<f64>>,
     /// The age of the organism, in ticks (atomic for thread-safe increments).
     age: AtomicUsize,
     /// Thread-safe flag indicating whether the organism has been marked as dead.
@@ -22,9 +23,9 @@ pub struct Organism {
 impl Clone for Organism {
     fn clone(&self) -> Self {
         Self {
-            region_key: self.region_key.clone(),
+            region_key: Mutex::new(self.region_key.lock().unwrap().clone()),
             phenotype: Rc::clone(&self.phenotype),
-            score: self.score,
+            score: Mutex::new(*self.score.lock().unwrap()),
             age: AtomicUsize::new(self.age.load(Ordering::Relaxed)),
             is_dead: AtomicBool::new(self.is_dead.load(Ordering::Relaxed)),
         }
@@ -40,8 +41,8 @@ impl Organism {
     /// * `age` - The initial age of the organism.
     pub fn new(phenotype: Rc<Phenotype>, age: usize) -> Self {
         Self {
-            region_key: None,
-            score: None,
+            region_key: Mutex::new(None),
+            score: Mutex::new(None),
             phenotype,
             age: AtomicUsize::new(age),
             is_dead: AtomicBool::new(false),
@@ -59,23 +60,23 @@ impl Organism {
     }
 
     /// Returns the region key of the organism, if set.
-    pub fn region_key(&self) -> Option<&Vec<usize>> {
-        self.region_key.as_ref()
+    pub fn region_key(&self) -> Option<Vec<usize>> {
+        self.region_key.lock().unwrap().clone()
     }
 
     /// Sets the region key of the organism.
-    pub fn set_region_key(&mut self, region_key: Option<Vec<usize>>) {
-        self.region_key = region_key;
+    pub fn set_region_key(&self, region_key: Option<Vec<usize>>) {
+        *self.region_key.lock().unwrap() = region_key;
     }
 
     /// Returns the score of the organism, if set.
     pub fn score(&self) -> Option<f64> {
-        self.score
+        *self.score.lock().unwrap()
     }
 
     /// Sets the score of the organism.
-    pub fn set_score(&mut self, score: Option<f64>) {
-        self.score = score;
+    pub fn set_score(&self, score: Option<f64>) {
+        *self.score.lock().unwrap() = score;
     }
 
     /// Returns the current age of the organism in ticks.

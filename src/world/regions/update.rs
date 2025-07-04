@@ -269,7 +269,7 @@ mod tests {
         let mut organisms_collection = create_test_organisms_from_problem_values(vec![vec![]]);
         // Manually set a score for the organism to test carrying capacity calculation
         organisms_collection
-            .iter_mut()
+            .iter()
             .next()
             .unwrap()
             .set_score(Some(10.0));

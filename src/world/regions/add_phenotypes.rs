@@ -17,7 +17,7 @@ impl super::Regions {
     pub fn add_phenotypes(&mut self, organisms: &Organisms) {
         for organism in organisms.iter() {
             if let Some(key) = organism.region_key() {
-                let organism_rc: Rc<Organism> = Rc::new(organism.clone());
+                let organism_rc: Rc<Organism> = Rc::clone(organism);
                 let region = self.regions.entry(key.clone()).or_default();
                 region.add_phenotype(organism_rc);
             }
@@ -72,14 +72,14 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let region_key1 = vec![1, 2, 3];
 
-        let mut organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
+        let organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let orgtype_rc_from_org = organisms_collection
             .iter()
             .next()
             .unwrap()
             .get_phenotype_rc();
         organisms_collection
-            .iter_mut()
+            .iter()
             .next()
             .unwrap()
             .set_region_key(Some(region_key1.clone()));
@@ -105,7 +105,7 @@ mod tests {
 
         let mut organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
-        let mut org_iter_mut = organisms_collection.iter_mut();
+        let mut org_iter_mut = organisms_collection.iter();
 
         let org1_mut = org_iter_mut.next().unwrap();
         org1_mut.set_region_key(Some(region_key.clone()));
@@ -146,7 +146,7 @@ mod tests {
 
         let mut organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
-        let mut iter_mut = organisms_collection.iter_mut();
+        let mut iter_mut = organisms_collection.iter();
 
         let organism1_mut = iter_mut.next().unwrap();
         organism1_mut.set_region_key(Some(region_key1.clone()));
@@ -187,24 +187,24 @@ mod tests {
         let region_key = vec![1, 0, 0];
 
         // First, add one organism to create the region and put one orgtype in it
-        let mut initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
+        let initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let existing_orgtype_rc = initial_organisms.iter().next().unwrap().get_phenotype_rc();
         initial_organisms
-            .iter_mut()
+            .iter()
             .next()
             .unwrap()
             .set_region_key(Some(region_key.clone()));
         regions.add_phenotypes(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
-        let mut new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
+        let new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let new_orgtype_rc = new_organisms_to_add
             .iter()
             .next()
             .unwrap()
             .get_phenotype_rc();
         new_organisms_to_add
-            .iter_mut()
+            .iter()
             .next()
             .unwrap()
             .set_region_key(Some(region_key.clone()));

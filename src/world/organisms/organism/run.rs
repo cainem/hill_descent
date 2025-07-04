@@ -13,7 +13,7 @@ impl Organism {
     ///
     /// This function will panic if the number of outputs from the world function does not match
     /// the number of known outputs provided.
-    pub fn run(&mut self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
+    pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
         // Run the world function with the input for each phenotype
         let phenotype = self.phenotype();
         let phenotype_expressed_values = phenotype.expression_problem_values();
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn given_valid_inputs_when_run_is_called_then_score_is_updated_correctly() {
         // Arrange
-        let mut organism = create_test_organism();
+        let organism = create_test_organism();
         let inputs = vec![1.0, 2.0];
         let known_outputs = vec![0.5, 0.5];
         let test_fn = TestFn {
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn given_perfect_match_when_run_is_called_then_score_is_max() {
         // Arrange
-        let mut organism = create_test_organism();
+        let organism = create_test_organism();
         let inputs = vec![1.0];
         let known_outputs = vec![1.0];
         let test_fn = TestFn {
@@ -117,7 +117,7 @@ mod tests {
     )]
     fn given_mismatched_output_lengths_when_run_is_called_then_it_panics() {
         // Arrange
-        let mut organism = create_test_organism();
+        let organism = create_test_organism();
         let inputs = vec![1.0, 2.0];
         let known_outputs = vec![0.5, 0.5]; // Expects 2 outputs
         let test_fn = TestFn {

@@ -16,10 +16,10 @@ impl World {
         // 2. Run one epoch across the entire dataset.
         self.run_epoch(training_data, known_outputs);
 
-        // 3. Return a clone of the fittest organism.
+        // 3. Return the fittest organism.
         self.organisms
             .best()
-            .cloned()
+            .map(|rc| rc.as_ref().clone())
             .expect("Population contains no scored organisms")
     }
 }

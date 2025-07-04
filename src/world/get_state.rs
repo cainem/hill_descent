@@ -62,7 +62,7 @@ impl PhenotypeState {
 impl OrganismState {
     fn from_organism(o: &Organism) -> Self {
         Self {
-            region_key: o.region_key().cloned(),
+            region_key: o.region_key(),
             age: o.age(),
             score: o.score(),
             is_dead: o.is_dead(),
@@ -97,7 +97,7 @@ impl super::World {
         let organisms: Vec<OrganismState> = self
             .organisms
             .iter()
-            .map(OrganismState::from_organism)
+            .map(|rc| OrganismState::from_organism(rc.as_ref()))
             .collect();
 
         let regions: Vec<RegionState> = self

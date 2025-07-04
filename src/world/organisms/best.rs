@@ -1,16 +1,17 @@
 use super::{Organism, Organisms};
+use std::rc::Rc;
 
 impl Organisms {
     /// Returns a reference to the organism with the **highest** fitness score.
     ///
     /// If no organism in the collection has a score (`score() == None`), the
     /// function returns `None`.
-    pub fn best(&self) -> Option<&Organism> {
+    pub fn best(&self) -> Option<Rc<Organism>> {
         self.organisms
             .iter()
             .filter_map(|o| o.score().map(|s| (o, s)))
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-            .map(|(o, _)| o)
+            .map(|(o, _)| Rc::clone(o))
     }
 }
 
@@ -37,7 +38,8 @@ mod tests {
         let o3 = make_scored_organism(5.0);
         let orgs = Organisms::new_from_organisms(vec![o1.clone(), o2.clone(), o3.clone()]);
 
-        let best = orgs.best().unwrap();
+        let best_rc = orgs.best().unwrap();
+        let best = best_rc.as_ref();
         assert_eq!(best.score(), Some(10.0));
     }
 

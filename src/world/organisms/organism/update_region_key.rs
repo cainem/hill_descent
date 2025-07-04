@@ -27,7 +27,7 @@ impl Organism {
     ///   does not match the number of dimensions defined in `dimensions_container`,
     ///   unless both are zero. This panic originates from `calculate_dimensions_key`.
     pub fn update_region_key(
-        &mut self,
+        &self,
         dimensions_container: &Dimensions,
     ) -> OrganismUpdateRegionKeyResult {
         // System parameters are the first NUM_SYSTEM_PARAMETERS values in `expressed`.
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn given_valid_inputs_when_update_region_key_then_success_and_key_updated() {
-        let mut organism = create_organism_for_test(vec![
+        let organism = create_organism_for_test(vec![
             0.1, 0.5, 0.001, 0.001, 0.001, 100.0,
             2.0, // System params (NUM_SYSTEM_PARAMETERS)
             7.5, 60.0, // Problem params
@@ -106,12 +106,12 @@ mod tests {
         let result = organism.update_region_key(&dimensions);
 
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(&vec![2, 3]));
+        assert_eq!(organism.region_key(), Some(vec![2, 3]));
     }
 
     #[test]
     fn given_value_out_of_bounds_when_update_region_key_then_failure_and_key_is_none() {
-        let mut organism = create_organism_for_test(vec![
+        let organism = create_organism_for_test(vec![
             0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params
             12.0, 50.0, // Problem params. 12.0 is out of bounds for the first dimension.
         ]);
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn given_value_on_upper_bound_when_update_region_key_then_success_and_key_is_last_index() {
-        let mut organism = create_organism_for_test(vec![
+        let organism = create_organism_for_test(vec![
             0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0,  // System params
             10.0, // Problem param on the boundary
         ]);
@@ -137,12 +137,12 @@ mod tests {
         let result = organism.update_region_key(&dimensions);
 
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(&vec![2])); // Should be in the last interval
+        assert_eq!(organism.region_key(), Some(vec![2])); // Should be in the last interval
     }
 
     #[test]
     fn given_no_problem_params_when_update_region_key_then_success_and_key_is_empty() {
-        let mut organism = create_organism_for_test(vec![
+        let organism = create_organism_for_test(vec![
             0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params only
         ]);
         let dimensions = create_test_dimensions(vec![]); // No dimensions
@@ -150,6 +150,6 @@ mod tests {
         let result = organism.update_region_key(&dimensions);
 
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(&vec![]));
+        assert_eq!(organism.region_key(), Some(vec![]));
     }
 }

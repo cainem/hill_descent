@@ -19,7 +19,7 @@ impl Organisms {
         &mut self,
         dimensions: &Dimensions,
     ) -> OrganismUpdateRegionKeyResult {
-        for organism in self.organisms.iter_mut() {
+        for organism in self.organisms.iter() {
             match organism.update_region_key(dimensions) {
                 OrganismUpdateRegionKeyResult::Success => continue,
                 OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) => {

@@ -7,6 +7,7 @@ pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
 pub use organism::Organism;
+use std::rc::Rc;
 pub mod best;
 pub mod distinct_locations_count;
 pub mod find_spacial_limits;
@@ -16,18 +17,17 @@ pub mod organism;
 // Collection wrapper providing convenience methods over a vector of Organism instances.
 #[derive(Debug, Clone)]
 pub struct Organisms {
-    organisms: Vec<Organism>,
+    organisms: Vec<Rc<Organism>>,
 }
 
 impl Organisms {
     /// Returns an iterator over the organisms.
-    pub fn iter(&self) -> std::slice::Iter<'_, Organism> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Rc<Organism>> {
         self.organisms.iter()
     }
 
-    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Organism> {
-        self.organisms.iter_mut()
-    }
+    // Note: no mutable iterator needed since interior mutability
+    // pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Rc<Organism>> { ... }
 
     /// Returns the number of organisms.
     pub fn count(&self) -> usize {
@@ -35,7 +35,7 @@ impl Organisms {
     }
 
     // This was moved from the #[cfg(test)] block to be generally available
-    pub fn get_organisms(&self) -> &Vec<Organism> {
+    pub fn get_organisms(&self) -> &Vec<Rc<Organism>> {
         &self.organisms
     }
 
@@ -48,7 +48,7 @@ impl Organisms {
     }
 
     /// Adds a batch of organisms to the collection.
-    pub fn extend(&mut self, mut others: Vec<Organism>) {
+    pub fn extend(&mut self, mut others: Vec<Rc<Organism>>) {
         self.organisms.append(&mut others);
     }
 
@@ -60,7 +60,7 @@ impl Organisms {
     }
 
     /// Consumes the collection and returns the underlying vector.
-    pub fn into_inner(self) -> Vec<Organism> {
+    pub fn into_inner(self) -> Vec<Rc<Organism>> {
         self.organisms
     }
 }
@@ -82,13 +82,15 @@ mod tests {
             Self {
                 organisms: phenotypes
                     .into_iter()
-                    .map(|p| Organism::new(Rc::new(p), 0))
+                    .map(|p| Rc::new(Organism::new(Rc::new(p), 0)))
                     .collect(),
             }
         }
 
         pub fn new_from_organisms(organisms: Vec<Organism>) -> Self {
-            Self { organisms }
+            Self {
+                organisms: organisms.into_iter().map(Rc::new).collect(),
+            }
         }
     }
 }
