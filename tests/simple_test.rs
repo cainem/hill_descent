@@ -13,7 +13,7 @@ impl WorldFunction for Quadratic {
         // There is only one phenotype_expressed_value
         // return that operated on by the function
 
-        // function 2 x^2 + 1
+        // function 2 (x + 13)^2 + 1
 
         assert_eq!(1, phenotype_expressed_values.len());
 
@@ -21,7 +21,7 @@ impl WorldFunction for Quadratic {
 
         //dbg!(value);
 
-        let mut score = (value * value * 2.0) + 1.0;
+        let mut score = ((value + 13.0) * (value + 13.0) * 2.0) + 1.0;
 
         if score.is_infinite() && score.is_sign_negative() {
             score = f64::MAX
@@ -45,7 +45,7 @@ pub fn execute() {
 
     println!("{}\n", world.get_state());
 
-    for i in 0..1120 {
+    for i in 0..1200 {
         dbg!(i);
         dbg!(world.training_run(&[], &[1.0]));
         println!("{}\n\n", world.get_state());

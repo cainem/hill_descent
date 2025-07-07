@@ -12,10 +12,10 @@ use std::ops::RangeInclusive;
 
 pub use gamete::Gamete;
 pub use locus::Locus;
-use parameters::GlobalConstants;
+pub use parameters::GlobalConstants;
 pub use phenotype::Phenotype;
-use world::World;
-use world::world_function::WorldFunction;
+pub use world::World;
+pub use world::world_function::WorldFunction;
 
 // this will take a list of parameters and return a world
 pub fn setup_world(
