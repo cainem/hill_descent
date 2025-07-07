@@ -6,36 +6,51 @@ impl Regions {
     /// Calculation is based on PDD section 4.2.4:
     /// P_i = P * (1/F_i) / sum_over_j(1/F_j)
     /// where P is total target population_size, F_i is min_score in region i.
+    ///
+    /// To prevent floating-point overflows when a `min_score` is extremely small,
+    /// the inverse fitness is capped at a large but finite value if it would otherwise
+    /// be infinite.
+    ///
     /// Regions with no valid positive min_score, or if the sum of inverse fitnesses is not positive,
     /// will have their carrying capacity set to 0.
     pub(super) fn update_carrying_capacities(&mut self) {
         let mut sum_inverse_min_fitness = 0.0;
-        let mut regions_with_valid_scores = Vec::new();
 
-        for (key, region) in self.regions.iter() {
+        // First pass to calculate the sum of inverse fitnesses.
+        for (_, region) in self.regions.iter() {
             if let Some(min_score) = region.min_score() {
                 if min_score > 0.0 {
-                    sum_inverse_min_fitness += 1.0 / min_score;
-                    regions_with_valid_scores.push(key.clone());
+                    let mut inverse_fitness = 1.0 / min_score;
+                    if inverse_fitness.is_infinite() {
+                        // If inverse fitness is infinite (due to a very small min_score),
+                        // cap it to a large but finite number to avoid NaN calculations.
+                        inverse_fitness = f64::MAX / 10.0;
+                    }
+                    sum_inverse_min_fitness += inverse_fitness;
                 }
             }
         }
 
         let total_population_size = self.population_size;
 
-        for (_key, region) in self.regions_mut().iter_mut() {
+        // Second pass to set the carrying capacity for each region.
+        for (_, region) in self.regions_mut().iter_mut() {
+            let mut capacity = 0;
             if sum_inverse_min_fitness > 0.0 {
                 if let Some(min_score) = region.min_score() {
                     if min_score > 0.0 {
-                        let capacity_float = total_population_size as f64 * (1.0 / min_score)
-                            / sum_inverse_min_fitness;
-                        region.set_carrying_capacity(Some(capacity_float.floor() as usize));
-                        continue;
+                        let mut inverse_fitness = 1.0 / min_score;
+                        if inverse_fitness.is_infinite() {
+                            inverse_fitness = f64::MAX / 10.0;
+                        }
+                        // The division should now be safe from producing NaN.
+                        let capacity_float = total_population_size as f64
+                            * (inverse_fitness / sum_inverse_min_fitness);
+                        capacity = capacity_float.floor() as usize;
                     }
                 }
             }
-            // Default to 0 if no valid score for this region, or sum_inverse_min_fitness is not positive
-            region.set_carrying_capacity(Some(0));
+            region.set_carrying_capacity(Some(capacity));
         }
     }
 }
