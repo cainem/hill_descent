@@ -6,8 +6,8 @@ impl Organism {
     ///
     /// This method executes the organism's phenotype using the specified world function
     /// and inputs, and updates the organism's score based on the outputs compared to known outputs.
-    /// The score is calculated as the inverse of the sum of squared errors between the
-    /// function's output and the known outputs, plus a small constant `E0` to prevent division by zero.
+    /// The score is calculated as the sum of squared errors between the
+    /// function's output and the known outputs, plus a small constant `E0` to prevent the score from being zero.
     ///
     /// # Panics
     ///
@@ -39,7 +39,7 @@ impl Organism {
             .map(|(a, b)| (a - b).powi(2))
             .sum();
 
-        let score = 1.0 / (sum_of_squared_errors + E0);
+        let score = sum_of_squared_errors + E0;
         self.set_score(Some(score));
     }
 }
@@ -83,7 +83,7 @@ mod tests {
             output_values: vec![1.0, 0.0], // These will produce a known error
         };
         // Sum of squared errors = (1.0 - 0.5)^2 + (0.0 - 0.5)^2 = 0.25 + 0.25 = 0.5
-        let expected_score = 1.0 / (0.5 + E0);
+        let expected_score = 0.5 + E0;
 
         // Act
         organism.run(&test_fn, &inputs, &known_outputs);
@@ -102,7 +102,7 @@ mod tests {
             output_values: vec![1.0], // Perfect match
         };
         // Sum of squared errors = 0.0
-        let expected_score = 1.0 / E0;
+        let expected_score = E0;
 
         // Act
         organism.run(&test_fn, &inputs, &known_outputs);

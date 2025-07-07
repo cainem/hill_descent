@@ -1,7 +1,7 @@
 use crate::world::{World, organisms::Organism};
 
 impl World {
-    /// Applies one training epoch and returns the organism with the highest fitness score.
+    /// Applies one training epoch and returns the organism with the lowest fitness score (best fit).
     ///
     /// The function will panic if the training data/outputs slices are invalid. See
     /// `validate_training_sets` for validation rules.
@@ -45,7 +45,7 @@ mod tests {
     }
 
     #[test]
-    fn given_valid_data_when_get_best_then_returns_highest_score() {
+    fn given_valid_data_when_get_best_then_returns_lowest_score() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(5, 10);
         let mut world = World::new(&bounds, gc, Box::new(MockFn));

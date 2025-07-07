@@ -20,11 +20,11 @@ impl World {
         self.regions
             .update(&mut self.organisms, &mut self.dimensions);
 
-        // Return the best (highest) fitness score in the population for monitoring.
+        // Return the best (lowest) fitness score in the population for monitoring.
         self.organisms
             .iter()
             .filter_map(|o| o.score())
-            .fold(0.0, f64::max)
+            .fold(f64::MAX, f64::min)
     }
 }
 
@@ -92,7 +92,7 @@ mod tests {
         let best_score = world.training_run(&inputs, &known_outputs);
 
         // Assert
-        let expected = 1.0 / E0;
+        let expected = E0;
         assert!((best_score - expected).abs() < f64::EPSILON);
     }
 }

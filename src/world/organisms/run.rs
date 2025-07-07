@@ -44,7 +44,7 @@ mod tests {
             output_values: vec![1.0, 0.0], // These will produce a known error
         };
         // Sum of squared errors = (1.0 - 0.5)^2 + (0.0 - 0.5)^2 = 0.25 + 0.25 = 0.5
-        let expected_score = 1.0 / (0.5 + E0);
+        let expected_score = 0.5 + E0;
 
         // Act
         organisms.run(&test_fn, &inputs, &known_outputs);
