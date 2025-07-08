@@ -4,10 +4,13 @@ use crate::world::{organisms::Organism, world_function::WorldFunction};
 impl Organism {
     /// Runs the organism's phenotype with the provided function and inputs.
     ///
-    /// This method executes the organism's phenotype using the specified world function
-    /// and inputs, and updates the organism's score based on the outputs compared to known outputs.
-    /// The score is calculated as the sum of squared errors between the
-    /// function's output and the known outputs, plus a small constant `E0` to prevent the score from being zero.
+    /// Behaviour depends on `known_outputs`:
+    /// 1. **Supervised mode** – when `known_outputs` is **non-empty** the score is the
+    ///    sum-of-squared-errors between the world-function outputs and the `known_outputs`, plus `E0`.
+    /// 2. **Objective-function mode** – when `known_outputs` is **empty** the world function is assumed
+    ///    to return a single scalar that is to be *minimised*. The first element of the output vector
+    ///    is taken directly as the fitness (again with `E0` added). This lets callers minimise an
+    ///    arbitrary n-dimensional function without knowing its true minimum.
     ///
     /// # Panics
     ///
@@ -24,22 +27,33 @@ impl Organism {
             "output must only contain finite numbers"
         );
 
-        if outputs.len() != known_outputs.len() {
-            panic!(
-                "The number of outputs ({}) must match the number of known outputs ({}).",
-                outputs.len(),
-                known_outputs.len()
-            );
-        }
+        // Determine the fitness score depending on the scoring mode.
+        let score = if known_outputs.is_empty() {
+            // Objective-function mode.
+            if outputs.is_empty() {
+                panic!(
+                    "World function returned no outputs, cannot evaluate objective-function mode."
+                );
+            }
+            outputs[0] + E0
+        } else {
+            // Supervised mode – minimise squared error to known outputs.
+            if outputs.len() != known_outputs.len() {
+                panic!(
+                    "The number of outputs ({}) must match the number of known outputs ({}).",
+                    outputs.len(),
+                    known_outputs.len()
+                );
+            }
 
-        // Evaluate outputs against known outputs to determine the fitness.
-        let sum_of_squared_errors: f64 = outputs
-            .iter()
-            .zip(known_outputs.iter())
-            .map(|(a, b)| (a - b).powi(2))
-            .sum();
+            outputs
+                .iter()
+                .zip(known_outputs.iter())
+                .map(|(a, b)| (a - b).powi(2))
+                .sum::<f64>()
+                + E0
+        };
 
-        let score = sum_of_squared_errors + E0;
         self.set_score(Some(score));
     }
 }
@@ -126,5 +140,30 @@ mod tests {
 
         // Act & Assert
         organism.run(&test_fn, &inputs, &known_outputs);
+    }
+
+    #[test]
+    fn given_empty_known_outputs_when_run_then_score_is_first_output_plus_e0() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0, 2.0];
+        let test_fn = TestFn {
+            output_values: vec![2.5],
+        };
+        let expected = 2.5 + E0;
+        organism.run(&test_fn, &inputs, &[]);
+        assert_eq!(organism.score(), Some(expected));
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "World function returned no outputs, cannot evaluate objective-function mode."
+    )]
+    fn given_empty_known_outputs_and_no_outputs_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![0.0];
+        let test_fn = TestFn {
+            output_values: vec![],
+        };
+        organism.run(&test_fn, &inputs, &[]);
     }
 }

@@ -19,8 +19,6 @@ impl WorldFunction for Quadratic {
 
         let value = phenotype_expressed_values[0];
 
-        //dbg!(value);
-
         let mut score = ((value + 13.0) * (value + 13.0) * 2.0) + 1.0;
 
         if score.is_infinite() && score.is_sign_negative() {
@@ -29,8 +27,6 @@ impl WorldFunction for Quadratic {
         if score.is_infinite() {
             score = f64::MIN
         }
-
-        //dbg!(score);
 
         vec![score]
     }
@@ -47,11 +43,12 @@ pub fn execute() {
 
     for i in 0..1200 {
         dbg!(i);
-        dbg!(world.training_run(&[], &[1.0]));
+        // Objective-function mode: no known outputs
+        dbg!(world.training_run(&[], &[]));
         println!("{}\n\n", world.get_state());
     }
 
-    let best_organism = world.get_best_organism(&[&[0.0]], &[&[1.0]]);
+    let best_organism = world.get_best_organism(&[&[]], &[&[]]);
 
     dbg!(best_organism.phenotype().expression_problem_values());
 }

@@ -44,8 +44,8 @@ pub fn execute() {
 
     // Run for a number of epochs to allow the system to find a minimum.
     for i in 0..2000 {
-        // The known value for the score is the global minimum of Himmelblau's function, which is 0.
-        let current_best = world.training_run(&[], &[0.0]);
+        // Objective-function mode: no known outputs
+        let current_best = world.training_run(&[], &[]);
         if current_best < best_score {
             best_score = current_best;
         }
