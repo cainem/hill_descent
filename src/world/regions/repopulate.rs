@@ -68,6 +68,6 @@ mod tests {
         regions.repopulate(&mut rng, &mut offspring);
 
         // deficit requested was 3 but only 2 parents available; expect at least 2 offspring
-        assert!(offspring.count() >= 2);
+        assert!(offspring.len() >= 2);
     }
 }

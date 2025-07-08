@@ -34,11 +34,6 @@ impl Region {
         self.organisms.len()
     }
 
-    // Optional: A way to get a slice of the organisms if needed for read-only access
-    pub fn get_organisms(&self) -> &[Rc<Organism>] {
-        &self.organisms
-    }
-
     /// Removes all organisms from the region.
     pub fn clear_organisms(&mut self) {
         self.organisms.clear();
@@ -47,6 +42,11 @@ impl Region {
     /// Returns true if this region currently has no organisms.
     pub fn is_empty(&self) -> bool {
         self.organisms.is_empty()
+    }
+
+    #[cfg(test)]
+    pub fn organisms(&self) -> &[Rc<Organism>] {
+        &self.organisms
     }
 
     // Setter for carrying capacity

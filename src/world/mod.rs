@@ -10,15 +10,15 @@ use world_function::WorldFunction;
 
 const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 
-pub mod dimensions;
-pub mod get_best_organism;
-pub mod get_state;
-pub mod organisms;
-pub mod regions;
-pub mod remove_dead;
-pub mod run_epoch;
-pub mod training_run;
-pub mod validate_training_sets;
+mod dimensions;
+mod get_best_organism;
+mod get_state;
+mod organisms;
+mod regions;
+mod remove_dead;
+mod run_epoch;
+mod training_run;
+mod validate_training_sets;
 pub mod world_function;
 
 // Top-level simulation container holding dimensions, organisms, regions, RNG, and the evaluation function.
@@ -123,7 +123,7 @@ mod tests {
 
         let world = World::new(&bounds, gc, world_fn);
 
-        assert_eq!(world.organisms.count(), 10);
+        assert_eq!(world.organisms.len(), 10);
         assert_eq!(gc.population_size(), 10);
         assert_eq!(gc.max_regions(), 100);
 

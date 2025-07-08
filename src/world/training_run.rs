@@ -67,7 +67,7 @@ mod tests {
                 .all(|o| o.score().unwrap_or(0.0) > 0.0),
             "All organisms should have positive scores"
         );
-        assert!(world.organisms.count() > 0);
+        assert!(world.organisms.len() > 0);
     }
 
     // given_perfect_match_when_training_run_then_best_score_equals_max

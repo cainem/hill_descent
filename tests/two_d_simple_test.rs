@@ -61,5 +61,8 @@ pub fn execute() {
 
     // The goal is to get the score very close to the global minimum of 0.
     // A tolerance of 0.01 should be achievable.
-    assert!(best_score < 0.01, "Final score {best_score} was not close enough to 0.0");
+    assert!(
+        best_score < 0.01,
+        "Final score {best_score} was not close enough to 0.0"
+    );
 }

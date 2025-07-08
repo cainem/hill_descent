@@ -59,7 +59,7 @@ mod tests {
         let mut world = World::new(&default_bounds(), gc, Box::new(DummyFn));
         let region_count_before = world.regions.regions().len();
         world.remove_dead();
-        assert_eq!(world.organisms.count(), 3);
+        assert_eq!(world.organisms.len(), 3);
         assert_eq!(world.regions.regions().len(), region_count_before);
     }
 
@@ -71,14 +71,14 @@ mod tests {
         it.next().unwrap().mark_dead();
         it.next().unwrap().mark_dead();
         world.remove_dead();
-        assert_eq!(world.organisms.count(), 2);
+        assert_eq!(world.organisms.len(), 2);
         assert!(world.organisms.iter().all(|o| !o.is_dead()));
         assert!(
             world
                 .regions
                 .regions()
                 .values()
-                .all(|r| r.get_organisms().iter().all(|o| !o.is_dead()))
+                .all(|r| r.organisms().iter().all(|o| !o.is_dead()))
         );
     }
 
@@ -91,18 +91,18 @@ mod tests {
         }
         // Also mark the Rc clones stored in regions (they are distinct instances)
         for region in world.regions.regions().values() {
-            for o in region.get_organisms() {
+            for o in region.organisms() {
                 o.mark_dead();
             }
         }
         world.remove_dead();
-        assert_eq!(world.organisms.count(), 0);
+        assert_eq!(world.organisms.len(), 0);
         assert!(
             world
                 .regions
                 .regions()
                 .values()
-                .all(|r| r.get_organisms().iter().all(|o| o.is_dead()))
+                .all(|r| r.organisms().iter().all(|o| o.is_dead()))
         );
     }
 
@@ -115,7 +115,7 @@ mod tests {
         ]);
         organisms.iter().next().unwrap().mark_dead();
         organisms.retain_live();
-        assert_eq!(organisms.count(), 1);
+        assert_eq!(organisms.len(), 1);
         assert!(!organisms.iter().next().unwrap().is_dead());
     }
 
@@ -131,6 +131,6 @@ mod tests {
         region.add_phenotype(Rc::clone(&dead));
         region.retain_live();
         assert_eq!(region.organism_count(), 1);
-        assert!(Rc::ptr_eq(&region.get_organisms()[0], &live));
+        assert!(Rc::ptr_eq(&region.organisms()[0], &live));
     }
 }

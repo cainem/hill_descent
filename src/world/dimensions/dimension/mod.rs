@@ -1,4 +1,4 @@
-use std::ops::{Range, RangeInclusive};
+use std::ops::RangeInclusive;
 
 pub mod expand_bounds;
 pub mod get_interval;
@@ -32,10 +32,4 @@ impl Dimension {
         // Number of intervals is 2^d, where d is the number of divisions.
         2_usize.pow(self.number_of_divisions as u32)
     }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum IntervalType {
-    Standard(Range<f64>),
-    EndOfRange(RangeInclusive<f64>),
 }

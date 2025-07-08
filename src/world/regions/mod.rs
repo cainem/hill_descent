@@ -43,10 +43,6 @@ impl Regions {
         }
     }
 
-    pub fn get_region(&self, key: &Vec<usize>) -> Option<&Region> {
-        self.regions.get(key)
-    }
-
     pub fn regions(&self) -> &BTreeMap<Vec<usize>, Region> {
         &self.regions
     }

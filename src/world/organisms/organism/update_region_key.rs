@@ -1,6 +1,5 @@
-use crate::world::dimensions::Dimensions;
-use crate::world::dimensions::calculate_dimensions_key::{
-    CalculateDimensionsKeyResult, calculate_dimensions_key,
+use crate::world::dimensions::{
+    CalculateDimensionsKeyResult, Dimensions, calculate_dimensions_key,
 };
 use crate::world::organisms::organism::Organism;
 
@@ -30,8 +29,6 @@ impl Organism {
         &self,
         dimensions_container: &Dimensions,
     ) -> OrganismUpdateRegionKeyResult {
-        // System parameters are the first NUM_SYSTEM_PARAMETERS values in `expressed`.
-        // The remaining values are for the problem's dimensions.
         let problem_expressed_values = self.phenotype().expression_problem_values();
         let actual_dimensions = dimensions_container.get_dimensions();
 
@@ -43,7 +40,7 @@ impl Organism {
             CalculateDimensionsKeyResult::Failure {
                 dimension_index, ..
             } => {
-                self.set_region_key(None); // Clear previous key on failure
+                self.set_region_key(None);
                 OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index)
             }
         }

@@ -153,7 +153,7 @@ mod tests {
         let mut rng = StepRng::new(0, 1);
         let _ = region.reproduce(1, &mut rng);
         // After reproduction, organisms slice is sorted; index 0 should be older
-        let first_age = region.get_organisms()[0].age();
+        let first_age = region.organisms()[0].age();
         assert_eq!(first_age, 10);
     }
 }

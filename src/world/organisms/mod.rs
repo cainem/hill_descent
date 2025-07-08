@@ -1,7 +1,7 @@
 pub mod generate_random_phenotypes;
 pub mod increment_ages;
 pub mod new;
-pub mod run;
+
 pub mod run_all;
 pub mod update_all_region_keys;
 
@@ -26,18 +26,14 @@ impl Organisms {
         self.organisms.iter()
     }
 
-    // Note: no mutable iterator needed since interior mutability
-    // pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Rc<Organism>> { ... }
-
     /// Returns the number of organisms.
-    pub fn count(&self) -> usize {
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
         self.organisms.len()
     }
 
-    // This was moved from the #[cfg(test)] block to be generally available
-    pub fn get_organisms(&self) -> &Vec<Rc<Organism>> {
-        &self.organisms
-    }
+    // Note: no mutable iterator needed since interior mutability
+    // pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Rc<Organism>> { ... }
 
     /// Removes all organisms that have been marked as dead.
     ///

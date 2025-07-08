@@ -1,10 +1,9 @@
-use crate::world::dimensions::dimension::Dimension;
-
 pub mod calculate_dimensions_key;
 pub mod dimension;
 pub mod new;
 
 pub use calculate_dimensions_key::{CalculateDimensionsKeyResult, calculate_dimensions_key};
+pub use dimension::Dimension;
 
 #[derive(Debug, Clone)]
 // Holds the spatial dimensions (axes) of the world along with bookkeeping data.
