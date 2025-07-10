@@ -1,5 +1,3 @@
-#[cfg(unix)]
-use criterion::profiler::{Output, PProfProfiler};
 use criterion::{Criterion, criterion_group, criterion_main};
 use hill_descent::{
     parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
@@ -43,20 +41,5 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
     });
 }
 
-// Use pprof-based flamegraph on Unix-like systems.
-#[cfg(unix)]
-fn criterion_config() -> Criterion {
-    Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph))
-}
-
-#[cfg(unix)]
-criterion_group! {
-    name = benches;
-    config = criterion_config();
-    targets = hill_descent_100d_benchmark
-}
-
-// Fallback for non-Unix (e.g. Windows): run the benchmark without profiling.
-#[cfg(not(unix))]
 criterion_group!(benches, hill_descent_100d_benchmark);
 criterion_main!(benches);

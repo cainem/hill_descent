@@ -15,9 +15,9 @@ unused = "warn"
 [dev-dependencies]
 criterion = "0.5"
 
-[target.'cfg(unix)'.dev-dependencies]
-pprof = { version = "0.13", features = ["flamegraph", "criterion"] }
-
 [[bench]]
 name = "hundred_parameter_benchmark"
 harness = false
+
+[profile.bench]
+debug = true
