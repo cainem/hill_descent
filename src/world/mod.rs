@@ -17,6 +17,7 @@ mod organisms;
 mod regions;
 mod remove_dead;
 mod run_epoch;
+pub mod single_valued_function;
 mod training_run;
 mod validate_training_sets;
 pub mod world_function;

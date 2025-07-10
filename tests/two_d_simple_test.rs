@@ -1,4 +1,6 @@
-use hill_descent::{GlobalConstants, WorldFunction, setup_world};
+use hill_descent::{
+    GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+};
 use std::ops::RangeInclusive;
 
 // Himmelblau's function is a standard test function for optimization algorithms.
@@ -9,8 +11,8 @@ use std::ops::RangeInclusive;
 #[derive(Debug)]
 struct Himmelblau;
 
-impl WorldFunction for Himmelblau {
-    fn run(&self, phenotype_expressed_values: &[f64], _inputs: &[f64]) -> Vec<f64> {
+impl SingleValuedFunction for Himmelblau {
+    fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
         // This function is 2-dimensional.
         assert_eq!(2, phenotype_expressed_values.len());
 
@@ -20,9 +22,7 @@ impl WorldFunction for Himmelblau {
         // f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
         let term1 = (x.powi(2) + y - 11.0).powi(2);
         let term2 = (x + y.powi(2) - 7.0).powi(2);
-        let score = term1 + term2;
-
-        vec![score]
+        term1 + term2
     }
 }
 
@@ -43,7 +43,7 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..2000 {
+    for i in 0..200 {
         // Objective-function mode: no known outputs
         let current_best = world.training_run(&[], &[]);
         if current_best < best_score {

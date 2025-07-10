@@ -1,14 +1,14 @@
 use std::ops::RangeInclusive;
 
 use hill_descent::{
-    parameters::GlobalConstants, setup_world, world::world_function::WorldFunction,
+    parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
 };
 
 #[derive(Debug)]
 pub struct Quadratic;
 
-impl WorldFunction for Quadratic {
-    fn run(&self, phenotype_expressed_values: &[f64], _inputs: &[f64]) -> Vec<f64> {
+impl SingleValuedFunction for Quadratic {
+    fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
         // there should be no input.
         // There is only one phenotype_expressed_value
         // return that operated on by the function
@@ -28,7 +28,7 @@ impl WorldFunction for Quadratic {
             score = f64::MIN
         }
 
-        vec![score]
+        score
     }
 }
 
