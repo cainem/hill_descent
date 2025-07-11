@@ -11,7 +11,7 @@ impl World {
         self.regions.repopulate(&mut self.rng, &mut offspring);
         self.organisms.extend(offspring.into_inner());
 
-        // 4. Age organisms and cull those exceeding their max age
+        // 3. Age organisms and cull those exceeding their max age
         self.organisms.increment_ages();
         self.remove_dead();
 

@@ -13,6 +13,7 @@ const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
 mod dimensions;
 mod get_best_organism;
 mod get_state;
+mod get_state_for_web;
 mod organisms;
 mod regions;
 mod remove_dead;

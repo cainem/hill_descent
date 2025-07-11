@@ -1,51 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Hill Descent – WASM smoke-test</title>
-  </head>
-  <body>
-    <h1>Hill Descent WASM demo</h1>
-    <pre id="output">loading…</pre>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hill Descent Visualization</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Hill Descent Visualization</h1>
+    <div id="visualization"></div>
+    <div id="tooltip" class="tooltip" style="opacity:0;"></div>
 
-    <script type="module">
-      import init, { WasmWorld } from "/pkg/hill_descent.js";
-
-      async function run() {
-        await init();
-        const output = document.getElementById("output");
-        output.textContent = "Initializing world...";
-
-        // Create the world. This might take a moment.
-        const world = WasmWorld.new();
-        output.textContent = "World initialized. Starting simulation...";
-
-        let bestScore = Infinity;
-        const numEpochs = 200;
-
-        for (let i = 0; i < numEpochs; i++) {
-          const currentBest = world.training_run();
-          if (currentBest < bestScore) {
-            bestScore = currentBest;
-          }
-
-          // Update the UI periodically to show progress without overwhelming the browser.
-          if (i % 10 === 0 || i === numEpochs - 1) {
-            output.textContent = `Epoch ${i + 1}/${numEpochs}: Best score so far: ${bestScore.toExponential(4)}`;
-            // A small timeout to allow the browser to repaint the UI.
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
-        }
-
-        output.textContent += `\n\nFinal best score: ${bestScore}`;
-        if (bestScore < 0.01) {
-            output.textContent += "\nTest Passed: Score is close to 0.";
-        } else {
-            output.textContent += `\nTest Failed: Score ${bestScore} was not close enough to 0.01.`;
-        }
-      }
-
-      run();
-    </script>
-  </body>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script type="module" src="main.js"></script>
+</body>
 </html>
