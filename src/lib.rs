@@ -5,6 +5,9 @@ pub mod parameters;
 pub mod phenotype;
 pub mod world;
 
+#[cfg(target_arch = "wasm32")]
+pub mod wasm_interface;
+
 pub const NUM_SYSTEM_PARAMETERS: usize = 7;
 pub const E0: f64 = f64::MIN_POSITIVE;
 
