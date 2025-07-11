@@ -99,10 +99,14 @@ impl super::World {
 
                 for (i, &dim_idx) in key.iter().enumerate() {
                     let dim = &dims[i];
-                    let div_size = (*dim.range().end() - *dim.range().start())
-                        / dim.number_of_divisions() as f64;
+                    let intervals = (dim.number_of_divisions() + 1) as f64;
+                    let div_size = (*dim.range().end() - *dim.range().start()) / intervals;
                     let start = *dim.range().start() + dim_idx as f64 * div_size;
-                    let end = start + div_size;
+                    let mut end = start + div_size;
+                    // Ensure exact upper bound on last interval to avoid floating precision gaps
+                    if dim_idx + 1 == intervals as usize {
+                        end = *dim.range().end();
+                    }
                     if i == 0 {
                         bounds_x = (start, end);
                     } else {
@@ -124,6 +128,31 @@ impl super::World {
         if max_score_global < min_score_global {
             min_score_global = 0.0;
             max_score_global = 0.0;
+        }
+
+        // Debug assertion: every organism must belong to at least one region
+        for org in &organisms {
+            let in_region = regions.iter().any(|r| {
+                let (x0, x1) = r.bounds.x;
+                let (y0, y1) = r.bounds.y;
+                org.params.x >= x0 && org.params.x <= x1 && org.params.y >= y0 && org.params.y <= y1
+            });
+            if !in_region {
+                eprintln!("Organism outside any region: {org:?}");
+                eprintln!("Regions: {regions:?}");
+                eprintln!("Dimension 0 range: {:?}", dims[0].range());
+                eprintln!("Dimension 1 range: {:?}", dims[1].range());
+
+                if !in_region {
+                    panic!(
+                        "Organism {:?} outside any region. dims0 {:?} dims1 {:?}. Regions: {:?}",
+                        org,
+                        dims[0].range(),
+                        dims[1].range(),
+                        regions
+                    );
+                }
+            }
         }
 
         let state = WorldState {

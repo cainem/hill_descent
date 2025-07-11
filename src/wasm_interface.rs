@@ -40,6 +40,9 @@ impl WasmWorld {
         ];
         let global_constants = GlobalConstants::new(100, 10);
 
+        #[cfg(feature = "wasm")]
+        console_error_panic_hook::set_once();
+
         let world = World::new(&param_range, global_constants, Box::new(Himmelblau));
 
         WasmWorld { world }
