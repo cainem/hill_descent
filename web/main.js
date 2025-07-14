@@ -58,11 +58,32 @@ async function main() {
     function updateVisualization() {
         const state = JSON.parse(world.get_state_for_web());
         console.log("World state:", state);
-        // Update legend
-        legend.html(`Round: ${round}<br/>Bounds: x [${state.world_bounds.x[0].toFixed(2)}, ${state.world_bounds.x[1].toFixed(2)}], y [${state.world_bounds.y[0].toFixed(2)}, ${state.world_bounds.y[1].toFixed(2)}]`);
-        // Update scales to current world bounds
-        xScale.domain(state.world_bounds.x);
-        yScale.domain(state.world_bounds.y);
+        // Calculate display (occupied) bounds based on populated regions; fallback to world bounds if none
+        let displayBounds = {
+            x: [...state.world_bounds.x],
+            y: [...state.world_bounds.y]
+        };
+        if (state.regions && state.regions.length > 0) {
+            const minX = d3.min(state.regions, r => r.bounds.x[0]);
+            const maxX = d3.max(state.regions, r => r.bounds.x[1]);
+            const minY = d3.min(state.regions, r => r.bounds.y[0]);
+            const maxY = d3.max(state.regions, r => r.bounds.y[1]);
+            // Only update if calculated bounds are valid numbers
+            if ([minX, maxX, minY, maxY].every(v => typeof v === 'number' && !Number.isNaN(v))) {
+                displayBounds = { x: [minX, maxX], y: [minY, maxY] };
+            }
+        }
+
+        // Update legend showing both world & displayed bounds
+        legend.html(`Round: ${round}` +
+            `<br/>World bounds: x [${state.world_bounds.x[0].toFixed(2)}, ${state.world_bounds.x[1].toFixed(2)}], ` +
+            `y [${state.world_bounds.y[0].toFixed(2)}, ${state.world_bounds.y[1].toFixed(2)}]` +
+            `<br/>Displayed bounds: x [${displayBounds.x[0].toFixed(2)}, ${displayBounds.x[1].toFixed(2)}], ` +
+            `y [${displayBounds.y[0].toFixed(2)}, ${displayBounds.y[1].toFixed(2)}]`);
+
+        // Update scales to display bounds (auto-zoom)
+        xScale.domain(displayBounds.x);
+        yScale.domain(displayBounds.y);
 
 
         // Assertion: Check if every organism is within a provided region.
