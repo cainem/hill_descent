@@ -1,5 +1,11 @@
 # Web Visualization Product Definition Document (PDD)
 
+## Visualization Requirements
+
+- The visualization should make effective use of the available screen space.
+- Each distinct region should be clearly demarcated with a border.
+- The carrying capacity of each region should be displayed as text within that region.
+
 ## 1. Overview
 
 This document outlines the requirements for a web-based visualization of the `hill_descent` genetic algorithm simulation. The goal is to provide a real-time graphical representation of the world, its regions, and the organisms within it, running in a standard web browser. The visualization will be built using HTML, CSS, and JavaScript, with the D3.js library for rendering SVG elements.

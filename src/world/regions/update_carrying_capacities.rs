@@ -36,6 +36,7 @@ impl Regions {
         // Second pass to set the carrying capacity for each region.
         for (_, region) in self.regions_mut().iter_mut() {
             let mut capacity = 0;
+
             if sum_inverse_min_fitness > 0.0 {
                 if let Some(min_score) = region.min_score() {
                     if min_score > 0.0 {

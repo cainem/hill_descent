@@ -21,7 +21,8 @@ struct RegionBoundsState {
 }
 
 #[derive(Serialize, Debug)]
-struct RegionState {
+pub struct RegionState {
+    pub carrying_capacity: usize,
     bounds: RegionBoundsState,
     min_score: Option<f64>,
 }
@@ -120,6 +121,7 @@ impl super::World {
                         y: bounds_y,
                     },
                     min_score: region.min_score(),
+                    carrying_capacity: region.carrying_capacity().unwrap_or(0),
                 }
             })
             .collect();

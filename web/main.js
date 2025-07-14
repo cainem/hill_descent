@@ -49,6 +49,7 @@ async function main() {
     function updateVisualization() {
         const state = JSON.parse(world.get_state_for_web());
 
+
         // Assertion: Check if every organism is within a provided region.
         state.organisms.forEach(organism => {
             const is_in_a_region = state.regions.some(region => {
@@ -73,9 +74,11 @@ async function main() {
             .merge(regions)
             .attr("x", d => xScale(d.bounds.x[0]))
             .attr("y", d => yScale(d.bounds.y[1]))
-            .attr("width", d => xScale(d.bounds.x[1]) - xScale(d.bounds.x[0]))
-            .attr("height", d => yScale(d.bounds.y[0]) - yScale(d.bounds.y[1]))
-            .attr("fill", d => d.min_score === null ? "rgba(200, 200, 200, 0.5)" : colorScale(d.min_score))
+            .attr('width', d => xScale(d.bounds.x[1]) - xScale(d.bounds.x[0]))
+            .attr('height', d => yScale(d.bounds.y[0]) - yScale(d.bounds.y[1]))
+            .style('fill', d => d.min_score === null ? "rgba(200, 200, 200, 0.5)" : colorScale(d.min_score))
+            .style('stroke', 'black') // Add black border to regions
+            .style('stroke-width', 1)
             .on("mouseover", (event, d) => {
                 tooltip.transition().duration(200).style("opacity", .9);
                 tooltip.html(`Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]<br/>Min Score: ${d.min_score ? d.min_score.toExponential(2) : 'N/A'}`)
@@ -87,6 +90,25 @@ async function main() {
             });
 
         regions.exit().remove();
+
+        // Draw carrying capacity text
+        const regionTexts = svg.selectAll('.region-text')
+            .data(state.regions, d => d.bounds.x[0] + "," + d.bounds.y[0]);
+
+        regionTexts.enter()
+            .append('text')
+            .attr('class', 'region-text')
+            .merge(regionTexts)
+            .attr('x', d => xScale(d.bounds.x[0]) + (xScale(d.bounds.x[1]) - xScale(d.bounds.x[0])) / 2)
+            .attr('y', d => yScale(d.bounds.y[1]) + (yScale(d.bounds.y[0]) - yScale(d.bounds.y[1])) / 2)
+            .attr('dy', '0.35em') // Vertically center
+            .style('text-anchor', 'middle')
+            .style('fill-opacity', 0.5)
+            .style('font-size', '12px')
+            .style('fill', 'white')
+            .text(d => d.carrying_capacity);
+
+        regionTexts.exit().remove();
 
         // Render Organisms
         const organisms = svg.selectAll(".organism")

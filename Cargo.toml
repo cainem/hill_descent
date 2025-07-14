@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-console_error_panic_hook = { version = "0.1", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 rand = { version = "0.8.5", features = ["small_rng"] }
 getrandom = { version = "0.2", features = ["js"] }
