@@ -18,7 +18,7 @@ The pdd.md file holds the product definition file
 - Avoid having files over 40-100 lines of code (excluding tests). Refactor at that point.
 - Mocking data is only needed for tests
 - Never overwrite my .env file without first asking and confirming
-- Each function written should be fully unit tested with the tests existing in a
+- Each function written should be fully unit tested.
 - Tested means that it is to have full statement, branch and condition coverage. This only needs to true in the function to which they relate, full coverage of all code in called functions is not required (this will be assumed to be tested elsewhere)
 - There should be as little mocking used as possible. There is no I/O so the only mocking required is for the PRNG
 - The test names should clearly spell out the desired behaviour and results, they should be in the form given_xxx_when_yyy_then_zzz where xxx are the preconditions, yyy are any conditions and zzz are the results

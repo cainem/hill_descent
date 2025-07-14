@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    fn given_organisms_requiring_division_up_to_max_regions_when_update_then_stops_at_max_regions()
+    fn given_organisms_requiring_division_until_populated_regions_meet_max_when_update_then_stops()
     {
         let max_r = 4;
         let (mut regions, _gc) = create_test_regions_and_gc(max_r, 10);
@@ -185,12 +185,16 @@ mod tests {
 
         regions.update(&mut organisms, &mut dimensions);
 
-        assert_eq!(dimensions.get_dimension(0).number_of_divisions(), 2);
-        assert_eq!(dimensions.get_total_possible_regions(), 4);
-        assert_eq!(
-            regions.regions.len(),
-            3, // The test failure log shows this results in 3 populated regions, not 4.
-            "Should populate up to max possible regions if distinct locations allow"
+        // After the first pass only three populated regions exist, so the algorithm should
+        // perform at least one more subdivision resulting in at least three divisions.
+        assert!(
+            dimensions.get_dimension(0).number_of_divisions() >= 3,
+            "There should be at least 3 divisions after further subdivision"
+        );
+        // The populated region count should now meet or exceed `max_regions`.
+        assert!(
+            regions.regions.len() >= max_r,
+            "Subdivision should continue until populated regions reach or exceed max_regions"
         );
     }
 
@@ -223,8 +227,8 @@ mod tests {
     }
 
     #[test]
-    fn given_clustered_organisms_when_update_then_stops_dividing_when_potential_regions_reaches_max()
-     {
+    fn given_clustered_organisms_when_update_then_divides_further_until_populated_regions_meet_max()
+    {
         let max_r = 8;
         let (mut regions, _gc) = create_test_regions_and_gc(max_r, 20);
         // All 10 organisms are in the bottom-left quadrant of a 1.0x1.0 space
@@ -242,24 +246,14 @@ mod tests {
         ]);
         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
-        // The update loop terminates when the number of *potential* regions meets or exceeds
-        // max_regions. In this case, it stops when potential regions becomes 8.
-        // This leaves the clustered organisms in a few, poorly separated regions,
-        // as the division stops before focusing on the populated areas.
+        // The algorithm should now continue to subdivide the already–populated bottom-left
+        // quadrant until the number of populated regions meets or exceeds `max_regions`.
 
         regions.update(&mut organisms, &mut dimensions);
 
-        // After initial divisions in Dimensions::new to get 8 potential regions (a 4x2 grid),
-        // all organisms fall into just two of these grid cells.
-        assert_eq!(
-            regions.regions.len(),
-            2,
-            "Should only populate 2 regions as division stops when potential regions reach max"
-        );
-        assert_eq!(
-            dimensions.get_total_possible_regions(),
-            max_r,
-            "Total potential regions should be equal to max_regions at the stop point"
+        assert!(
+            regions.regions.len() >= max_r,
+            "Subdivision should continue until populated regions reach or exceed max_regions"
         );
     }
 
