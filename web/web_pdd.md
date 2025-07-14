@@ -39,6 +39,13 @@ The simulation itself will run as a WebAssembly (WASM) module, communicating wit
 *   **Interactivity:**
     *   When a user hovers the mouse over a region rectangle, a tooltip or pop-up should appear, displaying the region's boundaries (e.g., "x: [0.5, 1.0], y: [0.0, 0.5]").
 
+### 2.3. Legend / Metadata Display
+
+*   A legend shall be rendered below the world grid showing:
+    *   The current simulation round number (starting at 0 and incrementing each time the user presses **Run Round**).
+    *   The current world bounds as reported by the backend, formatted as `x [min, max], y [min, max]`.
+    *   The legend must update every time the visualization is refreshed.
+
 ### 2.4. Organism Rendering
 
 *   **Representation:** Each organism will be rendered as a black SVG `<circle>` (dot) on the world plane.

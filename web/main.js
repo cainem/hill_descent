@@ -4,6 +4,7 @@ async function main() {
     // 1. Initialize WASM
     await init();
     const world = WasmWorld.new();
+    let round = 0; // Track simulation rounds
 
     // 2. Setup D3.js visualization elements
     const margin = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -17,6 +18,14 @@ async function main() {
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const tooltip = d3.select("#tooltip");
+
+    // Legend div below the visualization
+    const legend = d3.select("body")
+        .append("div")
+        .attr("id", "legend")
+        .style("margin", "10px")
+        .style("font-family", "sans-serif")
+        .style("font-size", "14px");
 
     // Add a background rectangle for the entire world
     svg.append("rect")
@@ -48,6 +57,12 @@ async function main() {
     // 3. Define the rendering function
     function updateVisualization() {
         const state = JSON.parse(world.get_state_for_web());
+        console.log("World state:", state);
+        // Update legend
+        legend.html(`Round: ${round}<br/>Bounds: x [${state.world_bounds.x[0].toFixed(2)}, ${state.world_bounds.x[1].toFixed(2)}], y [${state.world_bounds.y[0].toFixed(2)}, ${state.world_bounds.y[1].toFixed(2)}]`);
+        // Update scales to current world bounds
+        xScale.domain(state.world_bounds.x);
+        yScale.domain(state.world_bounds.y);
 
 
         // Assertion: Check if every organism is within a provided region.
@@ -103,9 +118,9 @@ async function main() {
             .attr('y', d => yScale(d.bounds.y[1]) + (yScale(d.bounds.y[0]) - yScale(d.bounds.y[1])) / 2)
             .attr('dy', '0.35em') // Vertically center
             .style('text-anchor', 'middle')
-            .style('fill-opacity', 0.5)
+            .style('fill-opacity', 1.0)
             .style('font-size', '12px')
-            .style('fill', 'white')
+            .style('fill', 'black')
             .text(d => d.carrying_capacity);
 
         regionTexts.exit().remove();
@@ -136,6 +151,7 @@ async function main() {
 
     // 4. Start the simulation loop
     function simulationLoop() {
+        round += 1;
         world.training_run();
         updateVisualization();
     }
@@ -143,8 +159,12 @@ async function main() {
     // Initial render
     updateVisualization(); 
 
-    // Run the simulation loop every second
-    setInterval(simulationLoop, 1000);
+    // Add a button to manually advance the simulation
+    const runButton = d3.select("body")
+        .append("button")
+        .attr("id", "run-button")
+        .text("Run Round")
+        .on("click", simulationLoop);
 }
 
 main();
