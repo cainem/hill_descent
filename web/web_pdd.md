@@ -2,9 +2,9 @@
 
 ## Visualization Requirements
 
-- The visualization should make effective use of the available screen space.
+- The visualization should make effective use of the available screen space, automatically zooming to the area of interest.
 - Each distinct region should be clearly demarcated with a border.
-- The carrying capacity of each region should be displayed as text within that region.
+- Organisms should be clearly visible on top of the regions.
 
 ## 1. Overview
 
@@ -17,13 +17,13 @@ The simulation itself will run as a WebAssembly (WASM) module, communicating wit
 ### 2.1. Simulation Context
 
 *   The simulation will be configured to use a fitness function with two input parameters and one output value. This corresponds to a 2-dimensional world where the "height" or "fitness" is the output.
-*   The visualization will update after each round of the simulation completes.
-*   A delay of approximately 1 second will be introduced between each update to allow for clear observation of the simulation's progress.
+*   The visualization updates after each round. Users can trigger a single round or run rounds continuously.
+*   In continuous mode, a minimal delay (e.g., 10ms) is used between rounds to ensure a smooth animation.
 
 ### 2.2. Visualization Canvas
 
 *   An SVG element will serve as the main canvas for the visualization.
-*   The SVG canvas size should be responsive or large enough to comfortably display the entire world, which is defined by the bounds of the two input parameters.
+*   The SVG canvas size is responsive. The view within the SVG (`viewBox`) will automatically pan and zoom to tightly frame the bounding box of all living organisms, ensuring the active area is always in focus.
 
 ### 2.3. World and Region Rendering
 
@@ -33,6 +33,7 @@ The simulation itself will run as a WebAssembly (WASM) module, communicating wit
     *   Each defined region will be rendered as an SVG `<rect>` (square/rectangle) on the world plane.
     *   The position and size of the rectangle will correspond to the region's boundaries.
     *   The fill color of the rectangle will represent the region's current minimum known height (score), mapped to a color scale.
+    *   Region rectangles are rendered with 50% opacity to ensure that organisms on top are clearly visible.
 *   **Color Scale:**
     *   A continuous color scale from blue (representing the global minimum score observed) through green to red (global maximum score observed) will be used.
     *   This scale will be used to color the region rectangles.
@@ -48,7 +49,8 @@ The simulation itself will run as a WebAssembly (WASM) module, communicating wit
 
 ### 2.4. Organism Rendering
 
-*   **Representation:** Each organism will be rendered as a black SVG `<circle>` (dot) on the world plane.
+*   **Representation:** Each organism will be rendered as an SVG `<circle>`.
+*   **Color:** The fill color of the circle represents the organism's age, mapped to a continuous blue-green-red color scale (blue for young, red for old).
 *   **Position:** The organism's position will be determined by its two non-system parameter values.
 *   **Interactivity:**
     *   When a user hovers the mouse over an organism's circle, a tooltip or pop-up should appear, displaying its non-system parameters and its current age.

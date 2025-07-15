@@ -155,8 +155,8 @@ async function main() {
             console.assert(is_in_a_region, `Organism found outside of any region!`, { organism });
         });
 
-        const colorScale = d3.scaleSequential(d3.interpolateRdYlBu)
-            .domain([state.score_range.max, state.score_range.min]); // Inverted to make blue=low, red=high
+        const colorScale = d3.scaleSequential(d3.interpolateRgbBasis(["blue", "green", "red"]))
+            .domain([state.score_range.min, state.score_range.max]);
 
         // Render Regions
         const regions = svg.selectAll(".region")
@@ -169,7 +169,8 @@ async function main() {
             .attr("y", d => yScale(d.bounds.y[1]))
             .attr('width', d => xScale(d.bounds.x[1]) - xScale(d.bounds.x[0]))
             .attr('height', d => yScale(d.bounds.y[0]) - yScale(d.bounds.y[1]))
-            .style('fill', d => d.min_score === null ? "rgba(200, 200, 200, 0.5)" : colorScale(d.min_score))
+            .style('fill', d => d.min_score === null ? "#cccccc" : colorScale(d.min_score))
+            .style('fill-opacity', 0.5)
             .style('stroke', 'black') // Add black border to regions
             .style('stroke-width', 1)
             .on("mouseover", (event, d) => {
