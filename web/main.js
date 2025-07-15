@@ -57,22 +57,46 @@ async function main() {
     // 3. Define the rendering function
     function updateVisualization() {
         const state = JSON.parse(world.get_state_for_web());
-        console.log("World state:", state);
+
         // Calculate display (occupied) bounds based on populated regions; fallback to world bounds if none
         let displayBounds = {
             x: [...state.world_bounds.x],
             y: [...state.world_bounds.y]
         };
-        if (state.regions && state.regions.length > 0) {
-            const minX = d3.min(state.regions, r => r.bounds.x[0]);
-            const maxX = d3.max(state.regions, r => r.bounds.x[1]);
-            const minY = d3.min(state.regions, r => r.bounds.y[0]);
-            const maxY = d3.max(state.regions, r => r.bounds.y[1]);
-            // Only update if calculated bounds are valid numbers
-            if ([minX, maxX, minY, maxY].every(v => typeof v === 'number' && !Number.isNaN(v))) {
-                displayBounds = { x: [minX, maxX], y: [minY, maxY] };
+        // Determine bounds, prioritizing populated regions, then all regions, then organisms
+        {
+            // An 'active' region is one with carrying capacity OR organisms inside it.
+            const activeRegions = (state.regions || []).filter(region => {
+                if (region.carrying_capacity > 0) {
+                    return true;
+                }
+                // Check if any organism is within this region's bounds
+                return (state.organisms || []).some(organism =>
+                    organism.params.x >= region.bounds.x[0] && organism.params.x <= region.bounds.x[1] &&
+                    organism.params.y >= region.bounds.y[0] && organism.params.y <= region.bounds.y[1]
+                );
+            });
+
+            if (activeRegions.length > 0) {
+                // If we have active regions, calculate a bounding box to contain all of them.
+                const allX = activeRegions.flatMap(r => r.bounds.x);
+                const allY = activeRegions.flatMap(r => r.bounds.y);
+                displayBounds.x[0] = d3.min(allX);
+                displayBounds.x[1] = d3.max(allX);
+                displayBounds.y[0] = d3.min(allY);
+                displayBounds.y[1] = d3.max(allY);
+            } else if (state.organisms && state.organisms.length > 0) {
+                // Fallback for the rare case of organisms but no regions: bound the organisms.
+                displayBounds.x[0] = d3.min(state.organisms, o => o.params.x);
+                displayBounds.x[1] = d3.max(state.organisms, o => o.params.x);
+                displayBounds.y[0] = d3.min(state.organisms, o => o.params.y);
+                displayBounds.y[1] = d3.max(state.organisms, o => o.params.y);
             }
+            // If there's nothing, we just keep the default world bounds.
+            // If all else fails, displayBounds remains at world bounds as initialized
         }
+
+
 
         // Update legend showing both world & displayed bounds
         legend.html(`Round: ${round}` +
@@ -80,6 +104,34 @@ async function main() {
             `y [${state.world_bounds.y[0].toFixed(2)}, ${state.world_bounds.y[1].toFixed(2)}]` +
             `<br/>Displayed bounds: x [${displayBounds.x[0].toFixed(2)}, ${displayBounds.x[1].toFixed(2)}], ` +
             `y [${displayBounds.y[0].toFixed(2)}, ${displayBounds.y[1].toFixed(2)}]`);
+
+        // Adjust bounds to maintain square aspect
+        {
+            const xSpan = displayBounds.x[1] - displayBounds.x[0];
+            const ySpan = displayBounds.y[1] - displayBounds.y[0];
+            const maxSpan = Math.max(xSpan, ySpan);
+            const padSpanX = (maxSpan - xSpan) / 2;
+            const padSpanY = (maxSpan - ySpan) / 2;
+            if (padSpanX > 0) {
+                displayBounds.x[0] -= padSpanX;
+                displayBounds.x[1] += padSpanX;
+            }
+            if (padSpanY > 0) {
+                displayBounds.y[0] -= padSpanY;
+                displayBounds.y[1] += padSpanY;
+            }
+
+            // final padding 12%
+            const pad = (min, max) => {
+                const span = max - min;
+                const padVal = span * 0.12 || 1e-3;
+                return [min - padVal, max + padVal];
+            };
+            [displayBounds.x[0], displayBounds.x[1]] = pad(displayBounds.x[0], displayBounds.x[1]);
+            [displayBounds.y[0], displayBounds.y[1]] = pad(displayBounds.y[0], displayBounds.y[1]);
+        }
+
+
 
         // Update scales to display bounds (auto-zoom)
         xScale.domain(displayBounds.x);
@@ -157,6 +209,7 @@ async function main() {
             .merge(organisms)
             .attr("cx", d => xScale(d.params.x))
             .attr("cy", d => yScale(d.params.y))
+            .raise() // ensure circles are on top of region rectangles
             .on("mouseover", (event, d) => {
                 tooltip.transition().duration(200).style("opacity", .9);
                 tooltip.html(`Organism:<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}`)
@@ -186,6 +239,7 @@ async function main() {
         .attr("id", "run-button")
         .text("Run Round")
         .on("click", simulationLoop);
+
 }
 
 main();
