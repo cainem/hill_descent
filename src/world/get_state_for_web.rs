@@ -37,6 +37,7 @@ struct OrganismParamsState {
 struct OrganismState {
     params: OrganismParamsState,
     age: usize,
+    max_age: usize,
 }
 
 #[derive(Serialize, Debug)]
@@ -77,6 +78,7 @@ impl super::World {
                 Some(OrganismState {
                     params,
                     age: o.age(),
+                    max_age: o.phenotype().system_parameters().max_age().round() as usize,
                 })
             })
             .collect();
@@ -212,6 +214,20 @@ mod tests {
         assert!(x_bounds[1].as_f64().unwrap() <= *bounds[0].end());
         assert!(y_bounds[0].as_f64().unwrap() >= *bounds[1].start());
         assert!(y_bounds[1].as_f64().unwrap() <= *bounds[1].end());
+
+        // Check organism fields
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        for org in organisms {
+            assert!(org.get("params").is_some());
+            assert!(org.get("age").is_some());
+            assert!(org.get("max_age").is_some());
+            // max_age should be within its defined bounds [2.0, 10.0].
+            let max_age = org.get("max_age").unwrap().as_f64().unwrap();
+            assert!(
+                (2.0..=10.0).contains(&max_age),
+                "max_age {max_age} is out of bounds"
+            );
+        }
     }
 
     #[test]

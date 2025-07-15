@@ -58,6 +58,11 @@ async function main() {
     function updateVisualization() {
         const state = JSON.parse(world.get_state_for_web());
 
+        const ageColorScale = d3.scaleSequential(d3.interpolateRgbBasis(["blue", "green", "red"]))
+            .domain([0, 1]); // Domain is now age percentage (0 to 1)
+
+
+
         // Calculate display (occupied) bounds based on populated regions; fallback to world bounds if none
         let displayBounds = {
             x: [...state.world_bounds.x],
@@ -205,8 +210,8 @@ async function main() {
         organisms.enter().append("circle")
             .attr("class", "organism")
             .attr("r", 3)
-            .attr("fill", "black")
             .merge(organisms)
+            .attr("fill", d => ageColorScale(d.age / d.max_age))
             .attr("cx", d => xScale(d.params.x))
             .attr("cy", d => yScale(d.params.y))
             .raise() // ensure circles are on top of region rectangles

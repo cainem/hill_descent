@@ -1,3 +1,4 @@
+use crate::parameters::parameter::Parameter;
 use std::ops::RangeInclusive;
 
 /// Enhances a slice of parameter bounds by prepending system-specific parameter bounds.
@@ -16,24 +17,21 @@ use std::ops::RangeInclusive;
 pub fn enhance_parameters(
     existing_parameter_bounds: &[RangeInclusive<f64>],
 ) -> Vec<RangeInclusive<f64>> {
-    let mut system_parameter_bounds = vec![
-        // m1: Probability of ApplyAdjustmentFlag mutating from False to True
-        0.0..=1.0, // m1_prob_false_to_true
-        // m2: Probability of ApplyAdjustmentFlag mutating from True to False
-        0.0..=1.0, // m2_prob_true_to_false
-        // m3: Probability of LocusAdjustment.DoublingOrHalvingFlag mutating
-        0.0..=1.0, // m3_prob_adj_double_halve_flag
-        // m4: Probability of LocusAdjustment.DirectionOfTravel mutating
-        0.0..=1.0, // m4_prob_adj_direction_flag
-        // m5: Probability of LocusValue mutating
-        0.0..=1.0, // m5_prob_locus_value_mutation
-        // max_age: Maximum age of an organism
-        2.0..=10.0, // max_age
-        // crossover_points: Number of crossover points for sexual reproduction
-        1.0..=10.0, // crossover_points
+    let system_params_to_prepend = [
+        Parameter::with_bounds(0.1, 0.0, 1.0), // m1_prob_false_to_true
+        Parameter::with_bounds(0.5, 0.0, 1.0), // m2_prob_true_to_false
+        Parameter::with_bounds(0.001, 0.0, 1.0), // m3_prob_adj_double_halve_flag
+        Parameter::with_bounds(0.001, 0.0, 1.0), // m4_prob_adj_direction_flag
+        Parameter::with_bounds(0.001, 0.0, 1.0), // m5_prob_locus_value_mutation
+        Parameter::with_bounds(5.0, 2.0, 10.0), // max_age
+        Parameter::with_bounds(2.0, 1.0, 10.0), // crossover_points
     ];
 
     // Prepend system parameter bounds to the existing ones
+    let mut system_parameter_bounds: Vec<RangeInclusive<f64>> = system_params_to_prepend
+        .iter()
+        .map(|p| p.bounds().clone())
+        .collect();
     system_parameter_bounds.extend_from_slice(existing_parameter_bounds);
     system_parameter_bounds
 }

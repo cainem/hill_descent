@@ -64,6 +64,7 @@ mod tests {
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::parameters::system_parameters::SystemParameters;
+    use rand::SeedableRng;
     use rand::rngs::mock::StepRng; // For calculating adjustment bounds consistently
 
     // Helper function for simpler test cases, now with bounded adjustment_value.
@@ -196,6 +197,39 @@ mod tests {
             mutated_locus.adjustment().adjustment_value().get(),
             expected_max_adj_val
         );
+    }
+
+    #[test]
+    fn given_locus_with_bounds_when_mutated_repeatedly_then_value_stays_within_bounds() {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(99);
+        let bounds = 10.0..=20.0; // A narrow range for testing
+
+        // Create a Locus where the main value Parameter IS bounded.
+        let initial_value_param = Parameter::with_bounds(15.0, *bounds.start(), *bounds.end());
+
+        // The adjustment value's bounds depend on the locus's value bounds.
+        let locus_span = *bounds.end() - *bounds.start();
+        let max_adj_val =
+            (locus_span.abs() * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
+        let adj_param = Parameter::with_bounds(0.1, 0.0, max_adj_val);
+
+        let adjustment = LocusAdjustment::new(adj_param, DirectionOfTravel::Add, false);
+
+        let mut locus = Locus::new(initial_value_param, adjustment, true); // Start with apply=true to see changes
+
+        // System parameters that encourage mutation
+        let sys = SystemParameters::new(&[1.0, 1.0, 1.0, 1.0, 1.0, 100.0, 2.0]); // High mutation probs
+
+        // Mutate many times
+        for i in 0..5000 {
+            locus = locus.mutate(&mut rng, &sys);
+            let current_value = locus.value().get();
+            // Assert that the value never leaves the bounds defined in the Parameter.
+            assert!(
+                bounds.contains(&current_value),
+                "On iteration {i}, value {current_value} escaped bounds {bounds:?}"
+            );
+        }
     }
 
     #[test]
