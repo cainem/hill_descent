@@ -13,6 +13,10 @@ impl Regions {
     ///
     /// Regions with no valid positive min_score, or if the sum of inverse fitnesses is not positive,
     /// will have their carrying capacity set to 0.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self))
+    )]
     pub(super) fn update_carrying_capacities(&mut self) {
         let mut sum_inverse_min_fitness = 0.0;
 

@@ -8,6 +8,10 @@ impl Organisms {
     /// This is a thin wrapper over `Organism::run` and exists purely for convenience so that
     /// higher-level code such as `World::training_run` can express the whole fitness-evaluation
     /// step with a single call.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, function, inputs, known_outputs))
+    )]
     pub fn run_all(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
         for organism in self.organisms.iter() {
             organism.run(function, inputs, known_outputs);

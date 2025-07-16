@@ -5,6 +5,12 @@ pub mod parameters;
 pub mod phenotype;
 pub mod world;
 
+#[cfg(feature = "enable-tracing")]
+pub mod tracing_init;
+
+#[cfg(feature = "enable-tracing")]
+pub use tracing_init::init as init_tracing;
+
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_interface;
 

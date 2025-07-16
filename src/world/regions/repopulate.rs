@@ -12,6 +12,10 @@ impl Regions {
     ///
     /// Offspring are not assigned a region key here – that is done later via
     /// `Organisms::update_all_region_keys` in the caller.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, rng, organisms))
+    )]
     pub fn repopulate<R: Rng>(&mut self, rng: &mut R, organisms: &mut Organisms) {
         let region_keys: Vec<Vec<usize>> = self.regions.keys().cloned().collect();
         for key in region_keys {

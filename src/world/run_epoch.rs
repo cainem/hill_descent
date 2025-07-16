@@ -16,6 +16,10 @@ impl super::World {
     ///
     /// * `training_data`: Slice of input vectors for training
     /// * `known_outputs`: Slice of expected output vectors corresponding to the training data
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, training_data, known_outputs))
+    )]
     pub fn run_epoch(&mut self, training_data: &[&[f64]], known_outputs: &[&[f64]]) {
         validate_training_sets(training_data, known_outputs);
 

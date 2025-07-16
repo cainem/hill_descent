@@ -4,6 +4,10 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms};
 // update_carrying_capacities function has been moved to its own file.
 
 impl super::Regions {
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, organisms, dimensions))
+    )]
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
         loop {
             if let OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) =

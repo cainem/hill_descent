@@ -8,6 +8,10 @@ impl Regions {
     /// it checks if its score is lower than the current minimum score recorded for its region.
     /// If it is, or if the region has no minimum score yet, the region's minimum score is updated.
     /// The minimum scores are persistent and are only ever updated downwards.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, all_organisms))
+    )]
     pub(super) fn update_all_region_min_scores(&mut self, all_organisms: &Organisms) {
         for organism in all_organisms.iter() {
             if let (Some(key), Some(score)) = (organism.region_key(), organism.score()) {

@@ -1,6 +1,10 @@
 use super::Organisms;
 
 impl Organisms {
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self))
+    )]
     pub fn increment_ages(&self) {
         for organism in self.organisms.iter() {
             organism.increment_age();

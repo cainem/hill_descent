@@ -8,6 +8,10 @@ use rand::Rng;
 
 impl Locus {
     /// Applies PDD mutation rules to this locus, returning a new one.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "trace", skip(self, rng, sys))
+    )]
     pub fn mutate<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
         let mut new_adj_val = self.adjustment.adjustment_value().clone();
         let mut new_direction = self.adjustment.direction_of_travel();

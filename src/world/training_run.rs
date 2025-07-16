@@ -1,6 +1,10 @@
 use super::World;
 
 impl World {
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
+    )]
     pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> f64 {
         // 1. Evaluate fitness for every organism
         self.organisms

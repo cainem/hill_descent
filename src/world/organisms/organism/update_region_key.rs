@@ -25,6 +25,10 @@ impl Organism {
     /// * Panics if the number of problem-specific expressed values from the phenotype
     ///   does not match the number of dimensions defined in `dimensions_container`,
     ///   unless both are zero. This panic originates from `calculate_dimensions_key`.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "trace", skip(self, dimensions_container))
+    )]
     pub fn update_region_key(
         &self,
         dimensions_container: &Dimensions,

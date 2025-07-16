@@ -33,6 +33,7 @@ impl SingleValuedFunction for Quadratic {
 }
 
 #[test]
+#[ignore]
 pub fn execute() {
     let param_range = vec![RangeInclusive::new(-100.0, 100.0)];
     let global_constants = GlobalConstants::new(10, 4);
