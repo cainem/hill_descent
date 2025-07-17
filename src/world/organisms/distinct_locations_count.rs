@@ -3,6 +3,9 @@ use std::collections::HashSet;
 use crate::world::organisms::Organisms;
 
 impl Organisms {
+
+    // TODO - this should no longer be needed
+
     /// Computes the number of distinct spatial locations among all organisms.
     ///
     /// Spatial locations are derived from the expressed gene values, excluding

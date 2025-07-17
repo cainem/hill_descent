@@ -9,11 +9,12 @@ pub use dimension::Dimension;
 // Holds the spatial dimensions (axes) of the world along with bookkeeping data.
 pub struct Dimensions {
     dimensions: Vec<Dimension>,
+    // TODO - This should no longer be needed
     last_division_index: usize,
 }
 
 impl Dimensions {
-    pub fn get_dimensions(&self) -> &Vec<Dimension> {
+    pub fn get_dimensions(&self) -> &[Dimension] {
         &self.dimensions
     }
 
@@ -51,18 +52,16 @@ impl Dimensions {
 
     /// Divides the next dimension to increase region granularity.
     /// Returns true if a division was made, false otherwise.
-    pub fn divide_next_dimension(&mut self) -> bool {
+    pub fn divide_next_dimension(&mut self, dim_to_divide: usize) {
         if self.dimensions.is_empty() {
-            return false;
+            panic!();
         }
 
-        // Cycle through dimensions, dividing one at a time.
+        // TODO dim_to_divide will be passed in as parameter now; has no tests!!
         self.last_division_index = (self.last_division_index + 1) % self.dimensions.len();
         let dim_to_divide = &mut self.dimensions[self.last_division_index];
         let current_divisions = dim_to_divide.number_of_divisions();
         dim_to_divide.set_number_of_divisions(current_divisions + 1);
-
-        true
     }
 }
 

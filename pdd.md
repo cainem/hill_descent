@@ -105,7 +105,7 @@ An organism is defined by its DNA, which determines its position in the n-dimens
     * This bounding box is recursively divided by halving it along each of these $n_p$ problem-specific dimensions.  
   *   Let `x` be the number of currently populated n-orthotopes.
     *   The division process has two primary termination conditions:
-        1.  **Stability:** Division stops if `x` equals `$\hat{P}$`, where `$\hat{P}$` is the number of distinct points in space occupied by organisms. At this point, each distinct location has its own region, and further division would not separate any more organisms.
+        1.  **Stability:** Division stops if `x` equals $\hat{P}$, where $\hat{P}$ is the number of distinct points in space occupied by organisms. At this point, each distinct location has its own region, and further division would not separate any more organisms.
         2.  **Budget Exhaustion:** Division stops if `x` reaches the maximum allowed number of regions, `Z`. This ensures that the computational budget for regions is spent on separating actual groups of organisms, rather than creating a high-resolution grid in empty space. This is a refinement of the original concept to prevent premature termination when organisms are clustered.
     *   Unoccupied regions resulting from division are of no interest.
 

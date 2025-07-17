@@ -9,15 +9,18 @@ impl super::Regions {
         tracing::instrument(level = "debug", skip(self, organisms, dimensions))
     )]
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
+        let mut changed_dimension: Option<usize> = None;
+
         loop {
             if let OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) =
-                organisms.update_all_region_keys(dimensions)
+                organisms.update_all_region_keys(dimensions, changed_dimension)
             {
                 self.handle_out_of_bounds(dimensions, dimension_index);
                 continue;
             }
 
-            if self.handle_successful_update(organisms, dimensions) {
+            changed_dimension = self.handle_successful_update(organisms, dimensions);
+            if changed_dimension.is_none() {
                 break;
             }
         }
