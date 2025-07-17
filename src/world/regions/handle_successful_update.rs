@@ -36,7 +36,7 @@ impl super::Regions {
         // decide the dimension D that has the largest number of distinct values and (as a tie break) the one with the largest standard deviation
         // if the dimension D has one distinct value then clear and add organisms to regions and prune empty regions. Return None to indicate no changes where made.
         // TODO ------------------------------
-        let D = 99; // TODO - evaluate properly
+        let dim_index = 99; // TODO - evaluate properly
 
         // // Stop if we've hit the max number of regions, if all organisms are in one region,
         // // or if every distinct location already has its own region (further subdivision
@@ -49,13 +49,13 @@ impl super::Regions {
         // }
 
         // Try to divide the dimension with the highest organism count.
-        dimensions.divide_next_dimension(D);
+                dimensions.divide_next_dimension(dim_index);
         // The dimension change invalidates all existing region keys.
         // Clear all regions so they can be rebuilt in the next iteration.
         self.regions.clear();
 
         // return the index of the dimension that has changed
-        Some(D)
+        Some(dim_index)
     }
 }
 
@@ -65,6 +65,9 @@ impl super::Regions {
 //     use crate::phenotype::Phenotype;
 //     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
 //     use std::ops::RangeInclusive;
+// //     use crate::phenotype::Phenotype;
+// //     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
+// //     use std::ops::RangeInclusive;
 
 //     fn default_system_parameters() -> Vec<f64> {
 //         vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
