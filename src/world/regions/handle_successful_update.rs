@@ -21,7 +21,7 @@ impl super::Regions {
 
         // current regions are greater than or equal to the allowed regions;
         // refill and return
-        if self.regions.len() >= self.max_regions {
+        if self.regions.len() >= self.target_regions {
             return None;
         }
 
@@ -75,15 +75,15 @@ impl super::Regions {
 //         Organisms::new_from_phenotypes(phenotypes)
 //     }
 
-//     fn setup(max_regions: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions) {
-//         let gc = GlobalConstants::new(100, max_regions);
+//     fn setup(target_regions: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions) {
+//         let gc = GlobalConstants::new(100, target_regions);
 //         let regions = Regions::new(&gc);
 //         let dimensions = Dimensions::new(&bounds, &gc);
 //         (regions, dimensions)
 //     }
 
 //     #[test]
-//     fn given_max_regions_already_reached_when_handle_successful_update_then_returns_true() {
+//     fn given_target_regions_already_reached_when_handle_successful_update_then_returns_true() {
 //         let (mut regions, mut dims) = setup(1, vec![0.0..=1.0]);
 //         let mut organisms = organisms_from_problem_values(vec![vec![0.5]]);
 //         let finished = regions.handle_successful_update(&mut organisms, &mut dims);

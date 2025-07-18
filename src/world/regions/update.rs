@@ -69,22 +69,22 @@ impl super::Regions {
 //     }
 
 //     fn create_test_regions_and_gc(
-//         max_regions: usize,
+//         target_regions: usize,
 //         population_size: usize,
 //     ) -> (Regions, GlobalConstants) {
 //         if population_size == 0 {
 //             // Special handling for tests that might want to check behavior with population_size 0
 //             // The Regions::new constructor will panic if not for tests, so we bypass it here for such specific test cases.
-//             let gc_temp = GlobalConstants::new(1, max_regions); // Dummy pop size > 0 for GC
+//             let gc_temp = GlobalConstants::new(1, target_regions); // Dummy pop size > 0 for GC
 //             let regions = Regions {
 //                 regions: BTreeMap::new(),
-//                 max_regions,
+//                 target_regions,
 //                 population_size: 0, // Override for test
 //             };
 //             return (regions, gc_temp);
 //         }
 
-//         let global_constants = GlobalConstants::new(population_size, max_regions);
+//         let global_constants = GlobalConstants::new(population_size, target_regions);
 //         let regions = Regions::new(&global_constants);
 //         (regions, global_constants)
 //     }
@@ -116,7 +116,7 @@ impl super::Regions {
 //         let mut organisms = create_test_organisms_single(&[0.5, 0.5]); // 2 problem dimensions
 //         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
-//         // Dimensions::new with max_regions = 4 and 2 dims divides each dim once.
+//         // Dimensions::new with target_regions = 4 and 2 dims divides each dim once.
 //         assert_eq!(dimensions.get_dimension(0).number_of_divisions(), 1);
 //         assert_eq!(dimensions.get_dimension(1).number_of_divisions(), 1);
 //         assert_eq!(dimensions.get_total_possible_regions(), 4);
@@ -198,10 +198,10 @@ impl super::Regions {
 //             dimensions.get_dimension(0).number_of_divisions() >= 3,
 //             "There should be at least 3 divisions after further subdivision"
 //         );
-//         // The populated region count should now meet or exceed `max_regions`.
+//         // The populated region count should now meet or exceed `target_regions`.
 //         assert!(
 //             regions.regions.len() >= max_r,
-//             "Subdivision should continue until populated regions reach or exceed max_regions"
+//             "Subdivision should continue until populated regions reach or exceed target_regions"
 //         );
 //     }
 
@@ -254,13 +254,13 @@ impl super::Regions {
 //         let mut dimensions = create_test_dimensions(vec![0.0..=1.0, 0.0..=1.0], &_gc);
 
 //         // The algorithm should now continue to subdivide the already–populated bottom-left
-//         // quadrant until the number of populated regions meets or exceeds `max_regions`.
+//         // quadrant until the number of populated regions meets or exceeds `target_regions`.
 
 //         regions.update(&mut organisms, &mut dimensions);
 
 //         assert!(
 //             regions.regions.len() >= max_r,
-//             "Subdivision should continue until populated regions reach or exceed max_regions"
+//             "Subdivision should continue until populated regions reach or exceed target_regions"
 //         );
 //     }
 

@@ -46,7 +46,7 @@ impl World {
     /// * `user_defined_parameter_bounds` - A slice of `RangeInclusive<f64>` defining the
     ///   bounds for the problem-specific parameters to be optimized.
     /// * `global_constants` - A struct containing system-wide constants like `population_size`
-    ///   and `max_regions`.
+    ///   and `target_regions`.
     ///
     /// # Returns
     ///
@@ -127,13 +127,13 @@ mod tests {
 
         assert_eq!(world.organisms.len(), 10);
         assert_eq!(gc.population_size(), 10);
-        assert_eq!(gc.max_regions(), 100);
+        assert_eq!(gc.target_regions(), 100);
 
         // Verify that the number of dimensions matches the problem space dimensions.
         assert_eq!(world.dimensions.num_dimensions(), num_problem_dims);
 
         // Check that regions have been created and organisms assigned.
-        // With a small population and large max_regions, we expect at least one region.
+        // With a small population and large target_regions, we expect at least one region.
         assert!(!world.regions.regions().is_empty());
         // Every organism should have a region key after initialization.
         for organism in world.organisms.iter() {
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Max regions cannot be zero.")]
-    fn given_zero_max_regions_when_new_is_called_then_it_panics() {
+    fn given_zero_target_regions_when_new_is_called_then_it_panics() {
         let bounds: Vec<RangeInclusive<f64>> = Vec::new();
         let gc = GlobalConstants::new(10, 0);
         let world_fn: Box<dyn WorldFunction> = Box::new(TestFn);

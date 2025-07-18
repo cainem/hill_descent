@@ -9,8 +9,8 @@ impl Dimensions {
         global_constants: &GlobalConstants,
     ) -> Self {
         assert!(
-            global_constants.max_regions() > 0,
-            "max_regions must be greater than 0."
+            global_constants.target_regions() > 0,
+            "target_regions must be greater than 0."
         );
 
         let mut created_dimensions: Vec<Dimension> = parameter_bounds
@@ -32,7 +32,7 @@ impl Dimensions {
         let mut effective_last_division_index = num_problem_dimensions - 1;
         let mut current_potential_regions: usize = 1; // Starts at 2^0 = 1 region
 
-        // Loop to add divisions until max_regions is met or exceeded
+        // Loop to add divisions until target_regions is met or exceeded
         loop {
             let next_index_to_try = (effective_last_division_index + 1) % num_problem_dimensions;
 
@@ -40,7 +40,7 @@ impl Dimensions {
             // Each division in any dimension doubles the total number of potential regions.
             match current_potential_regions.checked_mul(2) {
                 Some(potential_after_division)
-                    if potential_after_division <= global_constants.max_regions() =>
+                    if potential_after_division <= global_constants.target_regions() =>
                 {
                     // It's possible to divide this dimension further
                     let current_divisions =
@@ -51,13 +51,13 @@ impl Dimensions {
                     effective_last_division_index = next_index_to_try; // This dimension was the last one successfully divided
                 }
                 _ => {
-                    // Cannot divide further (either multiplication overflowed or exceeded max_regions)
+                    // Cannot divide further (either multiplication overflowed or exceeded target_regions)
                     break;
                 }
             }
-            // If current_potential_regions == global_constants.max_regions(), the next iteration
-            // will attempt to multiply by 2. If this doesn't overflow, it will exceed max_regions,
-            // causing the loop to break. This ensures we don't exceed max_regions.
+            // If current_potential_regions == global_constants.target_regions(), the next iteration
+            // will attempt to multiply by 2. If this doesn't overflow, it will exceed target_regions,
+            // causing the loop to break. This ensures we don't exceed target_regions.
         }
 
         Self {
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn given_empty_parameter_bounds_when_new_then_no_dimensions_are_created() {
         let bounds: Vec<RangeInclusive<f64>> = vec![];
-        let gc = GlobalConstants::new(100, 100); // population_size, max_regions
+        let gc = GlobalConstants::new(100, 100); // population_size, target_regions
         let dimensions_obj = Dimensions::new(&bounds, &gc);
 
         assert!(dimensions_obj.dimensions.is_empty());
@@ -93,9 +93,9 @@ mod tests {
     }
 
     #[test]
-    fn given_single_bound_and_max_regions_one_when_new_then_no_divisions_occur() {
+    fn given_single_bound_and_target_regions_one_when_new_then_no_divisions_occur() {
         let bounds = vec![0.0..=10.0];
-        let gc = GlobalConstants::new(100, 1); // max_regions = 1
+        let gc = GlobalConstants::new(100, 1); // target_regions = 1
         let dimensions_obj = Dimensions::new(&bounds, &gc);
 
         assert_eq!(dimensions_obj.dimensions.len(), 1);
@@ -105,9 +105,9 @@ mod tests {
     }
 
     #[test]
-    fn given_single_bound_and_max_regions_allows_some_divisions_then_divisions_occur() {
+    fn given_single_bound_and_target_regions_allows_some_divisions_then_divisions_occur() {
         let bounds = vec![0.0..=10.0];
-        // max_regions = 8 allows 2^3 regions, so 3 divisions for a single dimension.
+        // target_regions = 8 allows 2^3 regions, so 3 divisions for a single dimension.
         // 1 region (0 div) -> 2 regions (1 div) -> 4 regions (2 div) -> 8 regions (3 div)
         // Next would be 16 regions, which exceeds 8.
         let gc = GlobalConstants::new(100, 8);
@@ -119,9 +119,9 @@ mod tests {
     }
 
     #[test]
-    fn given_single_bound_and_max_regions_allows_fewer_divisions_than_max_possible() {
+    fn given_single_bound_and_target_regions_allows_fewer_divisions_than_max_possible() {
         let bounds = vec![0.0..=10.0];
-        // max_regions = 7. Allows 2 divisions (4 regions). Next is 8 regions > 7.
+        // target_regions = 7. Allows 2 divisions (4 regions). Next is 8 regions > 7.
         let gc = GlobalConstants::new(100, 7);
         let dimensions_obj = Dimensions::new(&bounds, &gc);
 
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn given_two_bounds_and_max_regions_one_then_no_divisions_occur() {
+    fn given_two_bounds_and_target_regions_one_then_no_divisions_occur() {
         let bounds = vec![0.0..=10.0, 0.0..=5.0];
         let gc = GlobalConstants::new(100, 1);
         let dimensions_obj = Dimensions::new(&bounds, &gc);
@@ -143,7 +143,7 @@ mod tests {
     }
 
     #[test]
-    fn given_two_bounds_and_max_regions_two_then_one_division_on_first_dim() {
+    fn given_two_bounds_and_target_regions_two_then_one_division_on_first_dim() {
         let bounds = vec![0.0..=10.0, 0.0..=5.0];
         let gc = GlobalConstants::new(100, 2); // Allows 1 total division (2^1 regions)
         let dimensions_obj = Dimensions::new(&bounds, &gc);
@@ -155,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn given_two_bounds_and_max_regions_three_then_one_division_on_first_dim() {
+    fn given_two_bounds_and_target_regions_three_then_one_division_on_first_dim() {
         let bounds = vec![0.0..=10.0, 0.0..=5.0];
         let gc = GlobalConstants::new(100, 3); // Still allows only 1 total division (2^1=2 regions, next is 2^2=4 regions)
         let dimensions_obj = Dimensions::new(&bounds, &gc);
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn given_two_bounds_and_max_regions_four_then_one_division_on_each_dim() {
+    fn given_two_bounds_and_target_regions_four_then_one_division_on_each_dim() {
         let bounds = vec![0.0..=10.0, 0.0..=5.0];
         let gc = GlobalConstants::new(100, 4); // Allows 2 total divisions (2^2=4 regions)
         let dimensions_obj = Dimensions::new(&bounds, &gc);
@@ -181,9 +181,9 @@ mod tests {
     }
 
     #[test]
-    fn given_three_bounds_and_max_regions_allows_round_robin_divisions() {
+    fn given_three_bounds_and_target_regions_allows_round_robin_divisions() {
         let bounds = vec![0.0..=1.0, 2.0..=3.0, 4.0..=5.0];
-        // max_regions = 8 allows 3 total divisions (2^3 regions)
+        // target_regions = 8 allows 3 total divisions (2^3 regions)
         let gc = GlobalConstants::new(100, 8);
         let dimensions_obj = Dimensions::new(&bounds, &gc);
         // Initial: divs=[0,0,0], last_idx_prime=2, regions=1
@@ -199,9 +199,9 @@ mod tests {
     }
 
     #[test]
-    fn given_three_bounds_and_max_regions_stops_before_full_round_robin() {
+    fn given_three_bounds_and_target_regions_stops_before_full_round_robin() {
         let bounds = vec![0.0..=1.0, 2.0..=3.0, 4.0..=5.0];
-        // max_regions = 7 allows 2 total divisions (2^2=4 regions, next is 2^3=8)
+        // target_regions = 7 allows 2 total divisions (2^2=4 regions, next is 2^3=8)
         let gc = GlobalConstants::new(100, 7);
         let dimensions_obj = Dimensions::new(&bounds, &gc);
         // Initial: divs=[0,0,0], last_idx_prime=2, regions=1

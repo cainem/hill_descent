@@ -49,9 +49,9 @@ impl Organisms {
 //     use std::rc::Rc;
 
 //     // Helper to create basic dimensions for testing
-//     fn create_test_dimensions_for_organisms(num_dims: usize, max_regions: usize) -> Dimensions {
+//     fn create_test_dimensions_for_organisms(num_dims: usize, target_regions: usize) -> Dimensions {
 //         let bounds: Vec<RangeInclusive<f64>> = (0..num_dims).map(|_| 0.0..=10.0).collect();
-//         let gc = GlobalConstants::new(100, max_regions);
+//         let gc = GlobalConstants::new(100, target_regions);
 //         Dimensions::new(&bounds, &gc)
 //     }
 
