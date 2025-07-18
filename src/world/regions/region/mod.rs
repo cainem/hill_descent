@@ -44,7 +44,6 @@ impl Region {
         self.organisms.is_empty()
     }
 
-    #[cfg(test)]
     pub fn organisms(&self) -> &[Rc<Organism>] {
         &self.organisms
     }

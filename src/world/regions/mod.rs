@@ -8,6 +8,8 @@ pub mod handle_successful_update;
 pub mod prune_empty_regions;
 pub mod region;
 
+pub mod calculate_dimension_stats;
+pub mod find_most_diverse_index;
 pub mod get_most_common_key;
 pub mod get_most_diverse_dimension;
 mod refill;

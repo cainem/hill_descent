@@ -33,7 +33,7 @@ impl super::Regions {
         let most_populous_region_key = self.get_most_common_key();
 
         if let Some(most_diverse_dimension) =
-            self.get_most_diverse_dimension(most_populous_region_key)
+            self.get_most_diverse_dimension(&most_populous_region_key)
         {
             // divide the most diverse dimension
             dimensions.divide_next_dimension(most_diverse_dimension);
