@@ -16,46 +16,34 @@ impl super::Regions {
         organisms: &mut Organisms,
         dimensions: &mut Dimensions,
     ) -> Option<usize> {
+        // place the organisms in their appropriate regions
+        self.refill(organisms);
 
-        // Before adding the current generation of organisms, clear the regions of any
-        // organisms from the previous generation. This ensures the region state is
-        // always in sync with the master organism list.
-        for region in self.regions.values_mut() {
-            region.clear_organisms();
+        // current regions are greater than or equal to the allowed regions;
+        // refill and return
+        if self.regions.len() >= self.max_regions {
+            return None;
         }
 
-        self.add_phenotypes(organisms);
-        self.prune_empty_regions();
+        // otherwise we have not got enough regions
+        // we need to divide a dimension.
+        // we need to work out what is the best dimension to divide based on the distribution within the most populous region.
+        // we are essentially using the most populous regions as a sample for the whole population
 
-        // TODO ------------------------------
-        // calculate the most populous key, P
-        // calculate the number of distinct keys
-        // if number of distinct keys >= self.max_regions then clear and add organisms to regions and prune empty regions. Return None to indicate no changes where made
-        // for all organisms with the key P gather stats on their dimension values.
-        // for each dimension record the number of distinct values and their standard deviation.
-        // decide the dimension D that has the largest number of distinct values and (as a tie break) the one with the largest standard deviation
-        // if the dimension D has one distinct value then clear and add organisms to regions and prune empty regions. Return None to indicate no changes where made.
-        // TODO ------------------------------
-        let dim_index = 99; // TODO - evaluate properly
+        let most_populous_region_key = self.get_most_common_key();
 
-        // // Stop if we've hit the max number of regions, if all organisms are in one region,
-        // // or if every distinct location already has its own region (further subdivision
-        // // cannot increase the populated region count).
-        // if self.regions.len() >= self.max_regions
-        //     || organisms.distinct_locations_count() <= 1
-        //     || self.regions.len() == organisms.distinct_locations_count()
-        // {
-        //     return true; // Stable state reached.
-        // }
-
-        // Try to divide the dimension with the highest organism count.
-                dimensions.divide_next_dimension(dim_index);
-        // The dimension change invalidates all existing region keys.
-        // Clear all regions so they can be rebuilt in the next iteration.
-        self.regions.clear();
-
-        // return the index of the dimension that has changed
-        Some(dim_index)
+        if let Some(most_diverse_dimension) =
+            self.get_most_diverse_dimension(most_populous_region_key)
+        {
+            // divide the most diverse dimension
+            dimensions.divide_next_dimension(most_diverse_dimension);
+            Some(most_diverse_dimension)
+        } else {
+            // get_most_diverse_dimension returns None if there is no variation in any dimensions
+            // in this case no dimension divisions are necessary fill and return none
+            self.refill(organisms);
+            None
+        }
     }
 }
 
