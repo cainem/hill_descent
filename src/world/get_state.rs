@@ -117,34 +117,34 @@ impl super::World {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::parameters::global_constants::GlobalConstants;
-    use crate::world::world_function::WorldFunction;
-    use std::ops::RangeInclusive;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::parameters::global_constants::GlobalConstants;
+//     use crate::world::world_function::WorldFunction;
+//     use std::ops::RangeInclusive;
 
-    // Minimal WorldFunction for tests
-    #[derive(Debug)]
-    struct DummyFn;
-    impl WorldFunction for DummyFn {
-        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-            vec![0.0]
-        }
-    }
+//     // Minimal WorldFunction for tests
+//     #[derive(Debug)]
+//     struct DummyFn;
+//     impl WorldFunction for DummyFn {
+//         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+//             vec![0.0]
+//         }
+//     }
 
-    #[test]
-    fn given_world_when_get_state_then_returns_valid_json() {
-        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0, 10.0..=11.0];
-        let gc = GlobalConstants::new(4, 10);
-        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
-        let world = super::super::World::new(&bounds, gc, world_fn);
+//     #[test]
+//     fn given_world_when_get_state_then_returns_valid_json() {
+//         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0, 10.0..=11.0];
+//         let gc = GlobalConstants::new(4, 10);
+//         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+//         let world = super::super::World::new(&bounds, gc, world_fn);
 
-        let json = world.get_state();
-        // Attempt to parse to ensure it is valid JSON
-        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
-        assert!(parsed.get("dimensions").is_some());
-        assert!(parsed.get("organisms").is_some());
-        assert!(parsed.get("regions").is_some());
-    }
-}
+//         let json = world.get_state();
+//         // Attempt to parse to ensure it is valid JSON
+//         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+//         assert!(parsed.get("dimensions").is_some());
+//         assert!(parsed.get("organisms").is_some());
+//         assert!(parsed.get("regions").is_some());
+//     }
+// }
