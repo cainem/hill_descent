@@ -48,83 +48,71 @@ impl super::Regions {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::parameters::global_constants::GlobalConstants;
-//     use crate::phenotype::Phenotype;
-//     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
-//     use std::ops::RangeInclusive;
-// //     use crate::phenotype::Phenotype;
-// //     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
-// //     use std::ops::RangeInclusive;
+#[cfg(test)]
+mod tests {
+    use crate::parameters::global_constants::GlobalConstants;
+    use crate::phenotype::Phenotype;
+    use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
+    use std::ops::RangeInclusive;
 
-//     fn default_system_parameters() -> Vec<f64> {
-//         vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
-//     }
+    // helper: 7 system parameters default values
+    fn default_system_parameters() -> Vec<f64> {
+        vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
+    }
 
-//     fn phenotype_with_problem_values(problem_values: &[f64]) -> Phenotype {
-//         let mut expressed = default_system_parameters();
-//         expressed.extend_from_slice(problem_values);
-//         Phenotype::new_for_test(expressed)
-//     }
+    fn phenotype_with_problem_values(problem_values: &[f64]) -> Phenotype {
+        let mut expressed = default_system_parameters();
+        expressed.extend_from_slice(problem_values);
+        Phenotype::new_for_test(expressed)
+    }
 
-//     fn organisms_from_problem_values(values: Vec<Vec<f64>>) -> Organisms {
-//         let phenotypes: Vec<Phenotype> = values
-//             .into_iter()
-//             .map(|pv| phenotype_with_problem_values(&pv))
-//             .collect();
-//         Organisms::new_from_phenotypes(phenotypes)
-//     }
+    fn organisms_from_problem_values(values: Vec<Vec<f64>>) -> Organisms {
+        let phenotypes: Vec<Phenotype> = values
+            .into_iter()
+            .map(|pv| phenotype_with_problem_values(&pv))
+            .collect();
+        Organisms::new_from_phenotypes(phenotypes)
+    }
 
-//     fn setup(target_regions: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions) {
-//         let gc = GlobalConstants::new(100, target_regions);
-//         let regions = Regions::new(&gc);
-//         let dimensions = Dimensions::new(&bounds, &gc);
-//         (regions, dimensions)
-//     }
+    fn setup(target_regions: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions) {
+        let gc = GlobalConstants::new(100, target_regions);
+        let regions = Regions::new(&gc);
+        let dimensions = Dimensions::new(&bounds, &gc);
+        (regions, dimensions)
+    }
 
-//     #[test]
-//     fn given_target_regions_already_reached_when_handle_successful_update_then_returns_true() {
-//         let (mut regions, mut dims) = setup(1, vec![0.0..=1.0]);
-//         let mut organisms = organisms_from_problem_values(vec![vec![0.5]]);
-//         let finished = regions.handle_successful_update(&mut organisms, &mut dims);
-//         assert!(finished);
-//     }
+    #[test]
+    fn given_target_regions_already_reached_when_handle_successful_update_then_returns_none() {
+        let (mut regions, mut dims) = setup(1, vec![0.0..=1.0]);
+        let mut organisms = organisms_from_problem_values(vec![vec![0.5]]);
+        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        assert_eq!(result, None);
+    }
 
-//     #[test]
-//     fn given_all_organisms_same_location_when_handle_successful_update_then_returns_true() {
-//         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0, 0.0..=1.0]);
-//         let mut organisms = organisms_from_problem_values(vec![vec![0.5, 0.5]; 3]);
-//         let finished = regions.handle_successful_update(&mut organisms, &mut dims);
-//         assert!(finished);
-//     }
+    #[test]
+    fn given_variance_when_handle_successful_update_then_returns_dimension_index() {
+        let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
+        // Two organisms in same initial region with variation
+        let mut organisms = organisms_from_problem_values(vec![vec![0.05], vec![0.06]]);
+        let _ = organisms.update_all_region_keys(&dims, None);
+        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        assert_eq!(result, Some(0));
+        assert_eq!(dims.get_last_division_index(), 0);
+    }
 
-//     #[test]
-//     fn given_each_location_has_own_region_when_handle_successful_update_then_returns_true() {
-//         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0, 0.0..=1.0]);
-//         dims.divide_next_dimension();
-//         dims.divide_next_dimension();
-//         let mut organisms = organisms_from_problem_values(vec![vec![0.1, 0.1], vec![0.9, 0.9]]);
-//         let _ = organisms.update_all_region_keys(&dims);
-//         let finished = regions.handle_successful_update(&mut organisms, &mut dims);
-//         assert!(finished);
-//     }
+    #[test]
+    fn given_no_variance_when_handle_successful_update_then_returns_none() {
+        let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
+        let mut organisms = organisms_from_problem_values(vec![vec![0.5], vec![0.5]]);
+        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        assert_eq!(result, None);
+    }
 
-//     #[test]
-//     fn given_possible_to_divide_further_when_handle_successful_update_then_returns_false_and_clears_regions()
-//      {
-//         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
-//         let mut organisms = organisms_from_problem_values(vec![vec![0.1], vec![0.9]]);
-//         let finished = regions.handle_successful_update(&mut organisms, &mut dims);
-//         assert!(!finished);
-//         assert!(regions.regions().is_empty());
-//     }
-
-//     #[test]
-//     fn given_no_dimensions_to_divide_when_handle_successful_update_then_returns_true() {
-//         let (mut regions, mut dims) = setup(10, vec![]);
-//         let mut organisms = organisms_from_problem_values(vec![vec![]]);
-//         let finished = regions.handle_successful_update(&mut organisms, &mut dims);
-//         assert!(finished);
-//     }
-// }
+    #[test]
+    fn given_zero_dimensions_when_handle_successful_update_then_returns_none() {
+        let (mut regions, mut dims) = setup(10, vec![]);
+        let mut organisms = organisms_from_problem_values(vec![vec![]]);
+        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        assert_eq!(result, None);
+    }
+}
