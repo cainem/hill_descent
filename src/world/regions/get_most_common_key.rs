@@ -10,9 +10,9 @@ impl super::Regions {
 #[cfg(test)]
 pub mod tests {
     use crate::parameters::global_constants::GlobalConstants;
-    use crate::world::regions::region::Region;
-    use crate::world::regions::Regions;
     use crate::test_utils::create_test_organism;
+    use crate::world::regions::Regions;
+    use crate::world::regions::region::Region;
 
     #[test]
     fn given_no_regions_when_get_most_common_key_then_returns_none() {

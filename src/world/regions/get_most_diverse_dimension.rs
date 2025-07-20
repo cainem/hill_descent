@@ -44,8 +44,8 @@ mod tests {
     use crate::parameters::global_constants::GlobalConstants;
     use crate::phenotype::Phenotype;
     use crate::world::organisms::organism::Organism;
-    use crate::world::regions::region::Region;
     use crate::world::regions::Regions;
+    use crate::world::regions::region::Region;
     use std::rc::Rc;
 
     // Helper to create a valid phenotype for testing.
@@ -75,8 +75,8 @@ mod tests {
     }
 
     #[test]
-    fn given_organisms_with_one_diverse_dimension_when_get_most_diverse_dimension_then_returns_correct_index(
-    ) {
+    fn given_organisms_with_one_diverse_dimension_when_get_most_diverse_dimension_then_returns_correct_index()
+     {
         let constants = GlobalConstants::new(10, 2);
         let mut regions = Regions::new(&constants);
         let key = vec![0];

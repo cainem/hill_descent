@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-
 /// Sorts dimensions by diversity and returns the index of the most diverse one.
 ///
 /// Diversity is determined first by the number of unique values (descending),
@@ -18,13 +17,15 @@ pub fn find_most_diverse_index(dimension_stats: Vec<(usize, f64)>) -> Option<usi
         }
     });
 
-    indexed_stats.first().and_then(|(index, (unique_count, _))| {
-        if *unique_count > 1 {
-            Some(*index)
-        } else {
-            None
-        }
-    })
+    indexed_stats
+        .first()
+        .and_then(|(index, (unique_count, _))| {
+            if *unique_count > 1 {
+                Some(*index)
+            } else {
+                None
+            }
+        })
 }
 
 #[cfg(test)]
