@@ -99,20 +99,20 @@ mod test_update_carrying_capacities {
     }
 
     fn create_test_regions_and_gc(
-        max_regions: usize,
+        target_regions: usize,
         population_size: usize,
     ) -> (Regions, GlobalConstants) {
         if population_size == 0 {
-            let gc_temp = GlobalConstants::new(1, max_regions);
+            let gc_temp = GlobalConstants::new(1, target_regions);
             let regions = Regions {
                 regions: BTreeMap::new(),
-                max_regions,
+                target_regions,
                 population_size: 0,
             };
             return (regions, gc_temp);
         }
 
-        let global_constants = GlobalConstants::new(population_size, max_regions);
+        let global_constants = GlobalConstants::new(population_size, target_regions);
         let regions = Regions::new(&global_constants);
         (regions, global_constants)
     }

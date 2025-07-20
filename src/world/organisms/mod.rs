@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 pub mod generate_random_phenotypes;
 pub mod increment_ages;
 pub mod new;
@@ -7,9 +9,7 @@ pub mod update_all_region_keys;
 
 pub use generate_random_phenotypes::generate_random_phenotypes;
 pub use organism::Organism;
-use std::rc::Rc;
 pub mod best;
-pub mod distinct_locations_count;
 pub mod find_spacial_limits;
 pub mod organism;
 

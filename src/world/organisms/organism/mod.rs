@@ -61,6 +61,7 @@ impl Organism {
 
     /// Returns the region key of the organism, if set.
     pub fn region_key(&self) -> Option<Vec<usize>> {
+        // TODO - this clone needs to ber gotten rid of
         self.region_key.lock().unwrap().clone()
     }
 

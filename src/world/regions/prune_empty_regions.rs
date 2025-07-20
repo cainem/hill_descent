@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn given_regions_with_some_empty_when_prune_empty_regions_then_empty_regions_are_removed() {
-        let gc = GlobalConstants::new(100, 10); // population_size, max_regions
+        let gc = GlobalConstants::new(100, 10); // population_size, target_regions
         let mut regions = Regions::new(&gc);
         let organism_rc = create_test_organism();
 

@@ -5,6 +5,9 @@ pub mod parameters;
 pub mod phenotype;
 pub mod world;
 
+#[cfg(test)]
+pub mod test_utils;
+
 #[cfg(feature = "enable-tracing")]
 pub mod tracing_init;
 
