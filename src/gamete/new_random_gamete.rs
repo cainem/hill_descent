@@ -25,6 +25,7 @@ impl Gamete {
             .iter()
             .map(|bounds| Locus::new_random_locus(rng, bounds))
             .collect();
+
         Gamete::new(loci)
     }
 }

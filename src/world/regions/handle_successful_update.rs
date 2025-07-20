@@ -30,11 +30,10 @@ impl super::Regions {
         // we need to work out what is the best dimension to divide based on the distribution within the most populous region.
         // we are essentially using the most populous regions as a sample for the whole population
 
-        let most_populous_region_key = self.get_most_common_key();
+        // Determine the most diverse dimension in the most populous region
+        let most_diverse_dimension = self.get_most_common_key().and_then(|key| self.get_most_diverse_dimension(&key));
 
-        if let Some(most_diverse_dimension) =
-            self.get_most_diverse_dimension(&most_populous_region_key)
-        {
+        if let Some(most_diverse_dimension) = most_diverse_dimension {
             // divide the most diverse dimension
             dimensions.divide_next_dimension(most_diverse_dimension);
             Some(most_diverse_dimension)

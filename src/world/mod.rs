@@ -14,7 +14,7 @@ mod dimensions;
 mod get_best_organism;
 mod get_state;
 mod get_state_for_web;
-mod organisms;
+pub mod organisms;
 mod regions;
 mod remove_dead;
 mod run_epoch;
