@@ -32,71 +32,71 @@ impl World {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::E0;
-//     use crate::parameters::global_constants::GlobalConstants;
-//     use crate::world::world_function::WorldFunction;
-//     use std::ops::RangeInclusive;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::E0;
+    use crate::parameters::global_constants::GlobalConstants;
+    use crate::world::world_function::WorldFunction;
+    use std::ops::RangeInclusive;
 
-//     // Mock WorldFunction that returns a single constant value (0.5) for deterministic tests.
-//     #[derive(Debug)]
-//     struct IdentityFn;
-//     impl WorldFunction for IdentityFn {
-//         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-//             vec![0.5] // deterministic output
-//         }
-//     }
+    // Mock WorldFunction that returns a single constant value (0.5) for deterministic tests.
+    #[derive(Debug)]
+    struct IdentityFn;
+    impl WorldFunction for IdentityFn {
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+            vec![0.5] // deterministic output
+        }
+    }
 
-//     // given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment
-//     #[test]
-//     fn given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment() {
-//         // Arrange
-//         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
-//         let gc = GlobalConstants::new(4, 16);
-//         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
-//         let inputs = vec![0.0];
-//         let known_outputs = vec![1.0];
+    // given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment
+    #[test]
+    fn given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment() {
+        // Arrange
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(20, 16);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![0.0];
+        let known_outputs = vec![1.0];
 
-//         // Act
-//         let best_score = world.training_run(&inputs, &known_outputs);
+        // Act
+        let best_score = world.training_run(&inputs, &known_outputs);
 
-//         // Assert
-//         assert!(best_score > 0.0, "Best score should be positive");
-//         assert!(
-//             world
-//                 .organisms
-//                 .iter()
-//                 .all(|o| o.score().unwrap_or(0.0) > 0.0),
-//             "All organisms should have positive scores"
-//         );
-//         assert!(world.organisms.len() > 0);
-//     }
+        // Assert
+        assert!(best_score > 0.0, "Best score should be positive");
+        assert!(
+            world
+                .organisms
+                .iter()
+                .all(|o| o.score().unwrap_or(0.0) > 0.0),
+            "All organisms should have positive scores"
+        );
+        assert!(world.organisms.len() > 0);
+    }
 
-//     // given_perfect_match_when_training_run_then_best_score_equals_max
-//     #[test]
-//     fn given_perfect_match_when_training_run_then_best_score_equals_max() {
-//         // Arrange
-//         // Mock WorldFunction that always returns the perfect matching value (1.0) for scoring tests.
-//         #[derive(Debug)]
-//         struct PerfectFn;
-//         impl WorldFunction for PerfectFn {
-//             fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-//                 vec![1.0]
-//             }
-//         }
-//         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
-//         let gc = GlobalConstants::new(3, 8);
-//         let mut world = World::new(&bounds, gc, Box::new(PerfectFn));
-//         let inputs = vec![0.0];
-//         let known_outputs = vec![1.0];
+    // given_perfect_match_when_training_run_then_best_score_equals_max
+    #[test]
+    fn given_perfect_match_when_training_run_then_best_score_equals_max() {
+        // Arrange
+        // Mock WorldFunction that always returns the perfect matching value (1.0) for scoring tests.
+        #[derive(Debug)]
+        struct PerfectFn;
+        impl WorldFunction for PerfectFn {
+            fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+                vec![1.0]
+            }
+        }
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(16, 8);
+        let mut world = World::new(&bounds, gc, Box::new(PerfectFn));
+        let inputs = vec![0.0];
+        let known_outputs = vec![1.0];
 
-//         // Act
-//         let best_score = world.training_run(&inputs, &known_outputs);
+        // Act
+        let best_score = world.training_run(&inputs, &known_outputs);
 
-//         // Assert
-//         let expected = E0;
-//         assert!((best_score - expected).abs() < f64::EPSILON);
-//     }
-// }
+        // Assert
+        let expected = E0;
+        assert!((best_score - expected).abs() < f64::EPSILON);
+    }
+}
