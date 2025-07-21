@@ -32,6 +32,11 @@ impl Organisms {
         self.organisms.len()
     }
 
+    #[cfg(test)]
+    pub fn is_empty(&self) -> bool {
+        self.organisms.is_empty()
+    }
+
     // Note: no mutable iterator needed since interior mutability
     // pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Rc<Organism>> { ... }
 

@@ -51,115 +51,157 @@ impl Organism {
                 }
             }
         } else {
-            // TODO evaluate the key value for the one dimension that has changed and update the region key
-            // if the region key is None at this point panic.
+            // Optimized path: only one dimension has changed and we already have a region key stored.
+            let dim_idx = dimension_changed.expect("dimension_changed is Some per branch");
+            debug_assert!(
+                dim_idx < dimensions_container.num_dimensions(),
+                "dimension_changed index {dim_idx} out of bounds"
+            );
 
-            // TODO return success or failure depending if it was possible or not
-            OrganismUpdateRegionKeyResult::Success
+            // Safe to unwrap because we checked is_none() earlier.
+            let mut current_key = self
+                .region_key()
+                .expect("Region key must be Some when using single-dimension path")
+                .clone();
+
+            // Ensure current_key length matches expected.
+            debug_assert_eq!(
+                current_key.len(),
+                dimensions_container.num_dimensions(),
+                "Stored region_key length mismatch"
+            );
+
+            let dimension = dimensions_container.get_dimension(dim_idx);
+            let value = {
+                let problem_expressed_values = self.phenotype().expression_problem_values();
+                problem_expressed_values[dim_idx]
+            };
+
+            match dimension.get_interval(value) {
+                Some(interval) => {
+                    current_key[dim_idx] = interval;
+                    self.set_region_key(Some(current_key));
+                    OrganismUpdateRegionKeyResult::Success
+                }
+                None => {
+                    self.set_region_key(None);
+                    OrganismUpdateRegionKeyResult::OutOfBounds(dim_idx)
+                }
+            }
         }
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-// use super::*;
-// use crate::NUM_SYSTEM_PARAMETERS;
-// use crate::phenotype::Phenotype;
-// use crate::world::dimensions::dimension::Dimension;
-// use std::ops::RangeInclusive;
-// use std::rc::Rc;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::NUM_SYSTEM_PARAMETERS;
+    use crate::phenotype::Phenotype;
+    use crate::world::dimensions::Dimensions;
+    use crate::world::dimensions::dimension::Dimension;
+    use std::ops::RangeInclusive;
+    use std::rc::Rc;
 
-// // Helper function to create an Organism instance for testing purposes.
-// fn create_organism_for_test(expressed_values: Vec<f64>) -> Organism {
-//     // Ensure there are enough values for system parameters for Phenotype::new_for_test.
-//     if expressed_values.len() < NUM_SYSTEM_PARAMETERS {
-//         panic!(
-//             "Test setup error: expressed_values length {} is less than NUM_SYSTEM_PARAMETERS {}",
-//             expressed_values.len(),
-//             NUM_SYSTEM_PARAMETERS
-//         );
-//     }
+    // ---------- helpers ----------
+    fn create_organism_for_test(problem_values: Vec<f64>) -> Organism {
+        // prepend dummy system parameters so Phenotype::new_for_test works
+        let mut expressed: Vec<f64> = vec![0.0; NUM_SYSTEM_PARAMETERS];
+        expressed.extend(problem_values);
+        let phenotype = Phenotype::new_for_test(expressed);
+        let organism = Organism::new(Rc::new(phenotype), 0);
+        organism.set_region_key(None);
+        organism
+    }
 
-//     let phenotype = Phenotype::new_for_test(expressed_values);
-//     let organism = Organism::new(Rc::new(phenotype), 0);
-//     organism.set_region_key(None); // Ensure it starts as None for tests
-//     organism
-// }
+    fn create_dimensions(spec: &[(RangeInclusive<f64>, usize)]) -> Dimensions {
+        let dims: Vec<Dimension> = spec
+            .iter()
+            .map(|(bounds, div)| {
+                let mut d = Dimension::new(bounds.clone(), 0);
+                d.set_number_of_divisions(*div);
+                d
+            })
+            .collect();
+        Dimensions::new_for_test(dims)
+    }
 
-// // Helper to create a Dimensions struct for testing.
-// // bounds_divisions: Vec of (range, num_divisions_for_this_dimension)
-// fn create_test_dimensions(bounds_divisions: Vec<(RangeInclusive<f64>, usize)>) -> Dimensions {
-//     let dims: Vec<Dimension> = bounds_divisions
-//         .into_iter()
-//         .map(|(bounds, num_divisions)| {
-//             let mut dim = Dimension::new(bounds, 0); // Start with 0 divisions
-//             dim.set_number_of_divisions(num_divisions);
-//             dim
-//         })
-//         .collect();
+    // ---------- tests: full recompute branch ----------
+    #[test]
+    fn given_valid_inputs_when_dimension_changed_none_then_success_and_key_set() {
+        let organism = create_organism_for_test(vec![7.5, 60.0]);
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+        let result = organism.update_region_key(&dims, None);
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
+        assert_eq!(organism.region_key(), Some(vec![2, 3]));
+    }
 
-//     Dimensions::new_for_test(dims)
-// }
+    #[test]
+    fn given_out_of_bounds_value_when_dimension_changed_none_then_failure_and_key_none() {
+        let organism = create_organism_for_test(vec![12.0, 60.0]); // 12.0 out of first dim bounds
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+        let result = organism.update_region_key(&dims, None);
+        assert!(matches!(
+            result,
+            OrganismUpdateRegionKeyResult::OutOfBounds(0)
+        ));
+        assert!(organism.region_key().is_none());
+    }
 
-// #[test]
-// fn given_valid_inputs_when_update_region_key_then_success_and_key_updated() {
-//     let organism = create_organism_for_test(vec![
-//         0.1, 0.5, 0.001, 0.001, 0.001, 100.0,
-//         2.0, // System params (NUM_SYSTEM_PARAMETERS)
-//         7.5, 60.0, // Problem params
-//     ]);
-//     let dimensions = create_test_dimensions(vec![
-//         (0.0..=10.0, 2),  // Dimension for 7.5. Index 1
-//         (0.0..=100.0, 4), // Dimension for 60.0. Index 2
-//     ]);
+    // ---------- tests: single-dimension fast path ----------
+    #[test]
+    fn given_single_dimension_in_bounds_when_region_key_exists_then_success_and_key_updated() {
+        // initial organism setup
+        let organism = create_organism_for_test(vec![7.5, 60.0]);
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
 
-//     let result = organism.update_region_key(&dimensions, None);
+        // compute full key first so region_key is Some
+        assert!(matches!(
+            organism.update_region_key(&dims, None),
+            OrganismUpdateRegionKeyResult::Success
+        ));
+        assert_eq!(organism.region_key(), Some(vec![2, 3]));
 
-//     assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-//     assert_eq!(organism.region_key(), Some(vec![2, 3]));
-// }
+        // Manually mark existing key then craft organism with changed value.
+        // Simulate cache by explicitly setting an old key then calling fast path.
+        organism.set_region_key(Some(vec![2, 3]));
 
-// #[test]
-// fn given_value_out_of_bounds_when_update_region_key_then_failure_and_key_is_none() {
-//     let organism = create_organism_for_test(vec![
-//         0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params
-//         12.0, 50.0, // Problem params. 12.0 is out of bounds for the first dimension.
-//     ]);
-//     let dimensions = create_test_dimensions(vec![(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+        // Build a new organism with second value 25.0 and an old cached key [2,3]
+        let organism2 = create_organism_for_test(vec![7.5, 25.0]);
+        organism2.set_region_key(Some(vec![2, 3]));
 
-//     let result = organism.update_region_key(&dimensions, None);
+        // call fast-path with Some(1) on organism2
+        let result = organism2.update_region_key(&dims, Some(1));
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
+        assert_eq!(organism2.region_key(), Some(vec![2, 1]));
+    }
 
-//     assert!(matches!(
-//         result,
-//         OrganismUpdateRegionKeyResult::OutOfBounds(0)
-//     )); // Fails on the first dimension (index 0)
-//     assert!(organism.region_key().is_none());
-// }
+    #[test]
+    fn given_single_dimension_out_of_bounds_when_region_key_exists_then_failure_and_key_cleared() {
+        let organism = create_organism_for_test(vec![7.5, 60.0]);
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+        // establish existing key
+        organism.update_region_key(&dims, None);
 
-// #[test]
-// fn given_value_on_upper_bound_when_update_region_key_then_success_and_key_is_last_index() {
-//     let organism = create_organism_for_test(vec![
-//         0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0,  // System params
-//         10.0, // Problem param on the boundary
-//     ]);
-//     let dimensions = create_test_dimensions(vec![(0.0..=10.0, 2)]); // 2 divisions -> 3 intervals [0, 5), [5, 10), [10, 10]
+        // Build new organism with first value out of bounds (-1.0) but cached key present
+        let organism2 = create_organism_for_test(vec![-1.0, 60.0]);
+        organism2.set_region_key(Some(vec![2, 3]));
 
-//     let result = organism.update_region_key(&dimensions, None);
+        let result = organism2.update_region_key(&dims, Some(0));
+        assert!(matches!(
+            result,
+            OrganismUpdateRegionKeyResult::OutOfBounds(0)
+        ));
+        assert!(organism2.region_key().is_none());
+    }
 
-//     assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-//     assert_eq!(organism.region_key(), Some(vec![2])); // Should be in the last interval
-// }
-
-// #[test]
-// fn given_no_problem_params_when_update_region_key_then_success_and_key_is_empty() {
-//     let organism = create_organism_for_test(vec![
-//         0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, // System params only
-//     ]);
-//     let dimensions = create_test_dimensions(vec![]); // No dimensions
-
-//     let result = organism.update_region_key(&dimensions, None);
-
-//     assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-//     assert_eq!(organism.region_key(), Some(vec![]));
-// }
-// }
+    // ---------- tests: dimension_changed_some_but_no_cached_key ----------
+    #[test]
+    fn given_dimension_changed_some_but_region_key_none_then_full_recompute_occurs() {
+        let organism = create_organism_for_test(vec![5.0, 50.0]);
+        // note: region_key is None by default from helper
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+        let result = organism.update_region_key(&dims, Some(0)); // Some index but no cached key yet
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
+        assert_eq!(organism.region_key(), Some(vec![1, 2]));
+    }
+}

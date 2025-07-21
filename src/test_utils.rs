@@ -9,6 +9,5 @@ pub(crate) fn create_test_organism() -> Rc<Organism> {
     // Phenotype requires at least NUM_SYSTEM_PARAMETERS bounds.
     let parameter_bounds: Vec<_> = (0..7).map(|_| 0.0..=1.0).collect();
     let phenotype = Rc::new(Phenotype::new_random_phenotype(&mut rng, &parameter_bounds));
-    let organism = Rc::new(Organism::new(phenotype, 0));
-    organism
+    Rc::new(Organism::new(phenotype, 0))
 }
