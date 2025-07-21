@@ -102,11 +102,14 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 * Regions are $n_p$-dimensional hyperrectangles (n-orthotopes).  
 * Division process:  
     * Initially, a bounding box encompassing the ranges of the $n_p$ problem-specific parameters across the population is determined (see Section 4.2.3).  
-    * This bounding box is recursively divided by halving it along each of these $n_p$ problem-specific dimensions.  
-  *   Let `x` be the number of currently populated n-orthotopes.
-    *   The division process has two primary termination conditions:
-        1.  **Stability:** Division stops if `x` equals $\hat{P}$, where $\hat{P}$ is the number of distinct points in space occupied by organisms. At this point, each distinct location has its own region, and further division would not separate any more organisms.
-        2.  **Budget Exhaustion:** Division stops if `x` reaches the maximum allowed number of regions, `Z`. This ensures that the computational budget for regions is spent on separating actual groups of organisms, rather than creating a high-resolution grid in empty space. This is a refinement of the original concept to prevent premature termination when organisms are clustered.
+    *   **Division Trigger:** Division occurs when the number of populated regions is less than the target number of regions, `Z`, and there is an opportunity to increase spatial resolution.
+    *   **Division Strategy:** Instead of a simple round-robin division, the system uses an adaptive strategy based on population distribution:
+        1.  **Identify Most Populous Region:** The region containing the highest number of organisms is selected as the candidate for division. This focuses the division effort on the most densely populated area of the solution space.
+        2.  **Select Dimension to Divide:** Within this most populous region, the system determines the "most diverse" problem-specific dimension to split. Diversity is measured using a two-tiered approach:
+            *   **Primary Criterion: Uniqueness.** The dimension with the highest number of distinct phenotype values among the organisms in the region is considered the most diverse.
+            *   **Tie-Breaker: Standard Deviation.** If multiple dimensions have the same number of unique values, the one with the largest standard deviation is chosen. This ensures that the split happens along the dimension with the widest spread of organisms.
+        3.  **Execution:** The selected dimension is then divided. This is a global operation that applies across the entire space. By incrementing the number of divisions in that single dimension, the total number of potential regions in the n-dimensional space is doubled.
+    *   **Termination:** This division process continues until either the target number of regions `Z` is reached, or no further meaningful divisions can be made (e.g., the most populous region has no diversity in any of its dimensions, meaning all organisms within it are at the same point).
     *   Unoccupied regions resulting from division are of no interest.
 
 **4.2.3. Bounding Box:** 
