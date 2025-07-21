@@ -9,17 +9,11 @@ pub use dimension::Dimension;
 // Holds the spatial dimensions (axes) of the world along with bookkeeping data.
 pub struct Dimensions {
     dimensions: Vec<Dimension>,
-    // TODO - This should no longer be needed
-    last_division_index: usize,
 }
 
 impl Dimensions {
     pub fn get_dimensions(&self) -> &[Dimension] {
         &self.dimensions
-    }
-
-    pub fn get_last_division_index(&self) -> usize {
-        self.last_division_index
     }
 
     /// Returns the number of spatial dimensions.
@@ -64,7 +58,6 @@ impl Dimensions {
             self.dimensions.len()
         );
 
-        self.last_division_index = dim_idx;
         let dim = &mut self.dimensions[dim_idx];
         let current_divisions = dim.number_of_divisions();
         dim.set_number_of_divisions(current_divisions + 1);
@@ -75,17 +68,7 @@ impl Dimensions {
 impl Dimensions {
     /// Test-only constructor to create a `Dimensions` object with a specific set of `Dimension`s.
     pub fn new_for_test(dimensions: Vec<Dimension>) -> Self {
-        let last_division_index = if dimensions.is_empty() {
-            0
-        } else {
-            // A sensible default for tests that don't care about this value.
-            // The logic in `double_regions` depends on this, but `update_dimensions_key` does not.
-            dimensions.len() - 1
-        };
-        Self {
-            dimensions,
-            last_division_index,
-        }
+        Self { dimensions }
     }
 }
 
@@ -102,7 +85,6 @@ mod tests_divide_next_dimension {
         ]);
         assert_eq!(dims.get_dimension(1).number_of_divisions(), 0);
         dims.divide_next_dimension(1);
-        assert_eq!(dims.get_last_division_index(), 1);
         assert_eq!(dims.get_dimension(1).number_of_divisions(), 1);
     }
 

@@ -67,7 +67,6 @@ mod test_update_carrying_capacities {
     use crate::world::dimensions::Dimensions; // Not directly used by update_carrying_capacities tests but by helpers
     use crate::world::organisms::Organisms; // Not directly used by update_carrying_capacities tests but by helpers
     use crate::world::regions::{Region, Regions};
-    use std::collections::BTreeMap;
     use std::ops::RangeInclusive;
 
     // HELPER FUNCTIONS (copied from src/world/regions/update.rs test module)
@@ -102,27 +101,14 @@ mod test_update_carrying_capacities {
         target_regions: usize,
         population_size: usize,
     ) -> (Regions, GlobalConstants) {
-        if population_size == 0 {
-            let gc_temp = GlobalConstants::new(1, target_regions);
-            let regions = Regions {
-                regions: BTreeMap::new(),
-                target_regions,
-                population_size: 0,
-            };
-            return (regions, gc_temp);
-        }
-
         let global_constants = GlobalConstants::new(population_size, target_regions);
         let regions = Regions::new(&global_constants);
         (regions, global_constants)
     }
 
     #[allow(dead_code)] // This helper might not be used by all test files that copy it
-    fn create_test_dimensions(
-        problem_bounds: Vec<RangeInclusive<f64>>,
-        gc: &GlobalConstants,
-    ) -> Dimensions {
-        Dimensions::new(&problem_bounds, gc)
+    fn create_test_dimensions(problem_bounds: Vec<RangeInclusive<f64>>) -> Dimensions {
+        Dimensions::new(&problem_bounds)
     }
 
     // Specific helper for update_carrying_capacities tests
@@ -271,25 +257,6 @@ mod test_update_carrying_capacities {
             regions_struct
                 .regions
                 .get(&key_without_score)
-                .unwrap()
-                .carrying_capacity(),
-            Some(0)
-        );
-    }
-
-    #[test]
-    fn given_population_size_zero_when_update_capacities_then_all_capacities_zero() {
-        let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 0); // Population size 0
-        let key1 = vec![1];
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(Some(10.0)));
-
-        regions_struct.update_carrying_capacities();
-        assert_eq!(
-            regions_struct
-                .regions
-                .get(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)

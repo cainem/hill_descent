@@ -19,6 +19,7 @@ impl super::Regions {
         let region = self.regions.get(key)?;
         let organisms = region.organisms();
 
+        // dividing the most diverse dimension will not result in any more populated regions
         if organisms.len() < 2 {
             return None;
         }
@@ -29,10 +30,6 @@ impl super::Regions {
             .collect();
 
         let num_dimensions = expressed_values.first().map_or(0, |v| v.len());
-        if num_dimensions == 0 {
-            return None;
-        }
-
         let dimension_stats =
             calculate_dimension_stats::calculate_dimension_stats(&expressed_values, num_dimensions);
         find_most_diverse_index::find_most_diverse_index(dimension_stats)

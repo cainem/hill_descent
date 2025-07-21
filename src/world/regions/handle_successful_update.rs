@@ -41,8 +41,7 @@ impl super::Regions {
             Some(most_diverse_dimension)
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
-            // in this case no dimension divisions are necessary fill and return none
-            self.refill(organisms);
+            // in this case no dimension divisions are necessary
             None
         }
     }
@@ -77,7 +76,7 @@ mod tests {
     fn setup(target_regions: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions) {
         let gc = GlobalConstants::new(100, target_regions);
         let regions = Regions::new(&gc);
-        let dimensions = Dimensions::new(&bounds, &gc);
+        let dimensions = Dimensions::new(&bounds);
         (regions, dimensions)
     }
 
@@ -97,7 +96,6 @@ mod tests {
         let _ = organisms.update_all_region_keys(&dims, None);
         let result = regions.handle_successful_update(&mut organisms, &mut dims);
         assert_eq!(result, Some(0));
-        assert_eq!(dims.get_last_division_index(), 0);
     }
 
     #[test]

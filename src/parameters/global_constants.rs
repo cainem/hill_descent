@@ -37,6 +37,9 @@ impl GlobalConstants {
         if target_regions == 0 {
             panic!("Max regions cannot be zero.");
         }
+        if target_regions > population_size {
+            panic!("population size must be greater than target regions")
+        }
 
         Self {
             population_size,
@@ -52,7 +55,7 @@ mod tests {
     #[test]
     fn given_valid_inputs_when_new_then_global_constants_is_created() {
         let population_size = 100;
-        let target_regions = 1000;
+        let target_regions = 10;
         let constants = GlobalConstants::new(population_size, target_regions);
 
         assert_eq!(constants.population_size(), population_size);

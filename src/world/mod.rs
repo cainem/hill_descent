@@ -82,7 +82,7 @@ impl World {
             Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
 
         let spacial_limits = organisms.find_spacial_limits();
-        let mut dimensions = Dimensions::new(&spacial_limits, &global_constants);
+        let mut dimensions = Dimensions::new(&spacial_limits);
         let mut regions = Regions::new(&global_constants);
 
         // This call performs the initial region division and organism assignment.

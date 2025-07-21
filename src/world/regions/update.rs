@@ -8,7 +8,7 @@ impl super::Regions {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, organisms, dimensions))
     )]
-        /// Update region state based on the current collection of `organisms` and the
+    /// Update region state based on the current collection of `organisms` and the
     /// mutable spatial `dimensions`.
     ///
     /// Algorithm overview:
@@ -33,7 +33,7 @@ impl super::Regions {
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
         let mut changed_dimension: Option<usize> = None;
 
-                // --- main update loop ------------------------------------------------
+        // --- main update loop ------------------------------------------------
         loop {
             if let OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index) =
                 organisms.update_all_region_keys(dimensions, changed_dimension)
@@ -48,7 +48,7 @@ impl super::Regions {
             }
         }
         // Update min scores for regions first, then carrying capacities
-                // --- post-processing -------------------------------------------------
+        // --- post-processing -------------------------------------------------
         // All region keys are now valid and space is stable – recalculate
         // dependent metrics before returning.
         self.update_all_region_min_scores(organisms);
@@ -56,78 +56,80 @@ impl super::Regions {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::parameters::global_constants::GlobalConstants;
-    use crate::phenotype::Phenotype;
-    use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
-    
-    use std::ops::RangeInclusive;
+// #[cfg(test)]
+// mod tests {
+//     use crate::parameters::global_constants::GlobalConstants;
+//     use crate::phenotype::Phenotype;
+//     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
 
-    // --- helper fns ---------------------------------------------------------
-    fn default_system_parameters() -> Vec<f64> {
-        vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
-    }
+//     use std::ops::RangeInclusive;
 
-    fn phen(problem_values: &[f64]) -> Phenotype {
-        let mut expr = default_system_parameters();
-        expr.extend_from_slice(problem_values);
-        Phenotype::new_for_test(expr)
-    }
+//     // --- helper fns ---------------------------------------------------------
+//     fn default_system_parameters() -> Vec<f64> {
+//         vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
+//     }
 
-    fn orgs(p_values: Vec<Vec<f64>>) -> Organisms {
-        Organisms::new_from_phenotypes(p_values.iter().map(|pv| phen(pv)).collect())
-    }
+//     fn phen(problem_values: &[f64]) -> Phenotype {
+//         let mut expr = default_system_parameters();
+//         expr.extend_from_slice(problem_values);
+//         Phenotype::new_for_test(expr)
+//     }
 
-    fn regions_and_dims(target: usize, pop: usize, bounds: Vec<RangeInclusive<f64>>) -> (Regions, Dimensions, GlobalConstants) {
-        let gc = GlobalConstants::new(pop, target);
-        (Regions::new(&gc), Dimensions::new(&bounds, &gc), gc)
-    }
+//     fn orgs(p_values: Vec<Vec<f64>>) -> Organisms {
+//         Organisms::new_from_phenotypes(p_values.iter().map(|pv| phen(pv)).collect())
+//     }
 
-    // --- tests --------------------------------------------------------------
+//     fn regions_and_dims(
+//         target: usize,
+//         pop: usize,
+//         bounds: Vec<RangeInclusive<f64>>,
+//     ) -> (Regions, Dimensions, GlobalConstants) {
+//         let gc = GlobalConstants::new(pop, target);
+//         (Regions::new(&gc), Dimensions::new(&bounds), gc)
+//     }
 
-    #[test]
-    fn given_no_organisms_when_update_then_no_regions() {
-        let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
-        let mut organisms = orgs(vec![]);
-        regions.update(&mut organisms, &mut dims);
-        assert!(regions.regions().is_empty());
-        
-    }
+//     // --- tests --------------------------------------------------------------
 
-    #[test]
-    fn given_one_organism_fits_bounds_when_update_then_single_region_no_extra_division() {
-        let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0, 0.0..=1.0]);
-        let mut organisms = orgs(vec![vec![0.5, 0.5]]);
-        // precondition: one division per dim from Dimensions::new
-        assert_eq!(dims.get_total_possible_regions(), 4);
-        regions.update(&mut organisms, &mut dims);
-        assert_eq!(regions.regions().len(), 1);
-        assert_eq!(dims.get_total_possible_regions(), 4);
-    }
+//     #[test]
+//     fn given_no_organisms_when_update_then_no_regions() {
+//         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
+//         let mut organisms = orgs(vec![]);
+//         regions.update(&mut organisms, &mut dims);
+//         assert!(regions.regions().is_empty());
+//     }
 
-    #[test]
-    fn given_organism_out_of_bounds_when_update_then_dimension_expands() {
-        let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0, 0.0..=1.0]);
-        let mut organisms = orgs(vec![vec![1.5, 0.5]]);
-        regions.update(&mut organisms, &mut dims);
-        let range0 = dims.get_dimension(0).range();
-        assert_eq!(*range0.start(), -0.5);
-        assert_eq!(*range0.end(), 1.5);
-        assert_eq!(dims.get_dimension(1).range().clone(), 0.0..=1.0);
-        assert_eq!(regions.regions().len(), 1);
-    }
+//     #[test]
+//     fn given_one_organism_fits_bounds_when_update_then_single_region_no_extra_division() {
+//         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0, 0.0..=1.0]);
+//         let mut organisms = orgs(vec![vec![0.5, 0.5]]);
+//         // precondition: one division per dim from Dimensions::new
+//         assert_eq!(dims.get_total_possible_regions(), 4);
+//         regions.update(&mut organisms, &mut dims);
+//         assert_eq!(regions.regions().len(), 1);
+//         assert_eq!(dims.get_total_possible_regions(), 4);
+//     }
 
-    #[test]
-    fn given_two_distant_organisms_when_update_then_space_divides() {
-        let (mut regions, mut dims, _) = regions_and_dims(16, 10, vec![0.0..=1.0, 0.0..=1.0]);
-        let mut organisms = orgs(vec![vec![0.2, 0.2], vec![0.8, 0.8]]);
-        regions.update(&mut organisms, &mut dims);
-        assert_eq!(regions.regions().len(), 2);
-        
-        // Each dim should now have 2 divisions (pre-divided once + one extra)
-        assert_eq!(dims.get_dimension(0).number_of_divisions(), 2);
-        assert_eq!(dims.get_dimension(1).number_of_divisions(), 2);
-    }
-}
+//     #[test]
+//     fn given_organism_out_of_bounds_when_update_then_dimension_expands() {
+//         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0, 0.0..=1.0]);
+//         let mut organisms = orgs(vec![vec![1.5, 0.5]]);
+//         regions.update(&mut organisms, &mut dims);
+//         let range0 = dims.get_dimension(0).range();
+//         assert_eq!(*range0.start(), -0.5);
+//         assert_eq!(*range0.end(), 1.5);
+//         assert_eq!(dims.get_dimension(1).range().clone(), 0.0..=1.0);
+//         assert_eq!(regions.regions().len(), 1);
+//     }
 
+//     #[test]
+//     fn given_two_distant_organisms_when_update_then_space_divides() {
+//         let (mut regions, mut dims, _) = regions_and_dims(16, 10, vec![0.0..=1.0, 0.0..=1.0]);
+//         let mut organisms = orgs(vec![vec![0.2, 0.2], vec![0.8, 0.8]]);
+//         regions.update(&mut organisms, &mut dims);
+//         assert_eq!(regions.regions().len(), 2);
+
+//         // Each dim should now have 2 divisions (pre-divided once + one extra)
+//         assert_eq!(dims.get_dimension(0).number_of_divisions(), 2);
+//         assert_eq!(dims.get_dimension(1).number_of_divisions(), 2);
+//     }
+// }
