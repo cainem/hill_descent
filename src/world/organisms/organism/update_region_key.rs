@@ -1,3 +1,4 @@
+use crate::trace;
 use crate::world::dimensions::{
     CalculateDimensionsKeyResult, Dimensions, calculate_dimensions_key,
 };
@@ -34,7 +35,8 @@ impl Organism {
         dimensions_container: &Dimensions,
         dimension_changed: Option<usize>,
     ) -> OrganismUpdateRegionKeyResult {
-        if dimension_changed.is_none() || self.region_key().is_none() {
+        if self.region_key().is_none() {
+            // Full recalculation if no key exists yet.
             let problem_expressed_values = self.phenotype().expression_problem_values();
             let actual_dimensions = dimensions_container.get_dimensions();
 
@@ -50,32 +52,15 @@ impl Organism {
                     OrganismUpdateRegionKeyResult::OutOfBounds(dimension_index)
                 }
             }
-        } else {
-            // Optimized path: only one dimension has changed and we already have a region key stored.
-            let dim_idx = dimension_changed.expect("dimension_changed is Some per branch");
-            debug_assert!(
-                dim_idx < dimensions_container.num_dimensions(),
-                "dimension_changed index {dim_idx} out of bounds"
+        } else if let Some(dim_idx) = dimension_changed {
+            // Optimized path: only one dimension has changed.
+            trace!(
+                "update_region_key: optimized path taken for dimension {}",
+                dim_idx
             );
-
-            // Safe to unwrap because we checked is_none() earlier.
-            let mut current_key = self
-                .region_key()
-                .expect("Region key must be Some when using single-dimension path")
-                .clone();
-
-            // Ensure current_key length matches expected.
-            debug_assert_eq!(
-                current_key.len(),
-                dimensions_container.num_dimensions(),
-                "Stored region_key length mismatch"
-            );
-
+            let mut current_key = self.region_key().clone().unwrap();
             let dimension = dimensions_container.get_dimension(dim_idx);
-            let value = {
-                let problem_expressed_values = self.phenotype().expression_problem_values();
-                problem_expressed_values[dim_idx]
-            };
+            let value = self.phenotype().expression_problem_values()[dim_idx];
 
             match dimension.get_interval(value) {
                 Some(interval) => {
@@ -88,6 +73,9 @@ impl Organism {
                     OrganismUpdateRegionKeyResult::OutOfBounds(dim_idx)
                 }
             }
+        } else {
+            // Nothing has changed; return success.
+            OrganismUpdateRegionKeyResult::Success
         }
     }
 }
@@ -203,5 +191,24 @@ mod tests {
         let result = organism.update_region_key(&dims, Some(0)); // Some index but no cached key yet
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         assert_eq!(organism.region_key(), Some(vec![1, 2]));
+    }
+
+    // ---------- tests: no-op branch ----------
+    #[test]
+    fn given_region_key_exists_when_no_dimension_changed_then_no_op_success() {
+        let organism = create_organism_for_test(vec![7.5, 60.0]);
+        let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
+
+        // First establish a region key
+        let result = organism.update_region_key(&dims, None);
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
+        let initial_key = organism.region_key().clone();
+        assert_eq!(initial_key, Some(vec![2, 3]));
+
+        // Now call with dimension_changed = None when region_key already exists
+        // This should be a no-op and return success without changing the key
+        let result = organism.update_region_key(&dims, None);
+        assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
+        assert_eq!(organism.region_key(), initial_key); // Key should remain unchanged
     }
 }

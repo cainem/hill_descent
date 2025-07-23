@@ -1,3 +1,5 @@
+use crate::trace;
+
 use super::{calculate_dimension_stats, find_most_diverse_index};
 
 impl super::Regions {
@@ -32,7 +34,27 @@ impl super::Regions {
         let num_dimensions = expressed_values.first().map_or(0, |v| v.len());
         let dimension_stats =
             calculate_dimension_stats::calculate_dimension_stats(&expressed_values, num_dimensions);
-        find_most_diverse_index::find_most_diverse_index(dimension_stats)
+        trace!("dimension stats {:?}", dimension_stats);
+
+        let most_diverse_index = find_most_diverse_index::find_most_diverse_index(dimension_stats);
+
+        #[cfg(feature = "enable-tracing")]
+        if most_diverse_index.is_some() {
+            for dim_idx in 0..num_dimensions {
+                let mut values_in_dimension: Vec<f64> = expressed_values
+                    .iter()
+                    .map(|values| values[dim_idx])
+                    .collect();
+                values_in_dimension
+                    .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                trace!(
+                    "dimension {} sorted values: {:?}",
+                    dim_idx, values_in_dimension
+                );
+            }
+        }
+
+        most_diverse_index
     }
 }
 

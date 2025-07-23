@@ -29,8 +29,8 @@ impl SingleValuedFunction for Himmelblau {
 #[test]
 #[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
-    #[cfg(feature = "enable-tracing")]
-    hill_descent::init_tracing();
+    // #[cfg(feature = "enable-tracing")]
+    // hill_descent::init_tracing();
 
     // The four minima are within the range [-5.0, 5.0] for both x and y.
     let param_range = vec![
@@ -46,7 +46,12 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..163 {
+    for i in 0..1000 {
+        if i == 174 {
+            #[cfg(feature = "enable-tracing")]
+            hill_descent::init_tracing();
+        }
+
         // Objective-function mode: no known outputs
         let current_best = world.training_run(&[], &[]);
         if current_best < best_score {

@@ -27,12 +27,11 @@ impl Organisms {
     }
 
     /// Returns the number of organisms.
-    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.organisms.len()
     }
 
-    #[cfg(test)]
+    /// Returns true if the collection contains no organisms.
     pub fn is_empty(&self) -> bool {
         self.organisms.is_empty()
     }

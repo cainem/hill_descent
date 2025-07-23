@@ -14,6 +14,45 @@ pub mod tracing_init;
 #[cfg(feature = "enable-tracing")]
 pub use tracing_init::init as init_tracing;
 
+// Conditional tracing macros - cleaner than wrapping every trace call
+#[cfg(feature = "enable-tracing")]
+pub use tracing::{debug, error, info, trace, warn};
+
+// When tracing is disabled, provide no-op macros
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_macros)]
+macro_rules! trace {
+    ($($arg:tt)*) => {{}};
+}
+
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_macros)]
+macro_rules! debug {
+    ($($arg:tt)*) => {{}};
+}
+
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_macros)]
+macro_rules! info {
+    ($($arg:tt)*) => {{}};
+}
+
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_macros)]
+macro_rules! tracing_warn {
+    ($($arg:tt)*) => {{}};
+}
+
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_macros)]
+macro_rules! tracing_error {
+    ($($arg:tt)*) => {{}};
+}
+
+#[cfg(not(feature = "enable-tracing"))]
+#[allow(unused_imports)]
+pub(crate) use {debug, info, trace, tracing_error as error, tracing_warn as warn};
+
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_interface;
 

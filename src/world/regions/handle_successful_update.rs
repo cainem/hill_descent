@@ -1,4 +1,5 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
+use crate::{debug, trace, warn};
 
 impl super::Regions {
     /// Handles the successful update of all organism region keys.
@@ -11,6 +12,10 @@ impl super::Regions {
     ///
     /// Returns `true` if the simulation has reached a stable state and should
     /// stop, `false` otherwise.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "trace", skip(self, organisms, dimensions))
+    )]
     pub(super) fn handle_successful_update(
         &mut self,
         organisms: &mut Organisms,
@@ -22,6 +27,11 @@ impl super::Regions {
         // current regions are greater than or equal to the allowed regions;
         // refill and return
         if self.regions.len() >= self.target_regions {
+            debug!(
+                "regions at target,  {} > {}",
+                self.regions.len(),
+                self.target_regions
+            );
             return None;
         }
 
@@ -31,17 +41,25 @@ impl super::Regions {
         // we are essentially using the most populous regions as a sample for the whole population
 
         // Determine the most diverse dimension in the most populous region
-        let most_diverse_dimension = self
-            .get_most_common_key()
-            .and_then(|key| self.get_most_diverse_dimension(&key));
+        let most_diverse_dimension = self.get_most_common_key().and_then(|key| {
+            trace!("analyzing most populous region with key: {:?}", key);
+            self.get_most_diverse_dimension(&key)
+        });
 
         if let Some(most_diverse_dimension) = most_diverse_dimension {
+            debug!("expanding dimension {}", most_diverse_dimension);
+
             // divide the most diverse dimension
             dimensions.divide_next_dimension(most_diverse_dimension);
+
+            trace!("most diverse dimension {}", most_diverse_dimension);
+            trace!("dimensions {:?}", dimensions);
+
             Some(most_diverse_dimension)
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
             // in this case no dimension divisions are necessary
+            warn!("no variation in data, no most diverse dimension");
             None
         }
     }

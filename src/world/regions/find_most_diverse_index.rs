@@ -1,3 +1,4 @@
+use crate::trace;
 use std::cmp::Ordering;
 
 /// Sorts dimensions by diversity and returns the index of the most diverse one.
@@ -17,7 +18,7 @@ pub fn find_most_diverse_index(dimension_stats: Vec<(usize, f64)>) -> Option<usi
         }
     });
 
-    indexed_stats
+    let result = indexed_stats
         .first()
         .and_then(|(index, (unique_count, _))| {
             if *unique_count > 1 {
@@ -25,7 +26,17 @@ pub fn find_most_diverse_index(dimension_stats: Vec<(usize, f64)>) -> Option<usi
             } else {
                 None
             }
-        })
+        });
+
+    #[cfg(not(feature = "enable-tracing"))]
+    if let Some((_index, (_unique_count, _std_dev))) = indexed_stats.first() {
+        trace!(
+            "most diverse dimension: index={}, unique_count={}, std_dev={}",
+            _index, _unique_count, _std_dev
+        );
+    }
+
+    result
 }
 
 #[cfg(test)]
