@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use crate::world::regions::count_unique_values_with_tolerance::count_unique_values_with_tolerance;
 
 /// Calculates the unique value count and standard deviation for each dimension.
 ///
@@ -25,12 +25,7 @@ pub fn calculate_dimension_stats(
             }
         }
 
-        let unique_count = {
-            let mut sorted_values = dimension_values.clone();
-            sorted_values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-            sorted_values.dedup();
-            sorted_values.len()
-        };
+        let unique_count = count_unique_values_with_tolerance(&dimension_values);
 
         let n = dimension_values.len();
         let std_dev = if n > 1 {
@@ -85,6 +80,29 @@ mod tests {
         // Dimension 1: 1 unique, std_dev 0.0
         assert_eq!(stats[1].0, 1);
         assert_eq!(stats[1].1, 0.0);
+    }
+
+    #[test]
+    fn given_values_within_relative_tolerance_when_calculate_dimension_stats_then_treats_as_same() {
+        let values: Vec<&[f64]> = vec![&[1.0, 2.0], &[1.000000000000001, 2.0]];
+        let stats = calculate_dimension_stats(&values, 2);
+
+        assert_eq!(stats.len(), 2);
+        // Values within relative tolerance should be treated as same
+        assert_eq!(stats[0].0, 1);
+        assert_eq!(stats[1].0, 1);
+    }
+
+    #[test]
+    fn given_values_outside_relative_tolerance_when_calculate_dimension_stats_then_treats_as_different()
+     {
+        let values: Vec<&[f64]> = vec![&[1.0, 2.0], &[1.01, 2.0]];
+        let stats = calculate_dimension_stats(&values, 2);
+
+        assert_eq!(stats.len(), 2);
+        // 1.0 vs 1.01 (1% difference) is outside relative tolerance
+        assert_eq!(stats[0].0, 2);
+        assert_eq!(stats[1].0, 1);
     }
 
     #[test]

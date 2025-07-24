@@ -15,10 +15,10 @@ impl Organisms {
     /// # Returns
     /// * `OrganismUpdateRegionKeyResult::Success` if all organism region keys were updated successfully.
     /// * `OrganismUpdateRegionKeyResult::OutOfBounds(usize)` with the dimension index of the first failure encountered.
-    #[cfg_attr(
-        feature = "enable-tracing",
-        tracing::instrument(level = "debug", skip(self, dimensions))
-    )]
+    // #[cfg_attr(
+    //     feature = "enable-tracing",
+    //     tracing::instrument(level = "debug", skip(self, dimensions))
+    // )]
     pub fn update_all_region_keys(
         &mut self,
         dimensions: &Dimensions,

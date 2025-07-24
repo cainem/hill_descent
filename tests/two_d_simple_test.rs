@@ -27,7 +27,7 @@ impl SingleValuedFunction for Himmelblau {
 }
 
 #[test]
-#[ignore] // This test is long-running and should be run explicitly.
+//#[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
     // #[cfg(feature = "enable-tracing")]
     // hill_descent::init_tracing();
@@ -46,11 +46,11 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..1000 {
-        if i == 174 {
-            #[cfg(feature = "enable-tracing")]
-            hill_descent::init_tracing();
-        }
+    for i in 0..10000 {
+        // if i == 4719 {
+        //     #[cfg(feature = "enable-tracing")]
+        //     hill_descent::init_tracing();
+        // }
 
         // Objective-function mode: no known outputs
         let current_best = world.training_run(&[], &[]);
