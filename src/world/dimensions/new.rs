@@ -14,149 +14,82 @@ impl Dimensions {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::parameters::global_constants::GlobalConstants;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ops::RangeInclusive;
 
-//     #[test]
-//     fn given_empty_parameter_bounds_when_new_then_no_dimensions_are_created() {
-//         let bounds: Vec<RangeInclusive<f64>> = vec![];
-//         let gc = GlobalConstants::new(100, 100); // population_size, target_regions
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+    #[test]
+    fn given_empty_parameter_bounds_when_new_then_no_dimensions_are_created() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![];
+        let dimensions_obj = Dimensions::new(&bounds);
 
-//         assert!(dimensions_obj.dimensions.is_empty());
-//         assert_eq!(dimensions_obj.last_division_index, 0);
-//     }
+        assert!(dimensions_obj.dimensions.is_empty());
+    }
 
-//     #[test]
-//     #[should_panic(
-//         expected = "Dimension max must be greater than or equal to min. Start: 10, End: 0"
-//     )]
-//     fn given_bounds_with_invalid_range_when_new_then_dimension_new_panics() {
-//         let bounds = vec![0.0..=10.0, 10.0..=0.0]; // Second range is invalid
-//         let gc = GlobalConstants::new(100, 100);
-//         Dimensions::new(&bounds, &gc); // This will call Dimension::new, which should panic
-//     }
+    #[test]
+    fn given_single_bound_when_new_then_one_dimension_created_with_zero_doublings() {
+        let bounds = vec![0.0..=10.0];
+        let dimensions_obj = Dimensions::new(&bounds);
 
-//     #[test]
-//     fn given_single_bound_and_target_regions_one_when_new_then_no_divisions_occur() {
-//         let bounds = vec![0.0..=10.0];
-//         let gc = GlobalConstants::new(100, 1); // target_regions = 1
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+        assert_eq!(dimensions_obj.dimensions.len(), 1);
+        assert_eq!(*dimensions_obj.dimensions[0].range(), 0.0..=10.0);
+        assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
+    }
 
-//         assert_eq!(dimensions_obj.dimensions.len(), 1);
-//         assert_eq!(*dimensions_obj.dimensions[0].range(), 0.0..=10.0);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 0);
-//     }
+    #[test]
+    fn given_multiple_bounds_when_new_then_all_dimensions_created_with_zero_doublings() {
+        let bounds = vec![0.0..=10.0, -5.0..=5.0, 100.0..=200.0];
+        let dimensions_obj = Dimensions::new(&bounds);
 
-//     #[test]
-//     fn given_single_bound_and_target_regions_allows_some_divisions_then_divisions_occur() {
-//         let bounds = vec![0.0..=10.0];
-//         // target_regions = 8 allows 2^3 regions, so 3 divisions for a single dimension.
-//         // 1 region (0 div) -> 2 regions (1 div) -> 4 regions (2 div) -> 8 regions (3 div)
-//         // Next would be 16 regions, which exceeds 8.
-//         let gc = GlobalConstants::new(100, 8);
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+        assert_eq!(dimensions_obj.dimensions.len(), 3);
 
-//         assert_eq!(dimensions_obj.dimensions.len(), 1);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 3);
-//     }
+        // Check first dimension
+        assert_eq!(*dimensions_obj.dimensions[0].range(), 0.0..=10.0);
+        assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
 
-//     #[test]
-//     fn given_single_bound_and_target_regions_allows_fewer_divisions_than_max_possible() {
-//         let bounds = vec![0.0..=10.0];
-//         // target_regions = 7. Allows 2 divisions (4 regions). Next is 8 regions > 7.
-//         let gc = GlobalConstants::new(100, 7);
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+        // Check second dimension
+        assert_eq!(*dimensions_obj.dimensions[1].range(), -5.0..=5.0);
+        assert_eq!(dimensions_obj.dimensions[1].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[1].num_intervals(), 1);
 
-//         assert_eq!(dimensions_obj.dimensions.len(), 1);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 2);
-//         assert_eq!(dimensions_obj.last_division_index, 0);
-//     }
+        // Check third dimension
+        assert_eq!(*dimensions_obj.dimensions[2].range(), 100.0..=200.0);
+        assert_eq!(dimensions_obj.dimensions[2].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[2].num_intervals(), 1);
+    }
 
-//     #[test]
-//     fn given_two_bounds_and_target_regions_one_then_no_divisions_occur() {
-//         let bounds = vec![0.0..=10.0, 0.0..=5.0];
-//         let gc = GlobalConstants::new(100, 1);
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+    #[test]
+    #[should_panic(
+        expected = "Dimension max must be greater than or equal to min. Start: 10, End: 0"
+    )]
+    fn given_bounds_with_invalid_range_when_new_then_dimension_new_panics() {
+        let bounds = vec![0.0..=5.0, 10.0..=0.0]; // Second range is invalid
+        Dimensions::new(&bounds); // This will call Dimension::new, which should panic
+    }
 
-//         assert_eq!(dimensions_obj.dimensions.len(), 2);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 0);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 0);
-//         assert_eq!(dimensions_obj.last_division_index, 1); // num_dims - 1 = 2 - 1 = 1
-//     }
+    #[test]
+    fn given_bounds_with_equal_start_end_when_new_then_dimension_created() {
+        let bounds = vec![5.0..=5.0]; // Valid range with equal start and end
+        let dimensions_obj = Dimensions::new(&bounds);
 
-//     #[test]
-//     fn given_two_bounds_and_target_regions_two_then_one_division_on_first_dim() {
-//         let bounds = vec![0.0..=10.0, 0.0..=5.0];
-//         let gc = GlobalConstants::new(100, 2); // Allows 1 total division (2^1 regions)
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
+        assert_eq!(dimensions_obj.dimensions.len(), 1);
+        assert_eq!(*dimensions_obj.dimensions[0].range(), 5.0..=5.0);
+        assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
+    }
 
-//         assert_eq!(dimensions_obj.dimensions.len(), 2);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 0);
-//         assert_eq!(dimensions_obj.last_division_index, 0); // Dimension 0 was divided
-//     }
+    #[test]
+    fn given_bounds_with_negative_values_when_new_then_dimensions_created_correctly() {
+        let bounds = vec![-10.0..=-1.0, -100.0..=100.0];
+        let dimensions_obj = Dimensions::new(&bounds);
 
-//     #[test]
-//     fn given_two_bounds_and_target_regions_three_then_one_division_on_first_dim() {
-//         let bounds = vec![0.0..=10.0, 0.0..=5.0];
-//         let gc = GlobalConstants::new(100, 3); // Still allows only 1 total division (2^1=2 regions, next is 2^2=4 regions)
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
-
-//         assert_eq!(dimensions_obj.dimensions.len(), 2);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 0);
-//         assert_eq!(dimensions_obj.last_division_index, 0);
-//     }
-
-//     #[test]
-//     fn given_two_bounds_and_target_regions_four_then_one_division_on_each_dim() {
-//         let bounds = vec![0.0..=10.0, 0.0..=5.0];
-//         let gc = GlobalConstants::new(100, 4); // Allows 2 total divisions (2^2=4 regions)
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
-//         // Iteration 1: Divides dim 0. regions = 2. last_idx = 0. divs = [1,0]
-//         // Iteration 2: Divides dim 1. regions = 4. last_idx = 1. divs = [1,1]
-//         // Iteration 3: Tries dim 0. potential regions = 8. 8 > 4. Break.
-//         assert_eq!(dimensions_obj.dimensions.len(), 2);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.last_division_index, 1); // Dimension 1 was divided last
-//     }
-
-//     #[test]
-//     fn given_three_bounds_and_target_regions_allows_round_robin_divisions() {
-//         let bounds = vec![0.0..=1.0, 2.0..=3.0, 4.0..=5.0];
-//         // target_regions = 8 allows 3 total divisions (2^3 regions)
-//         let gc = GlobalConstants::new(100, 8);
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
-//         // Initial: divs=[0,0,0], last_idx_prime=2, regions=1
-//         // Iteration 1 (dim 0): divs=[1,0,0], last_idx=0, regions=2
-//         // Iteration 2 (dim 1): divs=[1,1,0], last_idx=1, regions=4
-//         // Iteration 3 (dim 2): divs=[1,1,1], last_idx=2, regions=8
-//         // Iteration 4 (dim 0): Tries dim 0. potential regions = 16. 16 > 8. Break.
-//         assert_eq!(dimensions_obj.dimensions.len(), 3);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[2].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.last_division_index, 2);
-//     }
-
-//     #[test]
-//     fn given_three_bounds_and_target_regions_stops_before_full_round_robin() {
-//         let bounds = vec![0.0..=1.0, 2.0..=3.0, 4.0..=5.0];
-//         // target_regions = 7 allows 2 total divisions (2^2=4 regions, next is 2^3=8)
-//         let gc = GlobalConstants::new(100, 7);
-//         let dimensions_obj = Dimensions::new(&bounds, &gc);
-//         // Initial: divs=[0,0,0], last_idx_prime=2, regions=1
-//         // Iteration 1 (dim 0): divs=[1,0,0], last_idx=0, regions=2
-//         // Iteration 2 (dim 1): divs=[1,1,0], last_idx=1, regions=4
-//         // Iteration 3 (dim 2): Tries dim 2. potential regions = 8. 8 > 7. Break.
-//         assert_eq!(dimensions_obj.dimensions.len(), 3);
-//         assert_eq!(dimensions_obj.dimensions[0].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[1].number_of_divisions(), 1);
-//         assert_eq!(dimensions_obj.dimensions[2].number_of_divisions(), 0);
-//         assert_eq!(dimensions_obj.last_division_index, 1);
-//     }
-// }
+        assert_eq!(dimensions_obj.dimensions.len(), 2);
+        assert_eq!(*dimensions_obj.dimensions[0].range(), -10.0..=-1.0);
+        assert_eq!(*dimensions_obj.dimensions[1].range(), -100.0..=100.0);
+        assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
+        assert_eq!(dimensions_obj.dimensions[1].number_of_doublings(), 0);
+    }
+}

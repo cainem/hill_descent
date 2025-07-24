@@ -16,7 +16,6 @@ impl Dimension {
         let range = self.range();
         let start = *range.start();
         let end = *range.end();
-        let doublings = self.number_of_doublings();
 
         // Check if value is outside the range
         if value < start || value > end {
@@ -24,7 +23,7 @@ impl Dimension {
         }
 
         // Handle special case: single point range or no doublings.
-        if start == end || doublings == 0 {
+        if start == end || self.number_of_doublings() == 0 {
             return Some(0);
         }
 

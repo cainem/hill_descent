@@ -173,70 +173,70 @@ impl super::World {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::parameters::global_constants::GlobalConstants;
-//     use crate::world::world_function::WorldFunction;
-//     use std::ops::RangeInclusive;
+#[cfg(test)]
+mod tests {
+    use crate::parameters::global_constants::GlobalConstants;
+    use crate::world::world_function::WorldFunction;
+    use std::ops::RangeInclusive;
 
-//     // Minimal WorldFunction for tests
-//     #[derive(Debug)]
-//     struct DummyFn;
-//     impl WorldFunction for DummyFn {
-//         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-//             vec![0.0]
-//         }
-//     }
+    // Minimal WorldFunction for tests
+    #[derive(Debug)]
+    struct DummyFn;
+    impl WorldFunction for DummyFn {
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+            vec![0.0]
+        }
+    }
 
-//     #[test]
-//     fn given_2d_world_when_get_state_for_web_then_returns_valid_json_in_pdd_format() {
-//         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=10.0, 0.0..=20.0];
-//         let gc = GlobalConstants::new(4, 10);
-//         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
-//         let mut world = super::super::World::new(&bounds, gc, world_fn);
-//         // Manually run a round to populate regions and organisms with some data
-//         world.training_run(&[], &[]);
+    #[test]
+    fn given_2d_world_when_get_state_for_web_then_returns_valid_json_in_pdd_format() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=10.0, 0.0..=20.0];
+        let gc = GlobalConstants::new(10, 4);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let mut world = super::super::World::new(&bounds, gc, world_fn);
+        // Manually run a round to populate regions and organisms with some data
+        world.training_run(&[], &[]);
 
-//         let json = world.get_state_for_web();
-//         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let json = world.get_state_for_web();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-//         // Check top-level keys
-//         assert!(parsed.get("world_bounds").is_some());
-//         assert!(parsed.get("score_range").is_some());
-//         assert!(parsed.get("regions").is_some());
-//         assert!(parsed.get("organisms").is_some());
+        // Check top-level keys
+        assert!(parsed.get("world_bounds").is_some());
+        assert!(parsed.get("score_range").is_some());
+        assert!(parsed.get("regions").is_some());
+        assert!(parsed.get("organisms").is_some());
 
-//         // Check that the world bounds from the state encompass the original input bounds.
-//         let wb = parsed.get("world_bounds").unwrap();
-//         let x_bounds = wb.get("x").unwrap().as_array().unwrap();
-//         let y_bounds = wb.get("y").unwrap().as_array().unwrap();
-//         assert!(x_bounds[0].as_f64().unwrap() >= *bounds[0].start());
-//         assert!(x_bounds[1].as_f64().unwrap() <= *bounds[0].end());
-//         assert!(y_bounds[0].as_f64().unwrap() >= *bounds[1].start());
-//         assert!(y_bounds[1].as_f64().unwrap() <= *bounds[1].end());
+        // Check that the world bounds from the state encompass the original input bounds.
+        let wb = parsed.get("world_bounds").unwrap();
+        let x_bounds = wb.get("x").unwrap().as_array().unwrap();
+        let y_bounds = wb.get("y").unwrap().as_array().unwrap();
+        assert!(x_bounds[0].as_f64().unwrap() >= *bounds[0].start());
+        assert!(x_bounds[1].as_f64().unwrap() <= *bounds[0].end());
+        assert!(y_bounds[0].as_f64().unwrap() >= *bounds[1].start());
+        assert!(y_bounds[1].as_f64().unwrap() <= *bounds[1].end());
 
-//         // Check organism fields
-//         let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
-//         for org in organisms {
-//             assert!(org.get("params").is_some());
-//             assert!(org.get("age").is_some());
-//             assert!(org.get("max_age").is_some());
-//             // max_age should be within its defined bounds [2.0, 10.0].
-//             let max_age = org.get("max_age").unwrap().as_f64().unwrap();
-//             assert!(
-//                 (2.0..=10.0).contains(&max_age),
-//                 "max_age {max_age} is out of bounds"
-//             );
-//         }
-//     }
+        // Check organism fields
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        for org in organisms {
+            assert!(org.get("params").is_some());
+            assert!(org.get("age").is_some());
+            assert!(org.get("max_age").is_some());
+            // max_age should be within its defined bounds [2.0, 10.0].
+            let max_age = org.get("max_age").unwrap().as_f64().unwrap();
+            assert!(
+                (2.0..=10.0).contains(&max_age),
+                "max_age {max_age} is out of bounds"
+            );
+        }
+    }
 
-//     #[test]
-//     #[should_panic]
-//     fn given_non_2d_world_when_get_state_for_web_then_panics() {
-//         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0]; // Only 1 dimension
-//         let gc = GlobalConstants::new(4, 10);
-//         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
-//         let world = super::super::World::new(&bounds, gc, world_fn);
-//         world.get_state_for_web(); // Should panic
-//     }
-// }
+    #[test]
+    #[should_panic]
+    fn given_non_2d_world_when_get_state_for_web_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0]; // Only 1 dimension
+        let gc = GlobalConstants::new(4, 10);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+        world.get_state_for_web(); // Should panic
+    }
+}
