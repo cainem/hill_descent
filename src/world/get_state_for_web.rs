@@ -102,7 +102,7 @@ impl super::World {
 
                 for (i, &dim_idx) in key.iter().enumerate() {
                     let dim = &dims[i];
-                    let intervals = dim.num_intervals() as f64;
+                    let intervals = dim.num_intervals();
                     let div_size = (*dim.range().end() - *dim.range().start()) / intervals;
                     let start = *dim.range().start() + dim_idx as f64 * div_size;
                     let mut end = start + div_size;

@@ -34,7 +34,8 @@ impl Dimensions {
             return 1;
         }
         // The total number of regions is the product of the number of intervals in each dimension.
-        self.dimensions.iter().map(|d| d.num_intervals()).product()
+        let product: f64 = self.dimensions.iter().map(|d| d.num_intervals()).product();
+        product as usize
     }
 
     /// Expands the bounds of a specified dimension.
@@ -114,23 +115,23 @@ mod tests_divide_next_dimension {
         // Test the sequence: 0 -> 1 -> 2 -> 3 -> 4 (doublings increment by 1)
         // Actual intervals: 1 -> 2 -> 4 -> 8 -> 16 (2^doublings)
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 0);
-        assert_eq!(dims.get_dimension(0).num_intervals(), 1);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 1.0);
 
         dims.divide_next_dimension(0);
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 1);
-        assert_eq!(dims.get_dimension(0).num_intervals(), 2);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 2.0);
 
         dims.divide_next_dimension(0);
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 2);
-        assert_eq!(dims.get_dimension(0).num_intervals(), 4);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 4.0);
 
         dims.divide_next_dimension(0);
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 3);
-        assert_eq!(dims.get_dimension(0).num_intervals(), 8);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 8.0);
 
         dims.divide_next_dimension(0);
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 4);
-        assert_eq!(dims.get_dimension(0).num_intervals(), 16);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 16.0);
     }
 
     #[test]

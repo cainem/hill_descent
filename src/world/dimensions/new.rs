@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(dimensions_obj.dimensions.len(), 1);
         assert_eq!(*dimensions_obj.dimensions[0].range(), 0.0..=10.0);
         assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
-        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1.0);
     }
 
     #[test]
@@ -46,19 +46,22 @@ mod tests {
         assert_eq!(dimensions_obj.dimensions.len(), 3);
 
         // Check first dimension
-        assert_eq!(*dimensions_obj.dimensions[0].range(), 0.0..=10.0);
+        assert_eq!(*dimensions_obj.dimensions[0].range().start(), 0.0_f64);
+        assert_eq!(*dimensions_obj.dimensions[0].range().end(), 10.0_f64);
         assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
-        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1.0);
 
         // Check second dimension
-        assert_eq!(*dimensions_obj.dimensions[1].range(), -5.0..=5.0);
+        assert_eq!(*dimensions_obj.dimensions[1].range().start(), -5.0_f64);
+        assert_eq!(*dimensions_obj.dimensions[1].range().end(), 5.0_f64);
         assert_eq!(dimensions_obj.dimensions[1].number_of_doublings(), 0);
-        assert_eq!(dimensions_obj.dimensions[1].num_intervals(), 1);
+        assert_eq!(dimensions_obj.dimensions[1].num_intervals(), 1.0);
 
         // Check third dimension
-        assert_eq!(*dimensions_obj.dimensions[2].range(), 100.0..=200.0);
+        assert_eq!(*dimensions_obj.dimensions[2].range().start(), 100.0_f64);
+        assert_eq!(*dimensions_obj.dimensions[2].range().end(), 200.0_f64);
         assert_eq!(dimensions_obj.dimensions[2].number_of_doublings(), 0);
-        assert_eq!(dimensions_obj.dimensions[2].num_intervals(), 1);
+        assert_eq!(dimensions_obj.dimensions[2].num_intervals(), 1.0);
     }
 
     #[test]
@@ -78,7 +81,7 @@ mod tests {
         assert_eq!(dimensions_obj.dimensions.len(), 1);
         assert_eq!(*dimensions_obj.dimensions[0].range(), 5.0..=5.0);
         assert_eq!(dimensions_obj.dimensions[0].number_of_doublings(), 0);
-        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1);
+        assert_eq!(dimensions_obj.dimensions[0].num_intervals(), 1.0);
     }
 
     #[test]

@@ -28,7 +28,7 @@ impl Dimension {
         }
 
         // The number of intervals is 2^doublings.
-        let num_intervals = self.num_intervals() as f64;
+        let num_intervals = self.num_intervals();
         let interval_size = (end - start) / num_intervals;
 
         // Handle case where range is tiny and interval_size is zero.

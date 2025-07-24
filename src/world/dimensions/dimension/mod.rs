@@ -28,8 +28,8 @@ impl Dimension {
     }
 
     /// Returns the number of intervals the dimension is divided into.
-    pub fn num_intervals(&self) -> usize {
+    pub fn num_intervals(&self) -> f64 {
         // Number of intervals is 2^d, where d is the number of doublings.
-        2_usize.pow(self.number_of_doublings as u32)
+        2.0_f64.powi(self.number_of_doublings as i32)
     }
 }
