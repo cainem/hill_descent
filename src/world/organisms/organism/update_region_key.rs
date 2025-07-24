@@ -106,7 +106,7 @@ mod tests {
             .iter()
             .map(|(bounds, div)| {
                 let mut d = Dimension::new(bounds.clone(), 0);
-                d.set_number_of_divisions(*div);
+                d.set_number_of_doublings(*div);
                 d
             })
             .collect();
@@ -120,7 +120,9 @@ mod tests {
         let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
         let result = organism.update_region_key(&dims, None);
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(vec![2, 3]));
+        // With binary doubling: 2 doublings = 4 intervals, 4 doublings = 16 intervals
+        // Position [7.5, 60.0] maps to intervals [3, 9]
+        assert_eq!(organism.region_key(), Some(vec![3, 9]));
     }
 
     #[test]
@@ -147,20 +149,20 @@ mod tests {
             organism.update_region_key(&dims, None),
             OrganismUpdateRegionKeyResult::Success
         ));
-        assert_eq!(organism.region_key(), Some(vec![2, 3]));
+        assert_eq!(organism.region_key(), Some(vec![3, 9]));
 
         // Manually mark existing key then craft organism with changed value.
         // Simulate cache by explicitly setting an old key then calling fast path.
-        organism.set_region_key(Some(vec![2, 3]));
+        organism.set_region_key(Some(vec![3, 9]));
 
-        // Build a new organism with second value 25.0 and an old cached key [2,3]
+        // Build a new organism with second value 25.0 and an old cached key [3,9]
         let organism2 = create_organism_for_test(vec![7.5, 25.0]);
-        organism2.set_region_key(Some(vec![2, 3]));
+        organism2.set_region_key(Some(vec![3, 9]));
 
         // call fast-path with Some(1) on organism2
         let result = organism2.update_region_key(&dims, Some(1));
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism2.region_key(), Some(vec![2, 1]));
+        assert_eq!(organism2.region_key(), Some(vec![3, 4]));
     }
 
     #[test]
@@ -172,7 +174,7 @@ mod tests {
 
         // Build new organism with first value out of bounds (-1.0) but cached key present
         let organism2 = create_organism_for_test(vec![-1.0, 60.0]);
-        organism2.set_region_key(Some(vec![2, 3]));
+        organism2.set_region_key(Some(vec![3, 9]));
 
         let result = organism2.update_region_key(&dims, Some(0));
         assert!(matches!(
@@ -190,7 +192,7 @@ mod tests {
         let dims = create_dimensions(&[(0.0..=10.0, 2), (0.0..=100.0, 4)]);
         let result = organism.update_region_key(&dims, Some(0)); // Some index but no cached key yet
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
-        assert_eq!(organism.region_key(), Some(vec![1, 2]));
+        assert_eq!(organism.region_key(), Some(vec![2, 8]));
     }
 
     // ---------- tests: no-op branch ----------
@@ -203,7 +205,7 @@ mod tests {
         let result = organism.update_region_key(&dims, None);
         assert!(matches!(result, OrganismUpdateRegionKeyResult::Success));
         let initial_key = organism.region_key().clone();
-        assert_eq!(initial_key, Some(vec![2, 3]));
+        assert_eq!(initial_key, Some(vec![3, 9]));
 
         // Now call with dimension_changed = None when region_key already exists
         // This should be a no-op and return success without changing the key

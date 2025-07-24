@@ -44,8 +44,9 @@ impl Dimensions {
         }
     }
 
-    /// Divides the dimension at `dim_idx`, increasing the total potential regions by a factor
-    /// of two. Panics if `dim_idx` is out of bounds or if there are no defined dimensions.
+    /// Divides the dimension at `dim_idx` by doubling the number of intervals.
+    /// Increments the number_of_doublings by 1, which doubles the total intervals (2^doublings).
+    /// Panics if `dim_idx` is out of bounds or if there are no defined dimensions.
     pub fn divide_next_dimension(&mut self, dim_idx: usize) {
         assert!(
             !self.dimensions.is_empty(),
@@ -59,8 +60,8 @@ impl Dimensions {
         );
 
         let dim = &mut self.dimensions[dim_idx];
-        let current_divisions = dim.number_of_divisions();
-        dim.set_number_of_divisions(current_divisions + 1);
+        let current_doublings = dim.number_of_doublings();
+        dim.set_number_of_doublings(current_doublings + 1);
     }
 }
 
@@ -78,14 +79,58 @@ mod tests_divide_next_dimension {
     use crate::world::dimensions::dimension::Dimension;
 
     #[test]
-    fn given_valid_index_when_divide_next_dimension_then_divisions_increment() {
+    fn given_zero_doublings_when_divide_next_dimension_then_becomes_one() {
         let mut dims = Dimensions::new_for_test(vec![
             Dimension::new(0.0..=1.0, 0),
             Dimension::new(0.0..=1.0, 0),
         ]);
-        assert_eq!(dims.get_dimension(1).number_of_divisions(), 0);
+        assert_eq!(dims.get_dimension(1).number_of_doublings(), 0);
         dims.divide_next_dimension(1);
-        assert_eq!(dims.get_dimension(1).number_of_divisions(), 1);
+        assert_eq!(dims.get_dimension(1).number_of_doublings(), 1);
+    }
+
+    #[test]
+    fn given_non_zero_doublings_when_divide_next_dimension_then_increments() {
+        let mut dims = Dimensions::new_for_test(vec![
+            Dimension::new(0.0..=1.0, 1),
+            Dimension::new(0.0..=1.0, 2),
+        ]);
+
+        // Test incrementing from 1 to 2
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 1);
+        dims.divide_next_dimension(0);
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 2);
+
+        // Test incrementing from 2 to 3
+        assert_eq!(dims.get_dimension(1).number_of_doublings(), 2);
+        dims.divide_next_dimension(1);
+        assert_eq!(dims.get_dimension(1).number_of_doublings(), 3);
+    }
+
+    #[test]
+    fn given_sequence_when_divide_next_dimension_then_doublings_increment_by_one() {
+        let mut dims = Dimensions::new_for_test(vec![Dimension::new(0.0..=1.0, 0)]);
+
+        // Test the sequence: 0 -> 1 -> 2 -> 3 -> 4 (doublings increment by 1)
+        // Actual intervals: 1 -> 2 -> 4 -> 8 -> 16 (2^doublings)
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 0);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 1);
+
+        dims.divide_next_dimension(0);
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 1);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 2);
+
+        dims.divide_next_dimension(0);
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 2);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 4);
+
+        dims.divide_next_dimension(0);
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 3);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 8);
+
+        dims.divide_next_dimension(0);
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 4);
+        assert_eq!(dims.get_dimension(0).num_intervals(), 16);
     }
 
     #[test]

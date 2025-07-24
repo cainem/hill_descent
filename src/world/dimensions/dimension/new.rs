@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 use crate::world::dimensions::dimension::Dimension;
 
 impl Dimension {
-    pub fn new(range_bounds: RangeInclusive<f64>, number_of_divisions: usize) -> Self {
+    pub fn new(range_bounds: RangeInclusive<f64>, number_of_doublings: usize) -> Self {
         assert!(
             *range_bounds.end() >= *range_bounds.start(),
             "Dimension max must be greater than or equal to min. Start: {}, End: {}",
@@ -12,7 +12,7 @@ impl Dimension {
         );
         Self {
             range: range_bounds,
-            number_of_divisions,
+            number_of_doublings,
         }
     }
 }
@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn given_zero_divisions_when_new_dimension_then_succeeds() {
         let dim = Dimension::new(0.0..=5.0, 0);
-        assert_eq!(dim.number_of_divisions(), 0);
+        assert_eq!(dim.number_of_doublings(), 0);
         assert_eq!(*dim.range(), 0.0..=5.0);
     }
 
@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn given_valid_input_when_new_dimension_then_succeeds() {
         let dim = Dimension::new(1.0..=5.0, 2);
-        assert_eq!(dim.number_of_divisions(), 2);
+        assert_eq!(dim.number_of_doublings(), 2);
         assert_eq!(*dim.range(), 1.0..=5.0);
     }
 }

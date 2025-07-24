@@ -61,12 +61,13 @@ mod tests {
     #[test]
     fn given_valid_inputs_when_calculate_dimensions_key_is_called_then_success_is_returned() {
         let dimensions = vec![
-            Dimension::new(0.0..=10.0, 2),  // 3 intervals: [0,5), [5,10), [10,10]
-            Dimension::new(0.0..=100.0, 4), // 5 intervals: [0,25), [25,50), [50,75), [75,100), [100,100]
+            Dimension::new(0.0..=10.0, 2),  // 2^2 = 4 intervals of size 2.5 each
+            Dimension::new(0.0..=100.0, 4), // 2^4 = 16 intervals of size 6.25 each
         ];
         let expressed_values = vec![7.5, 60.0];
         let result = calculate_dimensions_key(&dimensions, &expressed_values);
-        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![2, 3]));
+        // 7.5 falls into interval 3 (7.5/2.5 = 3.0), 60.0 falls into interval 9 (60.0/6.25 = 9.6)
+        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![3, 9]));
     }
 
     #[test]
@@ -78,9 +79,9 @@ mod tests {
         ];
         let expressed_values = vec![10.0, 100.0];
         let result = calculate_dimensions_key(&dimensions, &expressed_values);
-        // 10.0 is in interval 2 (the end point)
-        // 100.0 is in interval 4 (the end point)
-        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![2, 4]));
+        // 10.0 is in interval 3 (the last interval, 0-indexed)
+        // 100.0 is in interval 15 (the last interval, 0-indexed)
+        assert_eq!(result, CalculateDimensionsKeyResult::Success(vec![3, 15]));
     }
 
     #[test]

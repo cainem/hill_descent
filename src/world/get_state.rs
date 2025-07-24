@@ -9,7 +9,7 @@ use super::regions::region::Region;
 #[derive(Serialize)]
 struct DimensionState {
     range: (f64, f64),
-    number_of_divisions: usize,
+    number_of_doublings: usize,
 }
 
 #[derive(Serialize)]
@@ -46,7 +46,7 @@ impl DimensionState {
         let range = (*d.range().start(), *d.range().end());
         Self {
             range,
-            number_of_divisions: d.number_of_divisions(),
+            number_of_doublings: d.number_of_doublings(),
         }
     }
 }
