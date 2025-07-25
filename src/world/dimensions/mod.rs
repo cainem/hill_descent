@@ -26,6 +26,11 @@ impl Dimensions {
         &self.dimensions[index]
     }
 
+    /// Returns a mutable reference to a specific dimension by its index.
+    pub fn get_dimension_mut(&mut self, index: usize) -> &mut Dimension {
+        &mut self.dimensions[index]
+    }
+
     /// Calculates the total number of possible regions.
     pub fn get_total_possible_regions(&self) -> usize {
         if self.dimensions.is_empty() {

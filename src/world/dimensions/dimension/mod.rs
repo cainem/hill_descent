@@ -32,4 +32,15 @@ impl Dimension {
         // Number of intervals is 2^d, where d is the number of doublings.
         2.0_f64.powi(self.number_of_doublings as i32)
     }
+
+    /// Sets the range of the dimension.
+    pub fn set_range(&mut self, new_range: RangeInclusive<f64>) {
+        assert!(
+            *new_range.end() >= *new_range.start(),
+            "Dimension max must be greater than or equal to min. Start: {}, End: {}",
+            new_range.start(),
+            new_range.end()
+        );
+        self.range = new_range;
+    }
 }
