@@ -1,6 +1,12 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 use crate::{debug, trace, warn};
 
+pub enum AdjustRegionsResult {
+    DimensionExpanded(usize),
+    ExpansionNotNecessary,
+    AtResolutionLimit,
+}
+
 impl super::Regions {
     /// Handles the successful update of all organism region keys.
     ///
@@ -16,7 +22,7 @@ impl super::Regions {
         feature = "enable-tracing",
         tracing::instrument(level = "trace", skip(self, organisms, dimensions))
     )]
-    pub(super) fn handle_successful_update(
+    pub(super) fn adjust_regions(
         &mut self,
         organisms: &mut Organisms,
         dimensions: &mut Dimensions,
@@ -59,7 +65,9 @@ impl super::Regions {
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
             // in this case no dimension divisions are necessary
-            warn!("no variation in data, no most diverse dimension");
+            warn!(
+                "no variation in data in most diverse dimension there is probably not point in continuing"
+            );
             None
         }
     }
@@ -102,7 +110,7 @@ mod tests {
     fn given_target_regions_already_reached_when_handle_successful_update_then_returns_none() {
         let (mut regions, mut dims) = setup(1, vec![0.0..=1.0]);
         let mut organisms = organisms_from_problem_values(vec![vec![0.5]]);
-        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert_eq!(result, None);
     }
 
@@ -112,7 +120,7 @@ mod tests {
         // Two organisms in same initial region with variation
         let mut organisms = organisms_from_problem_values(vec![vec![0.05], vec![0.06]]);
         let _ = organisms.update_all_region_keys(&dims, None);
-        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert_eq!(result, Some(0));
     }
 
@@ -120,7 +128,7 @@ mod tests {
     fn given_no_variance_when_handle_successful_update_then_returns_none() {
         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
         let mut organisms = organisms_from_problem_values(vec![vec![0.5], vec![0.5]]);
-        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert_eq!(result, None);
     }
 
@@ -128,7 +136,7 @@ mod tests {
     fn given_zero_dimensions_when_handle_successful_update_then_returns_none() {
         let (mut regions, mut dims) = setup(10, vec![]);
         let mut organisms = organisms_from_problem_values(vec![vec![]]);
-        let result = regions.handle_successful_update(&mut organisms, &mut dims);
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert_eq!(result, None);
     }
 }

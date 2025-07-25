@@ -42,7 +42,7 @@ impl super::Regions {
                 continue;
             }
 
-            changed_dimension = self.handle_successful_update(organisms, dimensions);
+            changed_dimension = self.adjust_regions(organisms, dimensions);
             if changed_dimension.is_none() {
                 break;
             }
