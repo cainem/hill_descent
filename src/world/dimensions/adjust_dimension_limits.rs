@@ -1,86 +1,87 @@
-use crate::world::dimensions::Dimensions;
+use super::Dimensions;
 use crate::world::organisms::Organisms;
 
-/// Adjusts dimension limits based on actual organism expressed values.
-///
-/// This function examines each dimension and finds the minimum and maximum
-/// expressed values across all organisms for that dimension. Each dimension's
-/// range is then adjusted to be 50% larger than needed to hold these values.
-///
-/// # Arguments
-///
-/// * `dimensions` - A mutable reference to the world's dimensions to be adjusted.
-/// * `organisms` - A reference to the collection of organisms to analyze.
-///
-/// # Example
-///
-/// If organisms have values ranging from 10.0 to 20.0 for dimension 0,
-/// the new range will be centered around 15.0 with a span of 15.0
-/// (20.0 - 10.0 = 10.0, plus 50% = 15.0 span).
-/// The new range would be approximately [7.5, 22.5].
-#[allow(dead_code)]
-pub fn adjust_dimension_limits(dimensions: &mut Dimensions, organisms: &Organisms) {
-    let dimensions_vec = dimensions.get_dimensions();
+impl Dimensions {
+    /// Adjusts dimension limits based on actual organism expressed values.
+    ///
+    /// This function examines each dimension and finds the minimum and maximum
+    /// expressed values across all organisms for that dimension. Each dimension's
+    /// range is then adjusted to be 50% larger than needed to hold these values.
+    ///
+    /// # Arguments
+    ///
+    /// * `organisms` - A reference to the collection of organisms to analyze.
+    ///
+    /// # Example
+    ///
+    /// If organisms have values ranging from 10.0 to 20.0 for dimension 0,
+    /// the new range will be centered around 15.0 with a span of 15.0
+    /// (20.0 - 10.0 = 10.0, plus 50% = 15.0 span).
+    /// The new range would be approximately [7.5, 22.5].
+    #[allow(dead_code)]
+    pub fn adjust_dimension_limits(&mut self, organisms: &Organisms) {
+        let dimensions_vec = self.get_dimensions();
 
-    if organisms.is_empty() || dimensions_vec.is_empty() {
-        return;
-    }
+        if organisms.is_empty() || dimensions_vec.is_empty() {
+            return;
+        }
 
-    let num_dimensions = dimensions_vec.len();
-    let mut min_values = vec![f64::INFINITY; num_dimensions];
-    let mut max_values = vec![f64::NEG_INFINITY; num_dimensions];
+        let num_dimensions = dimensions_vec.len();
+        let mut min_values = vec![f64::INFINITY; num_dimensions];
+        let mut max_values = vec![f64::NEG_INFINITY; num_dimensions];
 
-    // Find min and max values for each dimension across all organisms
-    for organism in organisms.iter() {
-        let phenotype = organism.phenotype();
-        let expressed_values = phenotype.expressed_values();
+        // Find min and max values for each dimension across all organisms
+        for organism in organisms.iter() {
+            let phenotype = organism.phenotype();
+            let expressed_values = phenotype.expressed_values();
 
-        // Debug assert that we have enough expressed values for all dimensions
-        // Note: expressed_values includes system parameters (first 7) + spatial dimensions
-        debug_assert!(
-            expressed_values.len() >= num_dimensions,
-            "Organism expressed values length ({}) must be at least the number of dimensions ({})",
-            expressed_values.len(),
-            num_dimensions
-        );
+            // Debug assert that we have enough expressed values for all dimensions
+            // Note: expressed_values includes system parameters (first 7) + spatial dimensions
+            debug_assert!(
+                expressed_values.len() >= num_dimensions,
+                "Organism expressed values length ({}) must be at least the number of dimensions ({})",
+                expressed_values.len(),
+                num_dimensions
+            );
 
+            for i in 0..num_dimensions {
+                let value = expressed_values[i];
+
+                // Skip NaN values
+                if value.is_nan() {
+                    continue;
+                }
+
+                min_values[i] = min_values[i].min(value);
+                max_values[i] = max_values[i].max(value);
+            }
+        }
+
+        // Adjust each dimension's range to be 50% larger than needed
         for i in 0..num_dimensions {
-            let value = expressed_values[i];
+            let min_val = min_values[i];
+            let max_val = max_values[i];
 
-            // Skip NaN values
-            if value.is_nan() {
+            // Skip if no valid values found for this dimension
+            if min_val == f64::INFINITY || max_val == f64::NEG_INFINITY {
                 continue;
             }
 
-            min_values[i] = min_values[i].min(value);
-            max_values[i] = max_values[i].max(value);
+            let midpoint = (min_val + max_val) / 2.0;
+            let original_span = max_val - min_val;
+            let span = if original_span == 0.0 {
+                1.0 // Default span for single value
+            } else {
+                original_span * 1.5
+            };
+
+            let new_start = midpoint - span / 2.0;
+            let new_end = midpoint + span / 2.0;
+
+            // Access the dimension directly to set its range
+            let dimension = self.get_dimension_mut(i);
+            dimension.set_range(new_start..=new_end);
         }
-    }
-
-    // Adjust each dimension's range to be 50% larger than needed
-    for i in 0..num_dimensions {
-        let min_val = min_values[i];
-        let max_val = max_values[i];
-
-        // Skip if no valid values found for this dimension
-        if min_val == f64::INFINITY || max_val == f64::NEG_INFINITY {
-            continue;
-        }
-
-        let midpoint = (min_val + max_val) / 2.0;
-        let original_span = max_val - min_val;
-        let span = if original_span == 0.0 {
-            1.0 // Default span for single value
-        } else {
-            original_span * 1.5
-        };
-
-        let new_start = midpoint - span / 2.0;
-        let new_end = midpoint + span / 2.0;
-
-        // Access the dimension directly to set its range
-        let dimension = dimensions.get_dimension_mut(i);
-        dimension.set_range(new_start..=new_end);
     }
 }
 
@@ -88,7 +89,6 @@ pub fn adjust_dimension_limits(dimensions: &mut Dimensions, organisms: &Organism
 mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
-    use crate::world::dimensions::Dimensions;
     use crate::world::dimensions::dimension::Dimension;
     use crate::world::organisms::Organisms;
     use crate::world::organisms::organism::Organism;
@@ -119,7 +119,7 @@ mod tests {
             .map(|d| (*d.range().start(), *d.range().end()))
             .collect();
 
-        adjust_dimension_limits(&mut dimensions, &organisms);
+        dimensions.adjust_dimension_limits(&organisms);
 
         let new_ranges: Vec<_> = dimensions
             .get_dimensions()
@@ -134,10 +134,10 @@ mod tests {
     fn given_single_organism_when_adjusting_limits_then_range_expanded_correctly() {
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(0.0..=10.0, 1)]);
 
-        let organism = create_test_organism(vec![5.0]);
+        let organism = create_test_organism(vec![5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
         let organisms = Organisms::new_from_organisms(vec![(*organism).clone()]);
 
-        adjust_dimension_limits(&mut dimensions, &organisms);
+        dimensions.adjust_dimension_limits(&organisms);
 
         let new_range = dimensions.get_dimensions()[0].range();
         // With single value 5.0, min=max=5.0, span=0.0, new_span=1.0 (default)
@@ -163,7 +163,7 @@ mod tests {
             (*organism3).clone(),
         ]);
 
-        adjust_dimension_limits(&mut dimensions, &organisms);
+        dimensions.adjust_dimension_limits(&organisms);
 
         // Dimension 0: values 2.0, 8.0, 5.0 → min=2.0, max=8.0, span=6.0, new_span=9.0
         // midpoint=5.0, new range=[0.5, 9.5]
@@ -189,7 +189,7 @@ mod tests {
         let organisms =
             Organisms::new_from_organisms(vec![(*organism1).clone(), (*organism2).clone()]);
 
-        adjust_dimension_limits(&mut dimensions, &organisms);
+        dimensions.adjust_dimension_limits(&organisms);
 
         // Values: -5.0, 3.0 → min=-5.0, max=3.0, span=8.0, new_span=12.0
         // midpoint=-1.0, new range=[-7.0, 5.0]
@@ -209,7 +209,7 @@ mod tests {
         let organism = create_test_organism(vec![5.0, 150.0]);
         let organisms = Organisms::new_from_organisms(vec![(*organism).clone()]);
 
-        adjust_dimension_limits(&mut dimensions, &organisms);
+        dimensions.adjust_dimension_limits(&organisms);
 
         // First dimension should be updated
         let dim0_range = dimensions.get_dimensions()[0].range();

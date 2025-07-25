@@ -1,3 +1,4 @@
+pub mod adjust_dimension_limits;
 pub mod calculate_dimensions_key;
 pub mod dimension;
 pub mod new;
