@@ -29,8 +29,8 @@ impl SingleValuedFunction for Himmelblau {
 #[test]
 #[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
-    // #[cfg(feature = "enable-tracing")]
-    // hill_descent::init_tracing();
+    #[cfg(feature = "enable-tracing")]
+    hill_descent::init_tracing();
 
     // The four minima are within the range [-5.0, 5.0] for both x and y.
     let param_range = vec![
@@ -53,9 +53,19 @@ pub fn execute() {
         // }
 
         // Objective-function mode: no known outputs
-        let current_best = world.training_run(&[], &[]);
+        let at_resolution_limit = world.training_run(&[], &[]);
+
+        // Get the current best score from organisms
+        let current_best = world.get_best_score();
+
         if current_best < best_score {
             best_score = current_best;
+        }
+
+        // Break early if we've reached the resolution limit
+        if at_resolution_limit {
+            println!("Resolution limit reached at epoch {i}");
+            break;
         }
 
         //if i % 100 == 0 {

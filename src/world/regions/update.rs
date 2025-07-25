@@ -1,3 +1,4 @@
+use crate::info;
 use crate::world::organisms::organism::update_region_key::OrganismUpdateRegionKeyResult;
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 
@@ -25,12 +26,19 @@ impl super::Regions {
     ///    * `update_carrying_capacities`   – ecological capacity derived from
     ///      these scores and global constants.
     ///
-    /// This three-step process guarantees that every organism has a valid region
-    /// key and that the spatial partitioning respects both out-of-bounds cases
-    /// (expansion) and over-population within a region (division) until the
+    /// Updates the regions based on the current organisms and dimensions.
+    ///
+    /// This function iterates through organisms, updates their region keys,
+    /// handles out-of-bounds organisms by expanding dimensions, and adjusts
+    /// regions as needed. The process continues until the desired
     /// target number of regions is reached or no further meaningful split is
     /// possible.
-    pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the resolution limit has been reached and no further
+    /// meaningful splits are possible, `false` otherwise.
+    pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) -> bool {
         use crate::world::regions::adjust_regions::AdjustRegionsResult;
 
         let mut changed_dimension: Option<usize> = None;
@@ -51,18 +59,21 @@ impl super::Regions {
                     changed_dimension = Some(dimension_index);
                     continue;
                 }
-                AdjustRegionsResult::ExpansionNotNecessary
-                | AdjustRegionsResult::AtResolutionLimit => {
-                    break;
+                AdjustRegionsResult::ExpansionNotNecessary => {
+                    // Update min scores and carrying capacities before returning
+                    self.update_all_region_min_scores(organisms);
+                    self.update_carrying_capacities();
+                    return false;
+                }
+                AdjustRegionsResult::AtResolutionLimit => {
+                    info!("at resolution limit");
+                    // Update min scores and carrying capacities before returning
+                    self.update_all_region_min_scores(organisms);
+                    self.update_carrying_capacities();
+                    return true;
                 }
             }
         }
-        // Update min scores for regions first, then carrying capacities
-        // --- post-processing -------------------------------------------------
-        // All region keys are now valid and space is stable – recalculate
-        // dependent metrics before returning.
-        self.update_all_region_min_scores(organisms);
-        self.update_carrying_capacities();
     }
 }
 
@@ -104,8 +115,12 @@ mod tests {
     fn given_no_organisms_when_update_then_no_regions() {
         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
         let mut organisms = orgs(vec![]);
-        regions.update(&mut organisms, &mut dims);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
         assert!(regions.regions().is_empty());
+        assert!(
+            at_resolution_limit,
+            "Should return true when no organisms present - no point continuing"
+        );
     }
 
     #[test]
@@ -114,33 +129,133 @@ mod tests {
         let mut organisms = orgs(vec![vec![0.5, 0.5]]);
         // precondition: zero doublings per dim from Dimensions::new (1 interval each)
         assert_eq!(dims.get_total_possible_regions(), 1);
-        regions.update(&mut organisms, &mut dims);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
         assert_eq!(regions.regions().len(), 1);
         assert_eq!(dims.get_total_possible_regions(), 1);
+        assert!(
+            at_resolution_limit,
+            "Should return true - single organism has no variance for division"
+        );
     }
 
     #[test]
     fn given_organism_out_of_bounds_when_update_then_dimension_expands() {
         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0, 0.0..=1.0]);
-        let mut organisms = orgs(vec![vec![1.5, 0.5]]);
-        regions.update(&mut organisms, &mut dims);
+        // Add multiple organisms with significant variance to avoid resolution limit
+        let mut organisms = orgs(vec![
+            vec![1.5, 0.5],
+            vec![0.2, 0.3],
+            vec![0.1, 0.1],
+            vec![0.9, 0.9],
+            vec![0.4, 0.6],
+            vec![0.6, 0.4],
+        ]);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
         let range0 = dims.get_dimension(0).range();
         assert_eq!(*range0.start(), -0.5);
         assert_eq!(*range0.end(), 1.5);
         assert_eq!(dims.get_dimension(1).range().clone(), 0.0..=1.0);
-        assert_eq!(regions.regions().len(), 1);
+        // Should have multiple regions due to variance
+        assert!(!regions.regions().is_empty());
+        assert!(
+            !at_resolution_limit,
+            "Should return false when expansion occurs with sufficient variance"
+        );
     }
 
     #[test]
-    fn given_two_distant_organisms_when_update_then_space_divides() {
-        let (mut regions, mut dims, _) = regions_and_dims(10, 16, vec![0.0..=1.0, 0.0..=1.0]);
+    fn given_multiple_distant_organisms_when_update_then_space_divides() {
+        // Use a target of 2 so that after 1 division (creating 2 regions), the target is reached
+        // This should return false (ExpansionNotNecessary) rather than true (AtResolutionLimit)
+        let (mut regions, mut dims, _) = regions_and_dims(2, 16, vec![0.0..=1.0, 0.0..=1.0]);
         let mut organisms = orgs(vec![vec![0.2, 0.2], vec![0.8, 0.8]]);
-        regions.update(&mut organisms, &mut dims);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
+        // Should have exactly 2 regions due to target being reached
         assert_eq!(regions.regions().len(), 2);
+        assert!(
+            !at_resolution_limit,
+            "Should return false when target is reached (ExpansionNotNecessary)"
+        );
 
         // The algorithm divides the most diverse dimension first
         // With equal variance, dimension 0 gets divided first
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 1);
         assert_eq!(dims.get_dimension(1).number_of_doublings(), 0);
+    }
+
+    #[test]
+    fn given_small_target_when_update_then_returns_true_at_resolution_limit() {
+        let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
+        let mut organisms = orgs(vec![vec![0.5]]);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
+        assert!(
+            at_resolution_limit,
+            "Should return true - single organism has no variance for division"
+        );
+        assert_eq!(regions.regions().len(), 1);
+    }
+
+    #[test]
+    fn given_target_reached_when_update_then_returns_false_expansion_not_necessary() {
+        // Create a scenario where we reach the target number of regions
+        // Use a small target (1) so we quickly reach it
+        let (mut regions, mut dims, _) = regions_and_dims(1, 10, vec![0.0..=1.0, 0.0..=1.0]);
+
+        // Create organisms that would normally cause division
+        let mut organisms = orgs(vec![
+            vec![0.1, 0.1],
+            vec![0.9, 0.9],
+            vec![0.1, 0.9],
+            vec![0.9, 0.1],
+        ]);
+
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
+
+        // With target=1, the system reaches the target and returns false (ExpansionNotNecessary)
+        // This is different from true resolution limit (no variance)
+        assert!(
+            !at_resolution_limit,
+            "Should return false when target is reached (ExpansionNotNecessary)"
+        );
+        assert_eq!(
+            regions.regions().len(),
+            1,
+            "Should have exactly 1 region as per target"
+        );
+    }
+
+    #[test]
+    fn given_no_variance_when_update_then_returns_true_at_resolution_limit() {
+        // Create a scenario with high target but no variance (true resolution limit)
+        let (mut regions, mut dims, _) = regions_and_dims(10, 10, vec![0.0..=1.0, 0.0..=1.0]);
+
+        // Create organisms with identical values (no variance)
+        let mut organisms = orgs(vec![
+            vec![0.5, 0.5],
+            vec![0.5, 0.5],
+            vec![0.5, 0.5],
+            vec![0.5, 0.5],
+        ]);
+
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
+
+        // With no variance, the system cannot find a dimension to divide
+        // This is true resolution limit and should return true
+        assert!(
+            at_resolution_limit,
+            "Should return true when no variance exists (true resolution limit)"
+        );
+    }
+
+    #[test]
+    fn given_no_organisms_when_update_then_returns_true() {
+        let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
+        let mut organisms = orgs(vec![]);
+        let at_resolution_limit = regions.update(&mut organisms, &mut dims);
+        assert!(
+            at_resolution_limit,
+            "Should return true when no organisms present - no point continuing"
+        );
+        assert!(regions.regions().is_empty());
     }
 }

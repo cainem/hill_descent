@@ -5,7 +5,13 @@ impl World {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
     )]
-    pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> f64 {
+    /// Runs a single training iteration.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the resolution limit has been reached and no further
+    /// meaningful splits are possible, `false` otherwise.
+    pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
         // 1. Evaluate fitness for every organism
         self.organisms
             .run_all(self.world_function.as_ref(), inputs, known_outputs);
@@ -21,14 +27,9 @@ impl World {
 
         // 4. Re-evaluate spatial structure (bounding boxes, region keys, capacities).
         // This call updates region min scores and carrying capacities internally.
+        // Returns true if resolution limit reached, false otherwise.
         self.regions
-            .update(&mut self.organisms, &mut self.dimensions);
-
-        // Return the best (lowest) fitness score in the population for monitoring.
-        self.organisms
-            .iter()
-            .filter_map(|o| o.score())
-            .fold(f64::MAX, f64::min)
+            .update(&mut self.organisms, &mut self.dimensions)
     }
 }
 
@@ -60,10 +61,13 @@ mod tests {
         let known_outputs = vec![1.0];
 
         // Act
-        let best_score = world.training_run(&inputs, &known_outputs);
+        let at_resolution_limit = world.training_run(&inputs, &known_outputs);
 
         // Assert
-        assert!(best_score > 0.0, "Best score should be positive");
+        assert!(
+            !at_resolution_limit,
+            "Should not be at resolution limit for small world"
+        );
         assert!(
             world
                 .organisms
@@ -74,9 +78,9 @@ mod tests {
         assert!(!world.organisms.is_empty());
     }
 
-    // given_perfect_match_when_training_run_then_best_score_equals_max
+    // given_perfect_match_when_training_run_then_resolution_limit_not_reached
     #[test]
-    fn given_perfect_match_when_training_run_then_best_score_equals_max() {
+    fn given_perfect_match_when_training_run_then_resolution_limit_not_reached() {
         // Arrange
         // Mock WorldFunction that always returns the perfect matching value (1.0) for scoring tests.
         #[derive(Debug)]
@@ -93,10 +97,19 @@ mod tests {
         let known_outputs = vec![1.0];
 
         // Act
-        let best_score = world.training_run(&inputs, &known_outputs);
+        let at_resolution_limit = world.training_run(&inputs, &known_outputs);
 
         // Assert
-        let expected = E0;
-        assert!((best_score - expected).abs() < f64::EPSILON);
+        assert!(
+            !at_resolution_limit,
+            "Should not be at resolution limit for small world"
+        );
+        // Verify that organisms have been scored (perfect match should give E0)
+        let best_score = world
+            .organisms
+            .iter()
+            .filter_map(|o| o.score())
+            .fold(f64::MAX, f64::min);
+        assert!((best_score - E0).abs() < f64::EPSILON);
     }
 }
