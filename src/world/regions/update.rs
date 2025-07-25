@@ -31,6 +31,8 @@ impl super::Regions {
     /// target number of regions is reached or no further meaningful split is
     /// possible.
     pub fn update(&mut self, organisms: &mut Organisms, dimensions: &mut Dimensions) {
+        use crate::world::regions::adjust_regions::AdjustRegionsResult;
+
         let mut changed_dimension: Option<usize> = None;
 
         // --- main update loop ------------------------------------------------
@@ -39,12 +41,20 @@ impl super::Regions {
                 organisms.update_all_region_keys(dimensions, changed_dimension)
             {
                 self.handle_out_of_bounds(dimensions, dimension_index);
+                changed_dimension = Some(dimension_index);
                 continue;
             }
 
-            changed_dimension = self.adjust_regions(organisms, dimensions);
-            if changed_dimension.is_none() {
-                break;
+            let result = self.adjust_regions(organisms, dimensions);
+            match result {
+                AdjustRegionsResult::DimensionExpanded { dimension_index } => {
+                    changed_dimension = Some(dimension_index);
+                    continue;
+                }
+                AdjustRegionsResult::ExpansionNotNecessary
+                | AdjustRegionsResult::AtResolutionLimit => {
+                    break;
+                }
             }
         }
         // Update min scores for regions first, then carrying capacities

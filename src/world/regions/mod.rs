@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use region::Region;
 
 pub mod add_phenotypes;
-pub mod handle_out_of_bounds;
 pub mod adjust_regions;
+pub mod handle_out_of_bounds;
 pub mod prune_empty_regions;
 pub mod region;
 

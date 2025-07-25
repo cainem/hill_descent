@@ -1,8 +1,9 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 use crate::{debug, trace, warn};
 
+#[derive(Debug)]
 pub enum AdjustRegionsResult {
-    DimensionExpanded(usize),
+    DimensionExpanded { dimension_index: usize },
     ExpansionNotNecessary,
     AtResolutionLimit,
 }
@@ -26,7 +27,7 @@ impl super::Regions {
         &mut self,
         organisms: &mut Organisms,
         dimensions: &mut Dimensions,
-    ) -> Option<usize> {
+    ) -> AdjustRegionsResult {
         // place the organisms in their appropriate regions
         self.refill(organisms);
 
@@ -38,7 +39,7 @@ impl super::Regions {
                 self.regions.len(),
                 self.target_regions
             );
-            return None;
+            return AdjustRegionsResult::ExpansionNotNecessary;
         }
 
         // otherwise we have not got enough regions
@@ -61,14 +62,16 @@ impl super::Regions {
             trace!("most diverse dimension {}", most_diverse_dimension);
             trace!("dimensions {:?}", dimensions);
 
-            Some(most_diverse_dimension)
+            AdjustRegionsResult::DimensionExpanded {
+                dimension_index: most_diverse_dimension,
+            }
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
             // in this case no dimension divisions are necessary
             warn!(
                 "no variation in data in most diverse dimension there is probably not point in continuing"
             );
-            None
+            AdjustRegionsResult::AtResolutionLimit
         }
     }
 }
@@ -77,6 +80,7 @@ impl super::Regions {
 mod tests {
     use crate::parameters::global_constants::GlobalConstants;
     use crate::phenotype::Phenotype;
+    use crate::world::regions::adjust_regions::AdjustRegionsResult;
     use crate::world::{dimensions::Dimensions, organisms::Organisms, regions::Regions};
     use std::ops::RangeInclusive;
 
@@ -107,11 +111,16 @@ mod tests {
     }
 
     #[test]
-    fn given_target_regions_already_reached_when_handle_successful_update_then_returns_none() {
+    fn given_target_regions_already_reached_when_handle_successful_update_then_returns_expansion_not_necessary()
+     {
         let (mut regions, mut dims) = setup(1, vec![0.0..=1.0]);
         let mut organisms = organisms_from_problem_values(vec![vec![0.5]]);
+
+        // First update region keys to place organisms in regions
+        let _ = organisms.update_all_region_keys(&dims, None);
+
         let result = regions.adjust_regions(&mut organisms, &mut dims);
-        assert_eq!(result, None);
+        assert!(matches!(result, AdjustRegionsResult::ExpansionNotNecessary));
     }
 
     #[test]
@@ -121,22 +130,25 @@ mod tests {
         let mut organisms = organisms_from_problem_values(vec![vec![0.05], vec![0.06]]);
         let _ = organisms.update_all_region_keys(&dims, None);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
-        assert_eq!(result, Some(0));
+        assert!(matches!(
+            result,
+            AdjustRegionsResult::DimensionExpanded { dimension_index: 0 }
+        ));
     }
 
     #[test]
-    fn given_no_variance_when_handle_successful_update_then_returns_none() {
+    fn given_no_variance_when_handle_successful_update_then_returns_at_resolution_limit() {
         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
         let mut organisms = organisms_from_problem_values(vec![vec![0.5], vec![0.5]]);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
-        assert_eq!(result, None);
+        assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
     }
 
     #[test]
-    fn given_zero_dimensions_when_handle_successful_update_then_returns_none() {
+    fn given_zero_dimensions_when_handle_successful_update_then_returns_at_resolution_limit() {
         let (mut regions, mut dims) = setup(10, vec![]);
         let mut organisms = organisms_from_problem_values(vec![vec![]]);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
-        assert_eq!(result, None);
+        assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
     }
 }
