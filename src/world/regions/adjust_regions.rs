@@ -140,6 +140,8 @@ mod tests {
     fn given_no_variance_when_handle_successful_update_then_returns_at_resolution_limit() {
         let (mut regions, mut dims) = setup(10, vec![0.0..=1.0]);
         let mut organisms = organisms_from_problem_values(vec![vec![0.5], vec![0.5]]);
+        // Assign region keys to organisms before calling adjust_regions
+        let _ = organisms.update_all_region_keys(&dims, None);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
     }
@@ -148,6 +150,8 @@ mod tests {
     fn given_zero_dimensions_when_handle_successful_update_then_returns_at_resolution_limit() {
         let (mut regions, mut dims) = setup(10, vec![]);
         let mut organisms = organisms_from_problem_values(vec![vec![]]);
+        // Assign region keys to organisms before calling adjust_regions
+        let _ = organisms.update_all_region_keys(&dims, None);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
     }

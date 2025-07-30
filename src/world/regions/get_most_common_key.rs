@@ -37,12 +37,12 @@ pub mod tests {
 
         let key1 = vec![1];
         let mut region1 = Region::new();
-        region1.add_phenotype(create_test_organism());
+        region1.add_organism(create_test_organism());
 
         let key2 = vec![2];
         let mut region2 = Region::new();
-        region2.add_phenotype(create_test_organism());
-        region2.add_phenotype(create_test_organism()); // most common
+        region2.add_organism(create_test_organism());
+        region2.add_organism(create_test_organism()); // most common
 
         let key3 = vec![3];
         let region3 = Region::new(); // empty
@@ -61,11 +61,11 @@ pub mod tests {
 
         let key1 = vec![1];
         let mut region1 = Region::new();
-        region1.add_phenotype(create_test_organism());
+        region1.add_organism(create_test_organism());
 
         let key2 = vec![2];
         let mut region2 = Region::new();
-        region2.add_phenotype(create_test_organism());
+        region2.add_organism(create_test_organism());
 
         regions.regions_mut().insert(key1.clone(), region1);
         regions.regions_mut().insert(key2.clone(), region2);

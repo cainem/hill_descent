@@ -40,12 +40,12 @@ mod tests {
         let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_phenotype(Rc::clone(&organism_rc));
+        region1.add_organism(Rc::clone(&organism_rc));
 
         let region2 = Region::new(); // Empty
 
         let mut region3 = Region::new();
-        region3.add_phenotype(Rc::clone(&organism_rc));
+        region3.add_organism(Rc::clone(&organism_rc));
 
         regions.regions =
             BTreeMap::from([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
@@ -65,9 +65,9 @@ mod tests {
         let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_phenotype(Rc::clone(&organism_rc));
+        region1.add_organism(Rc::clone(&organism_rc));
         let mut region2 = Region::new();
-        region2.add_phenotype(Rc::clone(&organism_rc));
+        region2.add_organism(Rc::clone(&organism_rc));
 
         regions.regions = BTreeMap::from([(vec![0], region1), (vec![1], region2)]);
 

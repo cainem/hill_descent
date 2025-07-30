@@ -53,7 +53,7 @@ mod tests {
         let phen = Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5]);
         for _ in 0..2 {
             let org = Organism::new(Rc::new(phen.clone()), 0);
-            region.add_phenotype(Rc::new(org));
+            region.add_organism(Rc::new(org));
         }
         region
     }

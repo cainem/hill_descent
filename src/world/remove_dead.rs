@@ -127,8 +127,8 @@ mod tests {
         let dead = Rc::new(Organism::new(Rc::clone(&phenotype), 0));
         dead.mark_dead();
         let mut region = Region::new();
-        region.add_phenotype(Rc::clone(&live));
-        region.add_phenotype(Rc::clone(&dead));
+        region.add_organism(Rc::clone(&live));
+        region.add_organism(Rc::clone(&dead));
         region.retain_live();
         assert_eq!(region.organism_count(), 1);
         assert!(Rc::ptr_eq(&region.organisms()[0], &live));

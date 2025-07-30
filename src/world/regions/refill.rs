@@ -21,7 +21,7 @@ impl super::Regions {
         for region in self.regions.values_mut() {
             region.clear_organisms();
         }
-        self.add_phenotypes(organisms);
+        self.add_organisms(organisms);
 
         trace!(
             "refill: total organisms after: {} (in regions: {})",

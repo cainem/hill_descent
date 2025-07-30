@@ -24,7 +24,7 @@ impl Region {
     /// Adds an organism to the region.
     ///
     /// Uses `Rc<Organism>` to allow shared ownership without unnecessary clones.
-    pub fn add_phenotype(&mut self, organism: Rc<Organism>) {
+    pub fn add_organism(&mut self, organism: Rc<Organism>) {
         // kept name for minimal call-site changes; now stores organisms
         self.organisms.push(organism);
     }

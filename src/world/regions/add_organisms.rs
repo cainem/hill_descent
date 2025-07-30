@@ -3,10 +3,10 @@ use crate::world::organisms::organism::Organism;
 use std::rc::Rc;
 
 impl super::Regions {
-    /// Adds orgtypes from the given `Organisms` collection to their respective regions.
+    /// Adds organisms from the given `Organisms` collection to their respective regions.
     ///
-    /// Iterates through each organism in the `organisms` collection. If an organism
-    /// has a region key, its orgtype (as an `Rc<Phenotype>`) is added to the
+    /// Iterates through each organism in the `organisms` collection. Each organism
+    /// must have a region key, and its organism is added to the
     /// corresponding `Region`. If a `Region` for a given key does not exist,
     /// it is created.
     ///
@@ -14,13 +14,19 @@ impl super::Regions {
     ///
     /// * `self` - A mutable reference to the `Regions` instance.
     /// * `organisms` - A reference to the `Organisms` collection to process.
-    pub fn add_phenotypes(&mut self, organisms: &Organisms) {
+    ///
+    /// # Panics
+    ///
+    /// Panics if any organism does not have a region key, as this indicates
+    /// a serious bug in the system.
+    pub fn add_organisms(&mut self, organisms: &Organisms) {
         for organism in organisms.iter() {
-            if let Some(key) = organism.region_key() {
-                let organism_rc: Rc<Organism> = Rc::clone(organism);
-                let region = self.regions.entry(key.clone()).or_default();
-                region.add_phenotype(organism_rc);
-            }
+            let key = organism
+                .region_key()
+                .expect("All organisms must have a region key when adding to regions");
+            let organism_rc: Rc<Organism> = Rc::clone(organism);
+            let region = self.regions.entry(key.clone()).or_default();
+            region.add_organism(organism_rc);
         }
     }
 }
@@ -47,13 +53,14 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let organisms = Organisms::new_from_phenotypes(vec![]);
 
-        regions.add_phenotypes(&organisms);
+        regions.add_organisms(&organisms);
 
         assert_eq!(regions.regions().len(), 0);
     }
 
     #[test]
-    fn given_organisms_with_no_region_keys_when_add_phenotypes_then_regions_unchanged() {
+    #[should_panic(expected = "All organisms must have a region key when adding to regions")]
+    fn given_organisms_with_no_region_keys_when_add_organisms_then_panics() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
 
@@ -61,9 +68,8 @@ mod tests {
         let organisms_collection = Organisms::new_from_phenotypes(orgtypes_for_organisms);
         // Organisms created by new_from_phenotypes will have _region_key = None by default.
 
-        regions.add_phenotypes(&organisms_collection);
-
-        assert_eq!(regions.regions().len(), 0);
+        // This should panic because organisms don't have region keys
+        regions.add_organisms(&organisms_collection);
     }
 
     #[test]
@@ -84,7 +90,7 @@ mod tests {
             .unwrap()
             .set_region_key(Some(region_key1.clone()));
 
-        regions.add_phenotypes(&organisms_collection);
+        regions.add_organisms(&organisms_collection);
 
         assert_eq!(regions.regions().len(), 1);
         let region = regions
@@ -116,7 +122,7 @@ mod tests {
         org2_mut.set_region_key(Some(region_key.clone()));
         let org2_rc_from_org = org2_mut.get_phenotype_rc();
 
-        regions.add_phenotypes(&organisms_collection);
+        regions.add_organisms(&organisms_collection);
 
         assert_eq!(regions.regions().len(), 1);
         let region = regions
@@ -158,7 +164,7 @@ mod tests {
         organism2_mut.set_region_key(Some(region_key2.clone()));
         let org2_rc_from_org = organism2_mut.get_phenotype_rc();
 
-        regions.add_phenotypes(&organisms_collection);
+        regions.add_organisms(&organisms_collection);
 
         assert_eq!(regions.regions().len(), 2);
 
@@ -198,7 +204,7 @@ mod tests {
             .next()
             .unwrap()
             .set_region_key(Some(region_key.clone()));
-        regions.add_phenotypes(&initial_organisms);
+        regions.add_organisms(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
         let new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
@@ -214,7 +220,7 @@ mod tests {
             .set_region_key(Some(region_key.clone()));
 
         // Act: add the new organism
-        regions.add_phenotypes(&new_organisms_to_add);
+        regions.add_organisms(&new_organisms_to_add);
 
         // Assert
         assert_eq!(regions.regions().len(), 1); // Still only one region

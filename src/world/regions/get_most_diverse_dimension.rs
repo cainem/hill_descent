@@ -87,7 +87,7 @@ mod tests {
         let key = vec![0];
         let mut region = Region::new();
         let organism = create_test_organism(create_test_phenotype(vec![1.0, 2.0]));
-        region.add_phenotype(organism);
+        region.add_organism(organism);
         regions.regions_mut().insert(key.clone(), region);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), None);
@@ -105,8 +105,8 @@ mod tests {
         // Problem dimension 1: diversity
         let org1 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
         let org2 = create_test_organism(create_test_phenotype(vec![1.0, 2.0]));
-        region.add_phenotype(org1);
-        region.add_phenotype(org2);
+        region.add_organism(org1);
+        region.add_organism(org2);
         regions.regions_mut().insert(key.clone(), region);
 
         // The function looks at problem dimensions, so index 1 is correct.
@@ -124,8 +124,8 @@ mod tests {
         // Problem dimension 1: 2 unique, std dev high
         let org1 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
         let org2 = create_test_organism(create_test_phenotype(vec![2.0, 100.0]));
-        region.add_phenotype(org1);
-        region.add_phenotype(org2);
+        region.add_organism(org1);
+        region.add_organism(org2);
         regions.regions_mut().insert(key.clone(), region);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), Some(1));
@@ -139,8 +139,8 @@ mod tests {
         let mut region = Region::new();
         let org1 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
         let org2 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
-        region.add_phenotype(org1);
-        region.add_phenotype(org2);
+        region.add_organism(org1);
+        region.add_organism(org2);
         regions.regions_mut().insert(key.clone(), region);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), None);
