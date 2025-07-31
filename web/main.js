@@ -19,13 +19,7 @@ async function main() {
 
     const tooltip = d3.select("#tooltip");
 
-    // Legend div below the visualization
-    const legend = d3.select("body")
-        .append("div")
-        .attr("id", "legend")
-        .style("margin", "10px")
-        .style("font-family", "sans-serif")
-        .style("font-size", "14px");
+    // Corner coordinate labels will be added directly to the SVG
 
     // Add a background rectangle for the entire world
     svg.append("rect")
@@ -103,30 +97,38 @@ async function main() {
 
 
 
-        // Update legend showing both world & displayed bounds
-        legend.html(`Round: ${round}` +
-            `<br/>World bounds: x [${state.world_bounds.x[0].toFixed(2)}, ${state.world_bounds.x[1].toFixed(2)}], ` +
-            `y [${state.world_bounds.y[0].toFixed(2)}, ${state.world_bounds.y[1].toFixed(2)}]` +
-            `<br/>Displayed bounds: x [${displayBounds.x[0].toFixed(2)}, ${displayBounds.x[1].toFixed(2)}], ` +
-            `y [${displayBounds.y[0].toFixed(2)}, ${displayBounds.y[1].toFixed(2)}]`);
+        // Add corner coordinate labels directly on the visualization
+        // Remove any existing corner labels first
+        svg.selectAll(".corner-label").remove();
+        
+        // Add coordinate labels at the four corners
+        const cornerLabels = [
+            { x: 0, y: 0, anchor: "start", baseline: "hanging", coords: `(${displayBounds.x[0].toFixed(1)}, ${displayBounds.y[1].toFixed(1)})` }, // Top-left
+            { x: width, y: 0, anchor: "end", baseline: "hanging", coords: `(${displayBounds.x[1].toFixed(1)}, ${displayBounds.y[1].toFixed(1)})` }, // Top-right
+            { x: 0, y: height, anchor: "start", baseline: "auto", coords: `(${displayBounds.x[0].toFixed(1)}, ${displayBounds.y[0].toFixed(1)})` }, // Bottom-left
+            { x: width, y: height, anchor: "end", baseline: "auto", coords: `(${displayBounds.x[1].toFixed(1)}, ${displayBounds.y[0].toFixed(1)})` } // Bottom-right
+        ];
+        
+        svg.selectAll(".corner-label")
+            .data(cornerLabels)
+            .enter()
+            .append("text")
+            .attr("class", "corner-label")
+            .attr("x", d => d.x)
+            .attr("y", d => d.y)
+            .attr("dx", d => d.anchor === "start" ? 5 : -5) // Small offset from edge
+            .attr("dy", d => d.baseline === "hanging" ? 15 : -5) // Small offset from edge
+            .style("text-anchor", d => d.anchor)
+            .style("dominant-baseline", d => d.baseline)
+            .style("font-family", "monospace")
+            .style("font-size", "12px")
+            .style("fill", "black")
+            .style("background", "rgba(255,255,255,0.8)")
+            .text(d => d.coords);
 
-        // Adjust bounds to maintain square aspect
+        // Add padding to bounds for better visibility (independent for each dimension)
         {
-            const xSpan = displayBounds.x[1] - displayBounds.x[0];
-            const ySpan = displayBounds.y[1] - displayBounds.y[0];
-            const maxSpan = Math.max(xSpan, ySpan);
-            const padSpanX = (maxSpan - xSpan) / 2;
-            const padSpanY = (maxSpan - ySpan) / 2;
-            if (padSpanX > 0) {
-                displayBounds.x[0] -= padSpanX;
-                displayBounds.x[1] += padSpanX;
-            }
-            if (padSpanY > 0) {
-                displayBounds.y[0] -= padSpanY;
-                displayBounds.y[1] += padSpanY;
-            }
-
-            // final padding 12%
+            // final padding 12% for each dimension independently
             const pad = (min, max) => {
                 const span = max - min;
                 const padVal = span * 0.12 || 1e-3;
@@ -175,7 +177,14 @@ async function main() {
             .style('stroke-width', 1)
             .on("mouseover", (event, d) => {
                 tooltip.transition().duration(200).style("opacity", .9);
-                tooltip.html(`Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]<br/>Min Score: ${d.min_score ? d.min_score.toExponential(2) : 'N/A'}`)
+                
+                // Format min score in decimal format (same function as best score)
+                const formatDecimal = (num) => {
+                    if (num === 0) return '0';
+                    return num.toFixed(20).replace(/\.?0+$/, '');
+                };
+                
+                tooltip.html(`Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]<br/>Min Score: ${d.min_score ? formatDecimal(d.min_score) : 'N/A'}`)
                     .style("left", (event.pageX + 5) + "px")
                     .style("top", (event.pageY - 28) + "px");
             })
@@ -232,7 +241,21 @@ async function main() {
     // 4. Start the simulation loop
     function simulationLoop() {
         round += 1;
-        world.training_run();
+        const bestScore = world.training_run();
+        
+        // Update the display with current round and best score
+        document.getElementById('round-counter').textContent = round;
+        
+        // Force decimal format even for very small numbers
+        const formatDecimal = (num) => {
+            if (num === 0) return '0';
+            // Use toFixed with enough precision to capture the full number
+            // JavaScript numbers have ~15-17 significant digits
+            return num.toFixed(20).replace(/\.?0+$/, '');
+        };
+        
+        document.getElementById('best-score').textContent = formatDecimal(bestScore);
+        
         updateVisualization();
     }
 
