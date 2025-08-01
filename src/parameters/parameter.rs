@@ -72,6 +72,16 @@ impl Parameter {
         self.value = v;
     }
 
+    /// Sets a new value without clamping to bounds (for unbounded parameters).
+    /// Panics if `new_value` is NaN or infinite.
+    pub fn set_unbound(&mut self, new_value: f64) {
+        assert!(
+            new_value.is_finite(),
+            "value must be finite and not NaN or infinite"
+        );
+        self.value = new_value;
+    }
+
     /// Returns the bounds of the parameter.
     pub fn bounds(&self) -> &RangeInclusive<f64> {
         &self.bounds
@@ -143,6 +153,27 @@ mod tests {
     }
 
     #[test]
+    fn given_set_unbound_when_value_is_within_bounds_then_value_is_set() {
+        let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
+        p.set_unbound(1.7);
+        assert_eq!(p.get(), 1.7);
+    }
+
+    #[test]
+    fn given_set_unbound_when_value_is_below_min_then_value_is_set_without_clamping() {
+        let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
+        p.set_unbound(0.5);
+        assert_eq!(p.get(), 0.5);
+    }
+
+    #[test]
+    fn given_set_unbound_when_value_is_above_max_then_value_is_set_without_clamping() {
+        let mut p = Parameter::with_bounds(1.5, 1.0, 2.0);
+        p.set_unbound(10.0);
+        assert_eq!(p.get(), 10.0);
+    }
+
+    #[test]
     #[should_panic(expected = "value must be finite and not NaN or infinite")]
     fn given_new_when_value_is_nan_then_panics() {
         let _ = Parameter::new(f64::NAN);
@@ -190,5 +221,19 @@ mod tests {
     fn given_set_when_value_is_infinite_then_panics() {
         let mut p = Parameter::new(0.0);
         p.set(f64::INFINITY);
+    }
+
+    #[test]
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_set_unbound_when_value_is_nan_then_panics() {
+        let mut p = Parameter::new(0.0);
+        p.set_unbound(f64::NAN);
+    }
+
+    #[test]
+    #[should_panic(expected = "value must be finite and not NaN or infinite")]
+    fn given_set_unbound_when_value_is_infinite_then_panics() {
+        let mut p = Parameter::new(0.0);
+        p.set_unbound(f64::INFINITY);
     }
 }

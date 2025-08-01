@@ -59,6 +59,60 @@ impl Locus {
         }
         Locus::new(new_value, new_adjustment, new_apply_flag)
     }
+
+    /// Applies PDD mutation rules to this locus without clamping the final value to bounds.
+    /// Used for non-system parameters that should be allowed to mutate freely.
+    #[cfg_attr(
+        feature = "enable-tracing",
+        tracing::instrument(level = "trace", skip(self, rng, sys))
+    )]
+    pub fn mutate_unbound<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
+        let mut new_adj_val = self.adjustment.adjustment_value().clone();
+        let mut new_direction = self.adjustment.direction_of_travel();
+        let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
+        let mut new_apply_flag = self.apply_adjustment_flag();
+        // Direction mutation (m4)
+        if rng.gen_bool(sys.m4()) {
+            new_direction = match new_direction {
+                DirectionOfTravel::Add => DirectionOfTravel::Subtract,
+                DirectionOfTravel::Subtract => DirectionOfTravel::Add,
+            };
+            new_double_flag = !new_double_flag;
+        }
+        // Doubling flag mutation (m3)
+        if rng.gen_bool(sys.m3()) {
+            new_double_flag = !new_double_flag;
+        }
+        // Adjustment value mutation (m5)
+        if rng.gen_bool(sys.m5()) {
+            if new_double_flag {
+                new_adj_val.set(new_adj_val.get() * 2.0);
+            } else {
+                new_adj_val.set(new_adj_val.get() / 2.0);
+            }
+        }
+        // Rebuild adjustment (checksum updated)
+        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Apply flag mutation (m1/m2)
+        if new_apply_flag {
+            if rng.gen_bool(sys.m2()) {
+                new_apply_flag = false;
+            }
+        } else if rng.gen_bool(sys.m1()) {
+            new_apply_flag = true;
+        }
+        // Apply adjustment to value if flag is true (without clamping)
+        let mut new_value = self.value.clone();
+        if new_apply_flag {
+            let sign = match new_adjustment.direction_of_travel() {
+                DirectionOfTravel::Add => 1.0,
+                DirectionOfTravel::Subtract => -1.0,
+            };
+            let delta = sign * new_adjustment.adjustment_value().get();
+            new_value.set_unbound(new_value.get() + delta);
+        }
+        Locus::new(new_value, new_adjustment, new_apply_flag)
+    }
 }
 
 #[cfg(test)]
@@ -403,5 +457,72 @@ mod tests {
             "Adjustment value should be 0.0"
         );
         assert_eq!(l2.value().get(), 2.0, "Locus value should be 2.0");
+    }
+
+    #[test]
+    fn given_mutate_unbound_when_value_would_exceed_bounds_then_value_is_not_clamped() {
+        // Create a locus with bounds [1.0, 2.0] and initial value 1.5
+        let locus_val = Parameter::with_bounds(1.5, 1.0, 2.0);
+        let adj_val = Parameter::with_bounds(5.0, 0.0, 10.0); // Large adjustment
+        let adj = LocusAdjustment::new(adj_val, DirectionOfTravel::Add, false);
+        let locus = Locus::new(locus_val, adj, true); // apply_flag = true
+
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+        let mutated = locus.mutate_unbound(&mut rng, &sys);
+
+        // Value should be 1.5 + 5.0 = 6.5, which exceeds the original bounds [1.0, 2.0]
+        assert_eq!(mutated.value().get(), 6.5);
+    }
+
+    #[test]
+    fn given_mutate_unbound_when_value_would_go_below_bounds_then_value_is_not_clamped() {
+        // Create a locus with bounds [1.0, 2.0] and initial value 1.5
+        let locus_val = Parameter::with_bounds(1.5, 1.0, 2.0);
+        let adj_val = Parameter::with_bounds(3.0, 0.0, 10.0); // Large adjustment
+        let adj = LocusAdjustment::new(adj_val, DirectionOfTravel::Subtract, false);
+        let locus = Locus::new(locus_val, adj, true); // apply_flag = true
+
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+        let mutated = locus.mutate_unbound(&mut rng, &sys);
+
+        // Value should be 1.5 - 3.0 = -1.5, which is below the original bounds [1.0, 2.0]
+        assert_eq!(mutated.value().get(), -1.5);
+    }
+
+    #[test]
+    fn given_mutate_unbound_when_apply_flag_false_then_value_unchanged() {
+        let locus_val = Parameter::with_bounds(1.5, 1.0, 2.0);
+        let adj_val = Parameter::with_bounds(5.0, 0.0, 10.0);
+        let adj = LocusAdjustment::new(adj_val, DirectionOfTravel::Add, false);
+        let locus = Locus::new(locus_val, adj, false); // apply_flag = false
+
+        let mut rng = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+        let mutated = locus.mutate_unbound(&mut rng, &sys);
+
+        // Value should remain unchanged since apply_flag is false
+        assert_eq!(mutated.value().get(), 1.5);
+    }
+
+    #[test]
+    fn given_mutate_vs_mutate_unbound_when_value_exceeds_bounds_then_different_results() {
+        // Create a locus that will exceed bounds when mutated
+        let locus_val = Parameter::with_bounds(1.9, 1.0, 2.0);
+        let adj_val = Parameter::with_bounds(0.5, 0.0, 10.0);
+        let adj = LocusAdjustment::new(adj_val, DirectionOfTravel::Add, false);
+        let locus = Locus::new(locus_val, adj, true); // apply_flag = true
+
+        let mut rng1 = StepRng::new(0, 0);
+        let mut rng2 = StepRng::new(0, 0);
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+
+        let mutated_bounded = locus.mutate(&mut rng1, &sys);
+        let mutated_unbound = locus.mutate_unbound(&mut rng2, &sys);
+
+        // Bounded should clamp to 2.0, unbound should be 2.4
+        assert_eq!(mutated_bounded.value().get(), 2.0);
+        assert_eq!(mutated_unbound.value().get(), 2.4);
     }
 }

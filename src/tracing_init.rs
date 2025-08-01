@@ -8,7 +8,7 @@ pub fn init() {
     use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt};
 
     // Respect RUST_LOG. Default to debug if nothing set.
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("trace"));
 
     let subscriber = tracing_subscriber::registry().with(env_filter).with(
         fmt::layer()

@@ -35,8 +35,8 @@ impl WasmWorld {
     /// Creates a new world instance, configured for the Himmelblau test.
     pub fn new() -> Self {
         let param_range = vec![
-            RangeInclusive::new(-500.0, 500.0),
-            RangeInclusive::new(-500.0, 500.0),
+            RangeInclusive::new(-25000000.0, -5000000.0),
+            RangeInclusive::new(-25000000.0, -5000000.0),
         ];
         let global_constants = GlobalConstants::new(100, 10);
 
@@ -50,7 +50,8 @@ impl WasmWorld {
 
     /// Runs one epoch of the simulation and returns the best score from that epoch.
     pub fn training_run(&mut self) -> f64 {
-        self.world.training_run(&[], &[])
+        self.world.training_run(&[], &[]);
+        self.world.get_best_score()
     }
 
     /// Returns a JSON string representing the current state of the world for web visualization.

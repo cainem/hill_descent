@@ -34,8 +34,8 @@ pub fn execute() {
 
     // The four minima are within the range [-5.0, 5.0] for both x and y.
     let param_range = vec![
-        RangeInclusive::new(-5.0, 5.0),
-        RangeInclusive::new(-5.0, 5.0),
+        RangeInclusive::new(-25000000.0, -5000000.0),
+        RangeInclusive::new(-25000000.0, -5000000.0),
     ];
     let global_constants = GlobalConstants::new(100, 10); // Larger population for 2D search
 
@@ -46,11 +46,11 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..10000 {
-        // if i == 4719 {
-        //     #[cfg(feature = "enable-tracing")]
-        //     hill_descent::init_tracing();
-        // }
+    for i in 0..1000 {
+        if i == 54 {
+            #[cfg(feature = "enable-tracing")]
+            hill_descent::init_tracing();
+        }
 
         // Objective-function mode: no known outputs
         let at_resolution_limit = world.training_run(&[], &[]);
