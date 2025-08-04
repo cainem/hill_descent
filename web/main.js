@@ -194,24 +194,89 @@ async function main() {
 
         regions.exit().remove();
 
-        // Draw carrying capacity text
-        const regionTexts = svg.selectAll('.region-text')
+        // Draw region information text as "carrying_capacity - actual_population"
+        // Remove existing text elements first
+        svg.selectAll('.region-text').remove();
+        
+        // Create text groups for each region to handle multi-colored text
+        const regionTextGroups = svg.selectAll('.region-text-group')
             .data(state.regions, d => d.bounds.x[0] + "," + d.bounds.y[0]);
 
-        regionTexts.enter()
-            .append('text')
-            .attr('class', 'region-text')
-            .merge(regionTexts)
-            .attr('x', d => xScale(d.bounds.x[0]) + (xScale(d.bounds.x[1]) - xScale(d.bounds.x[0])) / 2)
-            .attr('y', d => yScale(d.bounds.y[1]) + (yScale(d.bounds.y[0]) - yScale(d.bounds.y[1])) / 2)
-            .attr('dy', '0.35em') // Vertically center
-            .style('text-anchor', 'middle')
-            .style('fill-opacity', 1.0)
-            .style('font-size', '12px')
-            .style('fill', 'black')
-            .text(d => d.carrying_capacity);
+        const textGroups = regionTextGroups.enter()
+            .append('g')
+            .attr('class', 'region-text-group')
+            .merge(regionTextGroups);
 
-        regionTexts.exit().remove();
+        textGroups.each(function(d) {
+            // Count organisms in this region
+            const organismsInRegion = (state.organisms || []).filter(organism =>
+                organism.params.x >= d.bounds.x[0] && organism.params.x <= d.bounds.x[1] &&
+                organism.params.y >= d.bounds.y[0] && organism.params.y <= d.bounds.y[1]
+            ).length;
+            
+            const centerX = xScale(d.bounds.x[0]) + (xScale(d.bounds.x[1]) - xScale(d.bounds.x[0])) / 2;
+            const centerY = yScale(d.bounds.y[1]) + (yScale(d.bounds.y[0]) - yScale(d.bounds.y[1])) / 2;
+            
+            // Clear existing elements in this group
+            d3.select(this).selectAll('*').remove();
+            
+            // Create the full text to measure its width for background sizing
+            const fullText = `${d.carrying_capacity} - ${organismsInRegion}`;
+            
+            // Add light gray background rectangle
+            const padding = 4;
+            const textWidth = fullText.length * 7; // Approximate text width
+            const textHeight = 16;
+            
+            d3.select(this).append('rect')
+                .attr('x', centerX - textWidth/2 - padding)
+                .attr('y', centerY - textHeight/2 - padding)
+                .attr('width', textWidth + 2*padding)
+                .attr('height', textHeight + 2*padding)
+                .attr('rx', 3) // Rounded corners
+                .style('fill', 'rgba(240, 240, 240, 0.8)')
+                .style('stroke', 'rgba(200, 200, 200, 0.5)')
+                .style('stroke-width', 1);
+            
+            // Create three separate text elements for equal spacing
+            const spacing = 8; // Space between elements
+            
+            // Add carrying capacity (always black)
+            const capacityText = d3.select(this).append('text')
+                .attr('x', centerX - spacing)
+                .attr('y', centerY)
+                .attr('dy', '0.35em')
+                .style('text-anchor', 'end')
+                .style('font-size', '12px')
+                .style('fill', 'black')
+                .style('font-weight', 'bold')
+                .text(`${d.carrying_capacity}`);
+            
+            // Add hyphen (centered)
+            d3.select(this).append('text')
+                .attr('x', centerX)
+                .attr('y', centerY)
+                .attr('dy', '0.35em')
+                .style('text-anchor', 'middle')
+                .style('font-size', '12px')
+                .style('fill', 'black')
+                .style('font-weight', 'bold')
+                .text('-');
+            
+            // Add actual population (green if <= capacity, red if > capacity)
+            const populationColor = organismsInRegion <= d.carrying_capacity ? 'green' : 'red';
+            d3.select(this).append('text')
+                .attr('x', centerX + spacing)
+                .attr('y', centerY)
+                .attr('dy', '0.35em')
+                .style('text-anchor', 'start')
+                .style('font-size', '12px')
+                .style('fill', populationColor)
+                .style('font-weight', 'bold')
+                .text(`${organismsInRegion}`);
+        });
+
+        regionTextGroups.exit().remove();
 
         // Render Organisms
         const organisms = svg.selectAll(".organism")
