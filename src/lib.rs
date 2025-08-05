@@ -8,24 +8,24 @@ pub mod world;
 #[cfg(test)]
 pub mod test_utils;
 
-#[cfg(feature = "enable-tracing")]
+#[cfg(any(feature = "enable-tracing", feature = "wasm-logging"))]
 pub mod tracing_init;
 
-#[cfg(feature = "enable-tracing")]
+#[cfg(any(feature = "enable-tracing", feature = "wasm-logging"))]
 pub use tracing_init::init as init_tracing;
 
-// Conditional tracing macros - cleaner than wrapping every trace call
-#[cfg(feature = "enable-tracing")]
-pub use tracing::{debug, error, info, trace, warn};
+// Re-export log macros for unified logging interface
+#[cfg(any(feature = "enable-tracing", feature = "wasm-logging"))]
+pub use log::{debug, error, info, trace, warn};
 
-// When tracing is disabled, provide no-op macros
-#[cfg(not(feature = "enable-tracing"))]
+// When logging is disabled, provide no-op macros
+#[cfg(not(any(feature = "enable-tracing", feature = "wasm-logging")))]
 #[allow(unused_macros)]
 macro_rules! trace {
     ($($arg:tt)*) => {{}};
 }
 
-#[cfg(not(feature = "enable-tracing"))]
+#[cfg(not(any(feature = "enable-tracing", feature = "wasm-logging")))]
 #[allow(unused_macros)]
 macro_rules! debug {
     ($($arg:tt)*) => {{}};

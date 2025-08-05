@@ -43,6 +43,13 @@ impl WasmWorld {
         #[cfg(feature = "console_error_panic_hook")]
         console_error_panic_hook::set_once();
 
+        // Initialize unified logging (works for both WASM and non-WASM)
+        #[cfg(any(feature = "enable-tracing", feature = "wasm-logging"))]
+        {
+            crate::init_tracing();
+            crate::info!("🚀 WASM World initialized with unified logging enabled!");
+        }
+
         let world = World::new(&param_range, global_constants, Box::new(Himmelblau));
 
         WasmWorld { world }
@@ -50,8 +57,15 @@ impl WasmWorld {
 
     /// Runs one epoch of the simulation and returns the best score from that epoch.
     pub fn training_run(&mut self) -> f64 {
-        self.world.training_run(&[], &[]);
-        self.world.get_best_score()
+        crate::info!("🌐 WASM training_run called");
+        let _resolution_limit_reached = self.world.training_run(&[], &[]);
+        let best_score = self.world.get_best_score();
+        crate::info!(
+            "🌐 WASM training_run complete: best_score = {}, resolution_limit = {}",
+            best_score,
+            _resolution_limit_reached
+        );
+        best_score
     }
 
     /// Returns a JSON string representing the current state of the world for web visualization.

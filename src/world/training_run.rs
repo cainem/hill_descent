@@ -12,24 +12,37 @@ impl World {
     /// Returns `true` if the resolution limit has been reached and no further
     /// meaningful splits are possible, `false` otherwise.
     pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
+        let _initial_population = self.organisms.len();
+        crate::info!("=== TRAINING RUN START: Population = {} ===", _initial_population);
+
         // 1. Evaluate fitness for every organism
         self.organisms
             .run_all(self.world_function.as_ref(), inputs, known_outputs);
+        crate::info!("After fitness evaluation: Population = {}", self.organisms.len());
 
         // 2. Generate offspring to fill regional deficits
         let mut offspring = crate::world::organisms::Organisms::new_empty();
         self.regions.repopulate(&mut self.rng, &mut offspring);
+        let _offspring_count = offspring.len();
         self.organisms.extend(offspring.into_inner());
+        crate::info!("After reproduction: Population = {} (added {} offspring)", self.organisms.len(), _offspring_count);
 
         // 3. Age organisms and cull those exceeding their max age
         self.organisms.increment_ages();
+        let _pre_cull_population = self.organisms.len();
         self.remove_dead();
+        let _post_cull_population = self.organisms.len();
+        crate::info!("After aging/culling: Population = {} (removed {} dead)", _post_cull_population, _pre_cull_population - _post_cull_population);
 
         // 4. Re-evaluate spatial structure (bounding boxes, region keys, capacities).
         // This call updates region min scores and carrying capacities internally.
         // Returns true if resolution limit reached, false otherwise.
-        self.regions
-            .update(&mut self.organisms, &mut self.dimensions)
+        let resolution_limit_reached = self
+            .regions
+            .update(&mut self.organisms, &mut self.dimensions);
+
+        crate::info!("=== TRAINING RUN END: Population = {}, Resolution limit: {} ===", self.organisms.len(), resolution_limit_reached);
+        resolution_limit_reached
     }
 }
 
