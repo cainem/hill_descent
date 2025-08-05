@@ -51,6 +51,7 @@ impl WasmWorld {
         }
 
         let world = World::new(&param_range, global_constants, Box::new(Himmelblau));
+        crate::info!("WASM World initial state: {}", world.get_state());
 
         WasmWorld { world }
     }

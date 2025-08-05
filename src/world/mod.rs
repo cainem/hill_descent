@@ -2,8 +2,8 @@ use crate::parameters::global_constants::GlobalConstants;
 use crate::world::dimensions::Dimensions;
 use organisms::Organisms;
 use rand::SeedableRng;
-use rand::rngs::SmallRng;
-use regions::Regions; // Required for SmallRng::from_seed
+use rand::rngs::StdRng;
+use regions::Regions; // Required for StdRng::from_seed
 use std::ops::RangeInclusive;
 
 use world_function::WorldFunction;
@@ -31,7 +31,7 @@ pub struct World {
     dimensions: Dimensions,
     organisms: Organisms,
     regions: Regions,
-    rng: SmallRng,
+    rng: StdRng,
     world_function: Box<dyn WorldFunction>,
 }
 
@@ -55,7 +55,7 @@ impl World {
     ///
     /// # Process
     ///
-    /// 1.  **Seeded RNG:** A deterministic pseudo-random number generator (`SmallRng`) is created
+    /// 1.  **Seeded RNG:** A deterministic pseudo-random number generator (`StdRng`) is created
     ///     to ensure reproducibility of the simulation.
     /// 2.  **Initial Population (PDD 5.1.3):** An initial population of `Organisms` is generated.
     ///     Each organism is created with a random phenotype, whose genetic material (loci)
@@ -78,7 +78,7 @@ impl World {
         global_constants: GlobalConstants,
         function: Box<dyn WorldFunction>,
     ) -> Self {
-        let mut rng = SmallRng::seed_from_u64(DEFAULT_WORLD_SEED);
+        let mut rng = StdRng::seed_from_u64(DEFAULT_WORLD_SEED);
         let mut organisms =
             Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
 

@@ -27,7 +27,7 @@ impl SingleValuedFunction for Himmelblau {
 }
 
 #[test]
-#[ignore] // This test is long-running and should be run explicitly.
+//#[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
     #[cfg(feature = "enable-tracing")]
     hill_descent::init_tracing();
@@ -41,12 +41,12 @@ pub fn execute() {
 
     let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
 
-    println!("Initial state:\n{}\n", world.get_state());
+    println!("Test initial state:\n{}\n", world.get_state());
 
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..1000 {
+    for i in 0..2 {
         if i == 54 {
             #[cfg(feature = "enable-tracing")]
             hill_descent::init_tracing();

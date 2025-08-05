@@ -1,3 +1,5 @@
+use crate::info;
+
 use super::World;
 
 impl World {
@@ -15,6 +17,7 @@ impl World {
         let _initial_population = self.organisms.len();
         crate::info!("=== TRAINING RUN START: Population = {} ===", _initial_population);
 
+        info!("Training run initial state: {}", self.get_state());
         // 1. Evaluate fitness for every organism
         self.organisms
             .run_all(self.world_function.as_ref(), inputs, known_outputs);

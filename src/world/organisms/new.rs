@@ -41,7 +41,6 @@ impl Organisms {
                     let max_age = p.system_parameters().max_age();
                     let upper_bound = if max_age > 0.0 { max_age as usize } else { 0 };
                     let age = if upper_bound > 0 {
-                        #[allow(deprecated)]
                         rng.gen_range(0..=upper_bound)
                     } else {
                         0
