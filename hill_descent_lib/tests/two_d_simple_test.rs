@@ -46,7 +46,7 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..2 {
+    for i in 0..1000 {
         if i == 54 {
             #[cfg(feature = "enable-tracing")]
             hill_descent::init_tracing();
@@ -65,7 +65,7 @@ pub fn execute() {
         // Break early if we've reached the resolution limit
         if at_resolution_limit {
             println!("Resolution limit reached at epoch {i}");
-            break;
+            //break;
         }
 
         //if i % 100 == 0 {
