@@ -208,9 +208,11 @@ async fn main() -> std::io::Result<()> {
             .route("/api/step", web::post().to(step_handler))
             .route("/api/state", web::get().to(state_handler))
             .route("/api/reset", web::post().to(reset_handler))
-            .service(
-                Files::new("/", r"C:\Users\mickc\dev\hill_descent\web").index_file("index.html"),
-            )
+            .service({
+                // Serve static files from the server crate's web/ directory
+                let static_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("web");
+                Files::new("/", static_dir).index_file("index.html")
+            })
     })
     .bind("127.0.0.1:3000")?
     .run()
