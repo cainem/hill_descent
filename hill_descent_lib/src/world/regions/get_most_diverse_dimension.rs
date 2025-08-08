@@ -47,9 +47,7 @@ impl super::Regions {
                     .collect();
                 values_in_dimension
                     .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-                trace!(
-                    "dimension {dim_idx} sorted values: {values_in_dimension:?}"
-                );
+                trace!("dimension {dim_idx} sorted values: {values_in_dimension:?}");
             }
         }
 

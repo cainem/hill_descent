@@ -1,23 +1,10 @@
-//! Unified logging initialization that works for both WASM and non-WASM builds.
+//! Unified logging initialization for native builds.
 //!
-//! This module provides a consistent logging interface using the `log` crate as the common API,
-//! with different backends for different targets:
-//! - WASM builds: outputs to browser console via `console_log`
-//! - Non-WASM builds: outputs to stdout/stderr via `tracing` with `tracing-log` bridge
-//!
-//! The code is entirely compiled out when logging features are not enabled.
+//! This module provides a consistent logging interface using the `log` crate as the common API
+//! and `tracing` as the backend when the `enable-tracing` feature is enabled.
 
-// WASM-specific logging that outputs to browser console
-#[cfg(all(
-    target_arch = "wasm32",
-    any(feature = "enable-tracing", feature = "wasm-logging")
-))]
-pub fn init() {
-    console_log::init_with_level(log::Level::Info).expect("error initializing log");
-}
-
-// Standard logging for non-WASM builds using tracing as backend
-#[cfg(all(not(target_arch = "wasm32"), feature = "enable-tracing"))]
+// Standard logging using tracing as backend
+#[cfg(feature = "enable-tracing")]
 pub fn init() {
     use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt};
 
@@ -38,11 +25,10 @@ pub fn init() {
     let _ = tracing::subscriber::set_global_default(subscriber);
 
     // Bridge log crate to tracing so log::info!() calls work
-    #[cfg(not(target_arch = "wasm32"))]
     tracing_log::LogTracer::init().ok();
 }
 
-#[cfg(not(any(feature = "enable-tracing", feature = "wasm-logging")))]
+#[cfg(not(feature = "enable-tracing"))]
 #[inline]
 pub fn init() {
     // no-op when logging disabled
