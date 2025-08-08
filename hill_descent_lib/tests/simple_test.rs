@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use hill_descent::{
+use hill_descent_lib::{
     parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
 };
 

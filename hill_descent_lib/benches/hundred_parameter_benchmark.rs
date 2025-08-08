@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use hill_descent::{
+use hill_descent_lib::{
     parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
 };
 use std::ops::RangeInclusive;
