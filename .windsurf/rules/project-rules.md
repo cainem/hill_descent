@@ -4,7 +4,7 @@ trigger: always_on
 
 The code is to be written in rust.
 The code will be written in a windows environment.
-The pdd.md file holds the product definition file
+The hill_descent_lib/pdd.md file holds the product definition file
 
 - Always prefer simple solutions
 - Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality before adding a new function or struct.

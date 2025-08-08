@@ -1,5 +1,3 @@
-
-use crate::trace;
 use std::cmp::Ordering;
 
 /// Sorts dimensions by diversity and returns the index of the most diverse one.

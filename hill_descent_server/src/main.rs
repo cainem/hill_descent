@@ -84,7 +84,8 @@ async fn start_handler(
     let response_data = StateResponse {
         epoch: 0,
         best_score: world.get_best_score(),
-        world_state: world.get_state(),
+        // Return the web-shaped JSON for the frontend visualization
+        world_state: world.get_state_for_web(),
         at_resolution_limit: false,
     };
 
@@ -93,6 +94,7 @@ async fn start_handler(
         let mut state = app_state.lock().unwrap();
         state.config = Some(config);
         state.current_state = Some(response_data.clone());
+        // We do not persist the World here to keep server types Send/Sync-free
     }
 
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -136,7 +138,8 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
     let response_data = StateResponse {
         epoch: current_epoch + 1,
         best_score: world.get_best_score(),
-        world_state: world.get_state(),
+        // Return the web-shaped JSON for the frontend visualization
+        world_state: world.get_state_for_web(),
         at_resolution_limit,
     };
 

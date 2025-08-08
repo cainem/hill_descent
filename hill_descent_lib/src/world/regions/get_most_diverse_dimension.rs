@@ -34,7 +34,7 @@ impl super::Regions {
         let num_dimensions = expressed_values.first().map_or(0, |v| v.len());
         let dimension_stats =
             calculate_dimension_stats::calculate_dimension_stats(&expressed_values, num_dimensions);
-        trace!("dimension stats {:?}", dimension_stats);
+        trace!("dimension stats {dimension_stats:?}");
 
         let most_diverse_index = find_most_diverse_index::find_most_diverse_index(dimension_stats);
 
@@ -48,8 +48,7 @@ impl super::Regions {
                 values_in_dimension
                     .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                 trace!(
-                    "dimension {} sorted values: {:?}",
-                    dim_idx, values_in_dimension
+                    "dimension {dim_idx} sorted values: {values_in_dimension:?}"
                 );
             }
         }

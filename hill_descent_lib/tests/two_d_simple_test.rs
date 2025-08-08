@@ -27,10 +27,10 @@ impl SingleValuedFunction for Himmelblau {
 }
 
 #[test]
-//#[ignore] // This test is long-running and should be run explicitly.
+#[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
     #[cfg(feature = "enable-tracing")]
-    hill_descent::init_tracing();
+    hill_descent_lib::init_tracing();
 
     // The four minima are within the range [-5.0, 5.0] for both x and y.
     let param_range = vec![
@@ -49,7 +49,7 @@ pub fn execute() {
     for i in 0..1000 {
         if i == 54 {
             #[cfg(feature = "enable-tracing")]
-            hill_descent::init_tracing();
+            hill_descent_lib::init_tracing();
         }
 
         // Objective-function mode: no known outputs

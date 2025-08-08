@@ -49,18 +49,18 @@ impl super::Regions {
 
         // Determine the most diverse dimension in the most populous region
         let most_diverse_dimension = self.get_most_common_key().and_then(|key| {
-            trace!("analyzing most populous region with key: {:?}", key);
+            trace!("analyzing most populous region with key: {key:?}");
             self.get_most_diverse_dimension(&key)
         });
 
         if let Some(most_diverse_dimension) = most_diverse_dimension {
-            debug!("expanding dimension {}", most_diverse_dimension);
+            debug!("expanding dimension {most_diverse_dimension}");
 
             // divide the most diverse dimension
             dimensions.divide_next_dimension(most_diverse_dimension);
 
-            trace!("most diverse dimension {}", most_diverse_dimension);
-            trace!("dimensions {:?}", dimensions);
+            trace!("most diverse dimension {most_diverse_dimension}");
+            trace!("dimensions {dimensions:?}");
 
             AdjustRegionsResult::DimensionExpanded {
                 dimension_index: most_diverse_dimension,

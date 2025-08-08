@@ -55,8 +55,7 @@ impl Organism {
         } else if let Some(dim_idx) = dimension_changed {
             // Optimized path: only one dimension has changed.
             trace!(
-                "update_region_key: optimized path taken for dimension {}",
-                dim_idx
+                "update_region_key: optimized path taken for dimension {dim_idx}"
             );
             let mut current_key = self.region_key().clone().unwrap();
             let dimension = dimensions_container.get_dimension(dim_idx);
