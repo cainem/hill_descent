@@ -27,11 +27,13 @@ pub fn find_most_diverse_index(dimension_stats: Vec<(usize, f64)>) -> Option<usi
             }
         });
 
-    #[cfg(not(feature = "enable-tracing"))]
+    #[cfg(feature = "enable-tracing")]
     if let Some((_index, (_unique_count, _std_dev))) = indexed_stats.first() {
-        trace!(
+        crate::trace!(
             "most diverse dimension: index={}, unique_count={}, std_dev={}",
-            _index, _unique_count, _std_dev
+            _index,
+            _unique_count,
+            _std_dev
         );
     }
 

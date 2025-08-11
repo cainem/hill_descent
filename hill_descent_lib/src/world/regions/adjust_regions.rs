@@ -1,5 +1,5 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
-use crate::{debug, trace, warn};
+use crate::{debug, trace};
 
 #[derive(Debug)]
 pub enum AdjustRegionsResult {
@@ -68,7 +68,8 @@ impl super::Regions {
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
             // in this case no dimension divisions are necessary
-            warn!(
+            #[cfg(feature = "enable-tracing")]
+            crate::warn!(
                 "no variation in data in most diverse dimension there is probably not point in continuing"
             );
             AdjustRegionsResult::AtResolutionLimit

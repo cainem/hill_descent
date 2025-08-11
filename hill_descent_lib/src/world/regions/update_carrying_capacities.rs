@@ -22,8 +22,8 @@ impl Regions {
 
         // First pass to calculate the sum of inverse fitnesses.
         for (_, region) in self.regions.iter() {
-            if let Some(min_score) = region.min_score() {
-                if min_score > 0.0 {
+            if let Some(min_score) = region.min_score()
+                && min_score > 0.0 {
                     let mut inverse_fitness = 1.0 / min_score;
                     if inverse_fitness.is_infinite() {
                         // If inverse fitness is infinite (due to a very small min_score),
@@ -32,7 +32,6 @@ impl Regions {
                     }
                     sum_inverse_min_fitness += inverse_fitness;
                 }
-            }
         }
 
         let total_population_size = self.population_size;
@@ -41,9 +40,9 @@ impl Regions {
         for (_, region) in self.regions_mut().iter_mut() {
             let mut capacity = 0;
 
-            if sum_inverse_min_fitness > 0.0 {
-                if let Some(min_score) = region.min_score() {
-                    if min_score > 0.0 {
+            if sum_inverse_min_fitness > 0.0
+                && let Some(min_score) = region.min_score()
+                && min_score > 0.0 {
                         let mut inverse_fitness = 1.0 / min_score;
                         if inverse_fitness.is_infinite() {
                             inverse_fitness = f64::MAX / 10.0;
@@ -53,8 +52,6 @@ impl Regions {
                             * (inverse_fitness / sum_inverse_min_fitness);
                         capacity = capacity_float.floor() as usize;
                     }
-                }
-            }
             region.set_carrying_capacity(Some(capacity));
         }
     }

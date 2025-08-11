@@ -51,7 +51,7 @@ macro_rules! error {
 
 #[cfg(not(feature = "enable-tracing"))]
 #[allow(unused_imports)]
-pub(crate) use {debug, error, info, trace, warn};
+pub(crate) use {debug, error, info, trace};
 
 pub const NUM_SYSTEM_PARAMETERS: usize = 7;
 pub const E0: f64 = f64::MIN_POSITIVE;
