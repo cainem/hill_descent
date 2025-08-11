@@ -34,10 +34,11 @@ impl Gamete {
         let mut next_cp = cps.next();
         for i in 0..len {
             if let Some(cp) = next_cp
-                && cp == i {
-                    use_p1 = !use_p1;
-                    next_cp = cps.next();
-                }
+                && cp == i
+            {
+                use_p1 = !use_p1;
+                next_cp = cps.next();
+            }
             if use_p1 {
                 if i < NUM_SYSTEM_PARAMETERS {
                     // System parameters: use bounded mutation

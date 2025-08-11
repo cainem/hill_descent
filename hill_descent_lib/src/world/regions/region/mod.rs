@@ -1,3 +1,4 @@
+mod execute_reproduction_passes;
 mod reproduce;
 
 use std::rc::Rc;
@@ -10,6 +11,12 @@ pub struct Region {
     min_score: Option<f64>,
     carrying_capacity: Option<usize>,
     organisms: Vec<Rc<Organism>>,
+}
+
+impl Region {
+    /// Maximum number of reproduction passes when population is low relative to carrying capacity.
+    /// This allows rapid population growth when a region has few organisms but high carrying capacity.
+    const REPRODUCTION_FACTOR: usize = 3;
 }
 
 impl Region {
