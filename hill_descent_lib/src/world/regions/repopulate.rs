@@ -44,7 +44,8 @@ mod tests {
         phenotype::Phenotype,
         world::{organisms::Organism, regions::region::Region},
     };
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
     use std::rc::Rc;
 
     fn create_region_with_two(capacity: usize) -> Region {
@@ -67,7 +68,7 @@ mod tests {
             .regions
             .insert(region_key, create_region_with_two(5));
 
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let mut offspring = Organisms::new_from_organisms(Vec::new());
         regions.repopulate(&mut rng, &mut offspring);
 

@@ -70,7 +70,8 @@ mod tests {
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::parameters::system_parameters::SystemParameters;
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     fn create_test_locus(val: f64) -> Locus {
         let param = Parameter::new(val);
@@ -87,7 +88,7 @@ mod tests {
     fn reproduce_zero_crossovers_returns_clones() {
         let g1 = create_test_gamete(&[1.0, 2.0, 3.0]);
         let g2 = create_test_gamete(&[4.0, 5.0, 6.0]);
-        let mut rng = StepRng::new(0, 0);
+        let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::default();
         let (o1, o2) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
         assert_eq!(o1, g1);
@@ -99,7 +100,7 @@ mod tests {
     fn reproduce_mismatched_lengths_panics() {
         let g1 = create_test_gamete(&[1.0]);
         let g2 = create_test_gamete(&[1.0, 2.0]);
-        let mut rng = StepRng::new(0, 0);
+        let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::default();
         let _ = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
     }
@@ -109,7 +110,7 @@ mod tests {
     fn reproduce_too_many_crossovers_panics() {
         let g1 = create_test_gamete(&[1.0, 2.0, 3.0]);
         let g2 = create_test_gamete(&[4.0, 5.0, 6.0]);
-        let mut rng = StepRng::new(0, 0);
+        let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::default();
         let _ = Gamete::reproduce(&g1, &g2, 2, &mut rng, &sys);
     }
@@ -149,7 +150,7 @@ mod tests {
         let g1 = Gamete::new(loci1);
         let g2 = Gamete::new(loci2);
 
-        let mut rng = StepRng::new(0, 0);
+        let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
         let (offspring1, _) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
 
@@ -205,7 +206,7 @@ mod tests {
         let g1 = Gamete::new(loci1);
         let g2 = Gamete::new(loci2);
 
-        let mut rng = StepRng::new(0, 0);
+        let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
         let (offspring1, _) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
 

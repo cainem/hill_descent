@@ -41,7 +41,7 @@ impl Organisms {
                     let max_age = p.system_parameters().max_age();
                     let upper_bound = if max_age > 0.0 { max_age as usize } else { 0 };
                     let age = if upper_bound > 0 {
-                        rng.gen_range(0..=upper_bound)
+                        rng.random_range(0..=upper_bound)
                     } else {
                         0
                     };
@@ -58,13 +58,14 @@ mod tests {
     use super::*;
     use crate::NUM_SYSTEM_PARAMETERS;
     use crate::parameters::GlobalConstants;
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     #[test]
     fn given_valid_inputs_when_new_called_then_creates_organisms_correctly() {
         let initial_value_bounds = vec![0.0..=1.0, 0.0..=1.0];
         let global_constants = GlobalConstants::new(10, 4);
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
 
         let organisms = Organisms::new(&initial_value_bounds, &global_constants, &mut rng);
 

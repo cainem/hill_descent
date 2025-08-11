@@ -49,16 +49,16 @@ pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
             let min_exp = f64::MIN_POSITIVE.log10(); // ≈ -307.653 at runtime
             let max_exp = max_abs.log10();
             // Choose sign deterministically via float sample
-            let sign = if rng.gen_range(0.0..1.0) < 0.5 {
+            let sign = if rng.random_range(0.0..1.0) < 0.5 {
                 1.0
             } else {
                 -1.0
             };
             for _ in 0..10_000 {
                 // exponent uniform in log space
-                let exponent = rng.gen_range(min_exp..=max_exp);
+                let exponent = rng.random_range(min_exp..=max_exp);
                 // mantissa uniform in [1.0, 10.0)
-                let mantissa = rng.gen_range(1.0..10.0);
+                let mantissa = rng.random_range(1.0..10.0);
                 let unsigned_val = mantissa * 10_f64.powf(exponent);
                 if !unsigned_val.is_finite() || unsigned_val > max_abs {
                     continue; // skip INF/NaN or magnitudes outside desired bounds
@@ -80,7 +80,7 @@ pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
             // Log-uniform approach
             let log_low = low.log10();
             let log_high = high.log10();
-            let random_log_val = rng.gen_range(log_low..=log_high);
+            let random_log_val = rng.random_range(log_low..=log_high);
             return 10.0_f64.powf(random_log_val);
         }
     }
@@ -92,14 +92,14 @@ pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
             // Log-uniform approach on the absolute values, then negate.
             let log_low = high.abs().log10();
             let log_high = low.abs().log10();
-            let random_log_val = rng.gen_range(log_low..=log_high);
+            let random_log_val = rng.random_range(log_low..=log_high);
             return -10.0_f64.powf(random_log_val);
         }
     }
 
     // --- Default Case ---
     // If none of the log-uniform conditions were met, use the standard linear distribution.
-    rng.gen_range(range)
+    rng.random_range(range)
 }
 
 #[cfg(test)]
@@ -199,22 +199,36 @@ mod tests {
 
     #[test]
     fn given_cross_zero_wide_range_rng_selects_positive_side_returns_positive() {
-        use rand::rngs::mock::StepRng;
-        // StepRng with value 0 produces gen::<f64>() == 0.0, so gen_bool(0.5) -> true.
-        let mut rng = StepRng::new(0, 0);
+        // Use different deterministic seeds until we find a positive sample.
         let range: RangeInclusive<f64> = -1_000_000.0..=1_000_000.0;
-        let v = gen_hybrid_range(&mut rng, range.clone());
+        let mut found = None;
+        for seed in 0u64..1000 {
+            let mut rng = StdRng::seed_from_u64(seed);
+            let v = gen_hybrid_range(&mut rng, range.clone());
+            if v >= 0.0 {
+                found = Some(v);
+                break;
+            }
+        }
+        let v = found.expect("expected to find a positive sample across seeds 0..1000");
         assert!(range.contains(&v));
         assert!(v >= 0.0, "Expected positive value but got {v}");
     }
 
     #[test]
     fn given_cross_zero_wide_range_rng_selects_negative_side_returns_negative() {
-        use rand::rngs::mock::StepRng;
-        // StepRng start at u64::MAX gives gen::<f64>() very close to 1.0 -> gen_bool(0.5) -> false.
-        let mut rng = StepRng::new(u64::MAX, 0);
+        // Use different deterministic seeds until we find a negative sample.
         let range: RangeInclusive<f64> = -1_000_000.0..=1_000_000.0;
-        let v = gen_hybrid_range(&mut rng, range.clone());
+        let mut found = None;
+        for seed in 0u64..1000 {
+            let mut rng = StdRng::seed_from_u64(seed);
+            let v = gen_hybrid_range(&mut rng, range.clone());
+            if v <= 0.0 {
+                found = Some(v);
+                break;
+            }
+        }
+        let v = found.expect("expected to find a negative sample across seeds 0..1000");
         assert!(range.contains(&v));
         assert!(v <= 0.0, "Expected negative value but got {v}");
     }

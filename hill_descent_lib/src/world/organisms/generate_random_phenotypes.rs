@@ -40,7 +40,8 @@ mod tests {
     use super::*;
     // Phenotype is brought in by use super::*;
     use crate::NUM_SYSTEM_PARAMETERS;
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
     use std::ops::RangeInclusive; // Expected to be 7
 
     // Helper to create parameter bounds for testing
@@ -51,7 +52,7 @@ mod tests {
 
     #[test]
     fn given_valid_inputs_when_called_then_returns_correct_number_of_phenotypes() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let enhanced_bounds = create_test_enhanced_bounds(3); // 7 system + 3 additional
         let population_size = 5;
 
@@ -70,7 +71,7 @@ mod tests {
 
     #[test]
     fn given_zero_population_size_when_called_then_returns_empty_vector() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let enhanced_bounds = create_test_enhanced_bounds(3);
         let population_size = 0;
 
@@ -84,7 +85,7 @@ mod tests {
 
     #[test]
     fn given_bounds_with_only_system_parameters_when_called_then_succeeds() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         // These bounds only contain the minimum required system parameters.
         let enhanced_bounds = create_test_enhanced_bounds(0);
         assert_eq!(

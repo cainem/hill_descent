@@ -18,7 +18,7 @@ impl Locus {
         let locus_value_param =
             Parameter::with_bounds(val, *value_bounds.start(), *value_bounds.end());
 
-        let apply_adjustment_flag = rng.r#gen::<bool>();
+        let apply_adjustment_flag = rng.random::<bool>();
 
         // Generate a LocusAdjustment. Its internal `adjustment_value` Parameter will have default MIN/MAX bounds.
         let mut adjustment = LocusAdjustment::new_random_locus_adjustment(rng, value_bounds);
@@ -91,12 +91,12 @@ mod tests {
         for i in 0..10000 {
             // Increased attempts to find the specific scenario
             let mut test_rng = StdRng::seed_from_u64(i);
-            let locus_candidate_val = test_rng.gen_range(bounds.clone());
+            let locus_candidate_val = test_rng.random_range(bounds.clone());
 
             let mut adj_rng = StdRng::seed_from_u64(i);
             // Simulate the RNG state consumption that would happen before initial_adjustment is created
-            adj_rng.gen_range(bounds.clone()); // For locus_value_param in new_random
-            adj_rng.r#gen::<bool>(); // For apply_adjustment_flag in new_random
+            adj_rng.random_range(bounds.clone()); // For locus_value_param in new_random
+            adj_rng.random::<bool>(); // For apply_adjustment_flag in new_random
             // Now, the RNG state for LocusAdjustment::new_random
             let initial_adjustment =
                 LocusAdjustment::new_random_locus_adjustment(&mut adj_rng, &bounds); // Changed call
@@ -131,11 +131,11 @@ mod tests {
         let mut found_case = false;
         for i in 0..10000 {
             let mut test_rng = StdRng::seed_from_u64(i);
-            let locus_candidate_val = test_rng.gen_range(bounds.clone());
+            let locus_candidate_val = test_rng.random_range(bounds.clone());
 
             let mut adj_rng = StdRng::seed_from_u64(i);
-            adj_rng.gen_range(bounds.clone());
-            adj_rng.r#gen::<bool>();
+            adj_rng.random_range(bounds.clone());
+            adj_rng.random::<bool>();
             let initial_adjustment =
                 LocusAdjustment::new_random_locus_adjustment(&mut adj_rng, &bounds); // Changed call
 
@@ -169,11 +169,11 @@ mod tests {
         let mut found_case = false;
         for i in 0..10000 {
             let mut test_rng = StdRng::seed_from_u64(i);
-            let locus_candidate_val = test_rng.gen_range(bounds.clone());
+            let locus_candidate_val = test_rng.random_range(bounds.clone());
 
             let mut adj_rng = StdRng::seed_from_u64(i);
-            adj_rng.gen_range(bounds.clone());
-            adj_rng.r#gen::<bool>();
+            adj_rng.random_range(bounds.clone());
+            adj_rng.random::<bool>();
             let initial_adjustment =
                 LocusAdjustment::new_random_locus_adjustment(&mut adj_rng, &bounds); // Changed call
 
@@ -208,13 +208,13 @@ mod tests {
         let mut found_case = false;
         for i in 0..10000 {
             let mut adj_rng_setup = StdRng::seed_from_u64(i);
-            adj_rng_setup.gen_range(bounds.clone()); // Consumed by Locus::new_random for locus_value_param
-            adj_rng_setup.r#gen::<bool>(); // Consumed by Locus::new_random for apply_adjustment_flag
+            adj_rng_setup.random_range(bounds.clone()); // Consumed by Locus::new_random for locus_value_param
+            adj_rng_setup.random::<bool>(); // Consumed by Locus::new_random for apply_adjustment_flag
 
             // Now, this RNG state is what LocusAdjustment::new_random will see
             let mut adj_rng_for_check = adj_rng_setup.clone();
-            adj_rng_for_check.r#gen::<bool>(); // direction_of_travel for LocusAdjustment
-            let initial_dh_flag_for_adjustment = adj_rng_for_check.r#gen::<bool>(); // doubling_or_halving_flag for LocusAdjustment
+            adj_rng_for_check.random::<bool>(); // direction_of_travel for LocusAdjustment
+            let initial_dh_flag_for_adjustment = adj_rng_for_check.random::<bool>(); // doubling_or_halving_flag for LocusAdjustment
 
             if !initial_dh_flag_for_adjustment {
                 let mut final_rng = StdRng::seed_from_u64(i);

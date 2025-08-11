@@ -71,7 +71,8 @@ impl Region {
 mod tests {
     use super::*;
     use crate::{phenotype::Phenotype, world::organisms::organism::Organism};
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     /// Helper: create an Organism with given score and age.
     fn make_org(score: f64, age: usize, idx: usize) -> Rc<Organism> {
@@ -89,7 +90,7 @@ mod tests {
         for i in 0..4 {
             region.add_organism(make_org(i as f64 + 1.0, i, i));
         }
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(4, &mut rng);
         assert_eq!(offspring.len(), 4);
         assert!(offspring.iter().all(|o| o.age() == 0));
@@ -101,7 +102,7 @@ mod tests {
         for i in 0..5 {
             region.add_organism(make_org(i as f64 + 1.0, i, i));
         }
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(3, &mut rng);
         assert_eq!(offspring.len(), 3);
     }
@@ -110,7 +111,7 @@ mod tests {
     fn given_zero_r_when_reproduce_then_returns_empty_vec() {
         let mut region = Region::new();
         region.add_organism(make_org(1.0, 0, 0));
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(0, &mut rng);
         assert!(offspring.is_empty());
     }
@@ -118,7 +119,7 @@ mod tests {
     #[test]
     fn given_empty_region_when_reproduce_then_returns_empty_vec() {
         let mut region = Region::new();
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(3, &mut rng);
         assert!(offspring.is_empty());
     }
@@ -127,7 +128,7 @@ mod tests {
     fn given_one_parent_when_reproduce_then_one_offspring_asexual() {
         let mut region = Region::new();
         region.add_organism(make_org(2.0, 5, 0));
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(1, &mut rng);
         assert_eq!(offspring.len(), 1);
     }
@@ -137,7 +138,7 @@ mod tests {
         let mut region = Region::new();
         region.add_organism(make_org(1.0, 1, 0));
         region.add_organism(make_org(2.0, 2, 1));
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         // Request more than available (5 > 2)
         let offspring = region.reproduce(5, &mut rng);
         // Two parents => even => 2 offspring via sexual reproduction
@@ -150,7 +151,7 @@ mod tests {
         // Same score, different ages
         region.add_organism(make_org(1.0, 10, 0)); // older
         region.add_organism(make_org(1.0, 5, 1)); // younger
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let _ = region.reproduce(1, &mut rng);
         // After reproduction, organisms slice is sorted; index 0 should be older
         let first_age = region.organisms()[0].age();

@@ -18,7 +18,7 @@ pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -
         let ca = a.adjustment().checksum() as f64 / max_u64;
         let cb = b.adjustment().checksum() as f64 / max_u64;
         let midpoint = (ca + cb) / 2.0;
-        let r = rng.gen_range(0.0..1.0);
+        let r = rng.random_range(0.0..1.0);
         let checksums_are_equal = a.adjustment().checksum() == b.adjustment().checksum();
         let value = if (checksums_are_equal && r < 0.5) || (!checksums_are_equal && r <= midpoint) {
             a.value().get()
@@ -38,11 +38,25 @@ mod tests {
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::phenotype::tests::{create_test_gamete, create_test_locus};
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
+
+    // Helper: find a seed for which the first r in [0,1) satisfies predicate
+    fn find_seed_for_predicate<P: Fn(f64) -> bool>(predicate: P) -> u64 {
+        for seed in 0u64..100_000 {
+            let mut rng = SmallRng::seed_from_u64(seed);
+            let r = rng.random_range(0.0..1.0);
+            if predicate(r) {
+                return seed;
+            }
+        }
+        panic!("No suitable seed found within search range");
+    }
 
     #[test]
     fn given_equal_checksums_rng_chooses_first_when_compute_expressed_then_returns_first_value() {
-        let mut rng = StepRng::new(0, 0); // rng.gen_range(0.0..1.0) will be 0.0, which is < 0.5
+        let seed = find_seed_for_predicate(|r| r < 0.5);
+        let mut rng = SmallRng::seed_from_u64(seed);
         let l1 = create_test_locus(1.0);
         let l2 = create_test_locus(2.0);
         let g1 = Gamete::new(vec![l1.clone()]);
@@ -53,7 +67,9 @@ mod tests {
 
     #[test]
     fn given_equal_checksums_rng_chooses_second_when_compute_expressed_then_returns_second_value() {
-        let mut rng = StepRng::new(u64::MAX, 0); // rng.gen::<u64>() will be u64::MAX, so r will be 1.0
+        // Use a seed that makes first r close to 1.0 so second value is chosen
+        let seed = find_seed_for_predicate(|r| r >= 0.999);
+        let mut rng = SmallRng::seed_from_u64(seed);
         let l1 = create_test_locus(1.0);
         let l2 = create_test_locus(2.0);
         let g1 = Gamete::new(vec![l1.clone()]);
@@ -65,13 +81,22 @@ mod tests {
     #[test]
     fn given_unequal_checksums_rng_favors_smaller_checksum_locus_when_compute_expressed_then_returns_its_value()
      {
-        let mut rng = StepRng::new(0, 0); // r will be 0.0
         let adj1 = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Add, false); // Smaller checksum
         let adj2 = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Subtract, false); // Larger checksum
         let l1 = Locus::new(Parameter::new(3.0), adj1.clone(), false);
         let l2 = Locus::new(Parameter::new(4.0), adj2.clone(), false);
 
         assert!(adj1.checksum() < adj2.checksum());
+
+        // compute midpoint as in compute_expressed
+        let max_u64 = u64::MAX as f64;
+        let ca = adj1.checksum() as f64 / max_u64;
+        let cb = adj2.checksum() as f64 / max_u64;
+        let midpoint = (ca + cb) / 2.0;
+
+        // choose seed so r <= midpoint to select the smaller checksum locus (l1)
+        let seed = find_seed_for_predicate(|r| r <= midpoint);
+        let mut rng = SmallRng::seed_from_u64(seed);
 
         let g1 = Gamete::new(vec![l1.clone()]);
         let g2 = Gamete::new(vec![l2.clone()]);
@@ -83,13 +108,22 @@ mod tests {
     #[test]
     fn given_unequal_checksums_rng_favors_larger_checksum_locus_when_compute_expressed_then_returns_its_value()
      {
-        let mut rng = StepRng::new(u64::MAX - 1, 0); // r will be close to 1.0
         let adj1 = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Add, false); // Smaller checksum
         let adj2 = LocusAdjustment::new(Parameter::new(0.0), DirectionOfTravel::Subtract, false); // Larger checksum
         let l1 = Locus::new(Parameter::new(3.0), adj1.clone(), false);
         let l2 = Locus::new(Parameter::new(4.0), adj2.clone(), false);
 
         assert!(adj1.checksum() < adj2.checksum());
+
+        // compute midpoint as in compute_expressed
+        let max_u64 = u64::MAX as f64;
+        let ca = adj1.checksum() as f64 / max_u64;
+        let cb = adj2.checksum() as f64 / max_u64;
+        let midpoint = (ca + cb) / 2.0;
+
+        // choose seed so r > midpoint to select the larger checksum locus (l2)
+        let seed = find_seed_for_predicate(|r| r > midpoint);
+        let mut rng = SmallRng::seed_from_u64(seed);
 
         let g1 = Gamete::new(vec![l1.clone()]);
         let g2 = Gamete::new(vec![l2.clone()]);
@@ -101,7 +135,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Gametes must have same number of loci")]
     fn given_mismatched_gamete_lengths_when_compute_expressed_then_panics() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let l = create_test_locus(1.0);
         let g1 = Gamete::new(vec![l.clone()]);
         let g2 = Gamete::new(vec![l.clone(), create_test_locus(2.0)]);
@@ -110,7 +144,7 @@ mod tests {
 
     #[test]
     fn given_multi_loci_gametes_when_compute_expressed_then_returns_correct_length_vector() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let vals1 = [1.0, 2.0, 3.0, 4.0];
         let vals2 = [5.0, 6.0, 7.0, 8.0];
         let g1 = create_test_gamete(&vals1);

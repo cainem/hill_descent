@@ -38,11 +38,12 @@ impl Phenotype {
 mod tests {
     use crate::phenotype::Phenotype;
     use crate::phenotype::tests::create_test_gamete;
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     #[test]
     fn given_phenotype_when_asexual_reproduction_then_one_offspring_is_created() {
-        let mut parent_creation_rng = StepRng::new(0, 1); // RNG for creating parent Phenotype
+        let mut parent_creation_rng = SmallRng::seed_from_u64(0); // RNG for creating parent Phenotype
         // Phenotype::new requires at least 7 loci to derive SystemParameters.
         // Gamete::reproduce also has constraints: gamete_len > 2 * crossovers.
         // We'll use 7 loci, with values corresponding to default system parameters.
@@ -59,7 +60,7 @@ mod tests {
             &mut parent_creation_rng,
         );
 
-        let mut asexual_rng = StepRng::new(10, 1); // Separate RNG for the asexual_reproduction call
+        let mut asexual_rng = SmallRng::seed_from_u64(10); // Separate RNG for the asexual_reproduction call
         let offspring = parent_phenotype.asexual_reproduction(&mut asexual_rng);
 
         // 1. Check gamete length conservation.

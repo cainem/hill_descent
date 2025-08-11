@@ -68,7 +68,8 @@ mod tests {
     use crate::parameters::system_parameters::SystemParameters;
     use crate::phenotype::Phenotype; // For Phenotype::new in helpers
     use rand::Rng;
-    use rand::rngs::mock::StepRng; // For Rng trait in helper signature
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     fn helper_create_test_locus(val: f64) -> Locus {
         Locus::new(
@@ -96,7 +97,7 @@ mod tests {
 
     #[test]
     fn given_parents_with_zero_m_values_when_reproduce_then_offspring_inherit_parental_gametes() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         // Phenotype::new requires 7 loci for system parameters.
         // These will all be 0.0, resulting in m_i = 0.0 for system parameters.
         let p_vals = vec![0.0; 7];
@@ -146,7 +147,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Parent gametes must have the same length for sexual reproduction.")]
     fn given_parents_with_mismatched_gamete_lengths_when_reproduce_then_panics() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         // Ensure phenotypes can be created (>=7 loci), but have different lengths for the target panic.
         let p1_loci_vals = &[0.0; 7]; // 7 loci
         let p2_loci_vals = &[0.0; 8]; // 8 loci
@@ -160,7 +161,7 @@ mod tests {
         expected = "Cannot create Phenotype: expressed values (genes) length 0 is less than required 7 for SystemParameters. Gametes need to provide at least 7 loci."
     )]
     fn given_parent_with_zero_length_gametes_when_reproduce_then_panics() {
-        let mut rng = StepRng::new(0, 1);
+        let mut rng = SmallRng::seed_from_u64(0);
         let empty_gamete = Gamete::new(vec![]);
         // Phenotype::new will panic because gametes with 0 loci cannot provide the 7 values needed for SystemParameters.
         // This panic occurs before sexual_reproduction can be called with such a phenotype.

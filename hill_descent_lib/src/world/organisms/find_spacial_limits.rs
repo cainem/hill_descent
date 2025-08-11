@@ -61,7 +61,8 @@ mod tests {
     use crate::locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment};
     use crate::parameters::parameter::Parameter;
     use crate::phenotype::Phenotype;
-    use rand::rngs::mock::StepRng;
+    use rand::SeedableRng;
+    use rand::rngs::SmallRng;
 
     // Helper to create a Locus (simplified for testing purposes)
     fn create_test_locus(val: f64) -> Locus {
@@ -104,7 +105,7 @@ mod tests {
 
     #[test]
     fn given_one_organism_when_find_spacial_limits_then_returns_ranges_from_that_organism() {
-        let mut rng = StepRng::new(0, 1); // Deterministic RNG
+        let mut rng = SmallRng::seed_from_u64(0); // Deterministic RNG
         // Values: 7 system params + 1 problem param
         let phenotype_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 8.0];
         let phenotype = create_test_phenotype(phenotype_vals, &mut rng);
@@ -131,7 +132,7 @@ mod tests {
 
     #[test]
     fn given_multiple_organisms_when_find_spacial_limits_then_returns_correct_min_max_ranges() {
-        let mut rng = StepRng::new(0, 1); // Deterministic RNG
+        let mut rng = SmallRng::seed_from_u64(0); // Deterministic RNG
 
         // Phenotype 1: 7 system params + 2 problem params
         let phenotype1_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 10.0, 200.0];
@@ -160,11 +161,14 @@ mod tests {
 
         // Assuming the expressed values are close to the input values for this test.
         // Let's find the actual expressed values to be precise.
-        let phenotype1_for_expr = create_test_phenotype(phenotype1_vals, &mut StepRng::new(0, 1));
+        let phenotype1_for_expr =
+            create_test_phenotype(phenotype1_vals, &mut SmallRng::seed_from_u64(0));
         let p1_expressed = phenotype1_for_expr.expression_problem_values();
-        let phenotype2_for_expr = create_test_phenotype(phenotype2_vals, &mut StepRng::new(0, 1));
+        let phenotype2_for_expr =
+            create_test_phenotype(phenotype2_vals, &mut SmallRng::seed_from_u64(0));
         let p2_expressed = phenotype2_for_expr.expression_problem_values();
-        let phenotype3_for_expr = create_test_phenotype(phenotype3_vals, &mut StepRng::new(0, 1));
+        let phenotype3_for_expr =
+            create_test_phenotype(phenotype3_vals, &mut SmallRng::seed_from_u64(0));
         let p3_expressed = phenotype3_for_expr.expression_problem_values();
 
         let expected_min_dim1 = p1_expressed[0].min(p2_expressed[0]).min(p3_expressed[0]);
