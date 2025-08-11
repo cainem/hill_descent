@@ -1,0 +1,39 @@
+[package]
+name = "hill_descent_lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+xxhash-rust = { workspace = true }
+rand = { workspace = true }
+getrandom = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+tracing-log = { workspace = true, optional = true }
+log = { version = "0.4", optional = true }
+
+[features]
+enable-tracing = [
+    "tracing",
+    "tracing-subscriber",
+    "tracing-log",
+    "log",
+]
+
+[lib]
+crate-type = ["rlib"]
+
+[lints.rust]
+unused = "warn"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "hundred_parameter_benchmark"
+harness = false
+
+[profile.bench]
+debug = true
