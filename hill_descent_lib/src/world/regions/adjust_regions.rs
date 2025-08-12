@@ -1,5 +1,5 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
-use crate::{debug, trace};
+
 
 #[derive(Debug)]
 pub enum AdjustRegionsResult {
@@ -21,7 +21,10 @@ impl super::Regions {
     /// stop, `false` otherwise.
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "trace", skip(self, organisms, dimensions))
+        tracing::instrument(
+            level = "trace",
+            skip(self, organisms, dimensions)
+        )
     )]
     pub(super) fn adjust_regions(
         &mut self,
@@ -34,7 +37,7 @@ impl super::Regions {
         // current regions are greater than or equal to the allowed regions;
         // refill and return
         if self.regions.len() >= self.target_regions {
-            debug!(
+            crate::debug!(
                 "regions at target,  {} > {}",
                 self.regions.len(),
                 self.target_regions
@@ -49,18 +52,18 @@ impl super::Regions {
 
         // Determine the most diverse dimension in the most populous region
         let most_diverse_dimension = self.get_most_common_key().and_then(|key| {
-            trace!("analyzing most populous region with key: {key:?}");
+            crate::trace!("analyzing most populous region with key: {key:?}");
             self.get_most_diverse_dimension(&key)
         });
 
         if let Some(most_diverse_dimension) = most_diverse_dimension {
-            debug!("expanding dimension {most_diverse_dimension}");
+            crate::debug!("expanding dimension {most_diverse_dimension}");
 
             // divide the most diverse dimension
             dimensions.divide_next_dimension(most_diverse_dimension);
 
-            trace!("most diverse dimension {most_diverse_dimension}");
-            trace!("dimensions {dimensions:?}");
+            crate::trace!("most diverse dimension {most_diverse_dimension}");
+            crate::trace!("dimensions {dimensions:?}");
 
             AdjustRegionsResult::DimensionExpanded {
                 dimension_index: most_diverse_dimension,

@@ -1,4 +1,4 @@
-use crate::info;
+
 use crate::world::organisms::organism::update_region_key::OrganismUpdateRegionKeyResult;
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 
@@ -7,7 +7,10 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms};
 impl super::Regions {
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "debug", skip(self, organisms, dimensions))
+        tracing::instrument(
+            level = "debug",
+            skip(self, organisms, dimensions)
+        )
     )]
     /// Update region state based on the current collection of `organisms` and the
     /// mutable spatial `dimensions`.
@@ -66,7 +69,7 @@ impl super::Regions {
                     return false;
                 }
                 AdjustRegionsResult::AtResolutionLimit => {
-                    info!("at resolution limit");
+                    crate::info!("at resolution limit");
                     // Update min scores and carrying capacities before returning
                     self.update_all_region_min_scores(organisms);
                     self.update_carrying_capacities();

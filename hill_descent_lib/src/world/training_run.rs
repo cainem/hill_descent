@@ -1,11 +1,12 @@
-use crate::info;
-
 use super::World;
 
 impl World {
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
+        tracing::instrument(
+            level = "debug",
+            skip(self, inputs, known_outputs)
+        )
     )]
     /// Runs a single training iteration.
     ///
@@ -20,7 +21,7 @@ impl World {
             _initial_population
         );
 
-        info!("Training run initial state: {}", self.get_state());
+        crate::info!("Training run initial state: {}", self.get_state());
         // 1. Evaluate fitness for every organism
         self.organisms
             .run_all(self.world_function.as_ref(), inputs, known_outputs);

@@ -20,38 +20,36 @@ pub use log::{debug, error, info, trace, warn};
 
 // When logging is disabled, provide no-op macros
 #[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! trace {
     ($($arg:tt)*) => {{}};
 }
 
 #[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {{}};
 }
 
 #[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{}};
 }
 
 #[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{}};
 }
 
 #[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{}};
 }
 
-#[cfg(not(feature = "enable-tracing"))]
-#[allow(unused_imports)]
-pub(crate) use {debug, error, info, trace};
+
 
 pub const NUM_SYSTEM_PARAMETERS: usize = 7;
 pub const E0: f64 = f64::MIN_POSITIVE;

@@ -1,4 +1,4 @@
-use crate::trace;
+
 use crate::world::organisms::Organisms;
 
 impl super::Regions {
@@ -13,7 +13,7 @@ impl super::Regions {
     /// Returns `true` if the simulation has reached a stable state and should
     /// stop, `false` otherwise.
     pub(super) fn refill(&mut self, organisms: &mut Organisms) {
-        trace!("refill: total organisms before: {}", organisms.len());
+        crate::trace!("refill: total organisms before: {}", organisms.len());
 
         // Before adding the current generation of organisms, clear the regions of any
         // organisms from the previous generation. This ensures the region state is
@@ -23,7 +23,7 @@ impl super::Regions {
         }
         self.add_organisms(organisms);
 
-        trace!(
+        crate::trace!(
             "refill: total organisms after: {} (in regions: {})",
             organisms.len(),
             self.regions
