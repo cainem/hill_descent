@@ -186,7 +186,7 @@ class OptimizationUI {
     }
 
     toggleAuto() {
-        if (this.autoInterval) {
+        if (this.isAutoRunning) {
             this.stopAuto();
         } else {
             this.startAuto();
@@ -395,8 +395,12 @@ class OptimizationUI {
         // Color scale for region min_score
         const scoreMin = state.score_range.min;
         const scoreMax = state.score_range.max;
+        
+        // Use logarithmic scale for better color distribution across large score ranges
+        const logScoreMin = Math.log10(scoreMin);
+        const logScoreMax = Math.log10(scoreMax);
         const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
-            .domain([scoreMax, scoreMin]); // lower scores are greener
+            .domain([logScoreMax, logScoreMin]); // lower scores are greener
 
         // Render regions
         const regionsSel = this.gRegions.selectAll('.region')
@@ -416,8 +420,8 @@ class OptimizationUI {
             .attr('height', d => this.yScale(d.bounds.y[0]) - this.yScale(d.bounds.y[1]))
             .attr('fill', d => {
                 // If no min_score yet, use the worst color from the scale (highest score)
-                if (d.min_score == null) return colorScale(scoreMax);
-                return colorScale(d.min_score);
+                if (d.min_score == null) return colorScale(logScoreMax);
+                return colorScale(Math.log10(d.min_score));
             })
             .attr('stroke', '#ccc')
             .attr('stroke-width', 0.5)
