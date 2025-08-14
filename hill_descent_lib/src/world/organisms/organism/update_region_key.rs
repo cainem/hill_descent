@@ -1,4 +1,3 @@
-
 use crate::world::dimensions::{
     CalculateDimensionsKeyResult, Dimensions, calculate_dimensions_key,
 };

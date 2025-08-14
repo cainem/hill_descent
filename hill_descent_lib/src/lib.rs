@@ -49,8 +49,6 @@ macro_rules! error {
     ($($arg:tt)*) => {{}};
 }
 
-
-
 pub const NUM_SYSTEM_PARAMETERS: usize = 7;
 pub const E0: f64 = f64::MIN_POSITIVE;
 

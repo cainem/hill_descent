@@ -1,4 +1,3 @@
-
 use crate::world::organisms::organism::update_region_key::OrganismUpdateRegionKeyResult;
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 
@@ -7,10 +6,7 @@ use crate::world::{dimensions::Dimensions, organisms::Organisms};
 impl super::Regions {
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(
-            level = "debug",
-            skip(self, organisms, dimensions)
-        )
+        tracing::instrument(level = "debug", skip(self, organisms, dimensions))
     )]
     /// Update region state based on the current collection of `organisms` and the
     /// mutable spatial `dimensions`.

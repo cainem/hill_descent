@@ -1,6 +1,5 @@
 use crate::world::{dimensions::Dimensions, organisms::Organisms};
 
-
 #[derive(Debug)]
 pub enum AdjustRegionsResult {
     DimensionExpanded { dimension_index: usize },
@@ -21,17 +20,14 @@ impl super::Regions {
     /// stop, `false` otherwise.
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(
-            level = "trace",
-            skip(self, organisms, dimensions)
-        )
+        tracing::instrument(level = "trace", skip(self, organisms, dimensions))
     )]
     pub(super) fn adjust_regions(
         &mut self,
         organisms: &mut Organisms,
         dimensions: &mut Dimensions,
     ) -> AdjustRegionsResult {
-        // place the organisms in their appropriate regions
+        // place the organisms in their appropriate regions and prune unused regions
         self.refill(organisms);
 
         // current regions are greater than or equal to the allowed regions;

@@ -1,4 +1,3 @@
-
 use crate::world::organisms::Organisms;
 
 impl super::Regions {
@@ -32,6 +31,8 @@ impl super::Regions {
                 .sum::<usize>()
         );
 
+        crate::debug!("regions before prune {}", self.regions.len());
         self.prune_empty_regions();
+        crate::debug!("regions after prune {}", self.regions.len());
     }
 }

@@ -3,10 +3,7 @@ use super::World;
 impl World {
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(
-            level = "debug",
-            skip(self, inputs, known_outputs)
-        )
+        tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
     )]
     /// Runs a single training iteration.
     ///

@@ -18,7 +18,6 @@ impl Dimensions {
     /// the new range will be centered around 15.0 with a span of 15.0
     /// (20.0 - 10.0 = 10.0, plus 50% = 15.0 span).
     /// The new range would be approximately [7.5, 22.5].
-    #[allow(dead_code)]
     pub fn adjust_dimension_limits(&mut self, organisms: &Organisms) {
         let dimensions_vec = self.get_dimensions();
 
