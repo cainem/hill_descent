@@ -56,13 +56,20 @@ impl super::Regions {
             crate::debug!("expanding dimension {most_diverse_dimension}");
 
             // divide the most diverse dimension
-            dimensions.divide_next_dimension(most_diverse_dimension);
+            if dimensions.divide_dimension(most_diverse_dimension) {
+                crate::trace!("most diverse dimension {most_diverse_dimension}");
+                crate::trace!("dimensions {dimensions:?}");
 
-            crate::trace!("most diverse dimension {most_diverse_dimension}");
-            crate::trace!("dimensions {dimensions:?}");
-
-            AdjustRegionsResult::DimensionExpanded {
-                dimension_index: most_diverse_dimension,
+                AdjustRegionsResult::DimensionExpanded {
+                    dimension_index: most_diverse_dimension,
+                }
+            } else {
+                // Division failed due to precision loss
+                crate::warn!(
+                    "failed to divide dimension {} due to f64 precision limit",
+                    most_diverse_dimension
+                );
+                AdjustRegionsResult::AtResolutionLimit
             }
         } else {
             // get_most_diverse_dimension returns None if there is no variation in any dimensions
@@ -144,6 +151,25 @@ mod tests {
         let _ = organisms.update_all_region_keys(&dims, None);
         let result = regions.adjust_regions(&mut organisms, &mut dims);
         assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
+    }
+
+    #[test]
+    fn given_at_precision_limit_when_adjust_regions_then_returns_at_resolution_limit() {
+        let (mut regions, mut dims) = setup(10, vec![1.0..=2.0]);
+        // Set the doublings to a high number to hit the precision limit.
+        dims.get_dimension_mut(0).set_number_of_doublings(52);
+
+        // Add organisms with variation to trigger a division attempt.
+        let mut organisms = organisms_from_problem_values(vec![vec![1.1], vec![1.2]]);
+        let _ = organisms.update_all_region_keys(&dims, None);
+
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
+
+        // Expect AtResolutionLimit because divide_dimension should fail.
+        assert!(matches!(result, AdjustRegionsResult::AtResolutionLimit));
+
+        // Also confirm the number of doublings did not change.
+        assert_eq!(dims.get_dimension(0).number_of_doublings(), 52);
     }
 
     #[test]
