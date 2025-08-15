@@ -2,6 +2,7 @@ use std::ops::RangeInclusive;
 
 pub mod expand_bounds;
 pub mod get_interval;
+pub mod interval_bounds;
 pub mod new;
 
 #[derive(Debug, Clone)]

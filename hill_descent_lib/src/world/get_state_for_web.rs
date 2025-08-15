@@ -86,6 +86,9 @@ impl super::World {
         let mut min_score_global = f64::MAX;
         let mut max_score_global = f64::MIN;
 
+        // Also capture the region keys so we can validate organism membership precisely.
+        let mut region_keys: Vec<Vec<usize>> = Vec::new();
+
         let regions: Vec<RegionState> = self
             .regions
             .regions()
@@ -101,21 +104,18 @@ impl super::World {
                 let mut bounds_y = (0.0, 0.0);
 
                 for (i, &dim_idx) in key.iter().enumerate() {
-                    let dim = &dims[i];
-                    let intervals = dim.num_intervals();
-                    let div_size = (*dim.range().end() - *dim.range().start()) / intervals;
-                    let start = *dim.range().start() + dim_idx as f64 * div_size;
-                    let mut end = start + div_size;
-                    // Ensure exact upper bound on last interval to avoid floating precision gaps
-                    if dim_idx + 1 == intervals as usize {
-                        end = *dim.range().end();
-                    }
+                    let (start, end) = dims[i]
+                        .interval_bounds(dim_idx)
+                        .expect("Region key contained an out-of-range interval index");
                     if i == 0 {
                         bounds_x = (start, end);
                     } else {
                         bounds_y = (start, end);
                     }
                 }
+
+                // Keep the key for later membership validation
+                region_keys.push(key.clone());
 
                 RegionState {
                     bounds: RegionBoundsState {
@@ -134,28 +134,33 @@ impl super::World {
             max_score_global = 0.0;
         }
 
-        // Debug assertion: every organism must belong to at least one region
+        // Debug assertion: every organism must belong to exactly one region key derived by get_interval
         for org in &organisms {
-            let in_region = regions.iter().any(|r| {
-                let (x0, x1) = r.bounds.x;
-                let (y0, y1) = r.bounds.y;
-                org.params.x >= x0 && org.params.x <= x1 && org.params.y >= y0 && org.params.y <= y1
-            });
-            if !in_region {
+            let xi = dims[0]
+                .get_interval(org.params.x)
+                .expect("Organism x not in any interval despite dimensions");
+            let yi = dims[1]
+                .get_interval(org.params.y)
+                .expect("Organism y not in any interval despite dimensions");
+
+            let in_region_key = region_keys
+                .iter()
+                .any(|k| k.len() == 2 && k[0] == xi && k[1] == yi);
+            if !in_region_key {
                 eprintln!("Organism outside any region: {org:?}");
                 eprintln!("Regions: {regions:?}");
                 eprintln!("Dimension 0 range: {:?}", dims[0].range());
                 eprintln!("Dimension 1 range: {:?}", dims[1].range());
 
-                if !in_region {
-                    panic!(
-                        "Organism {:?} outside any region. dims0 {:?} dims1 {:?}. Regions: {:?}",
-                        org,
-                        dims[0].range(),
-                        dims[1].range(),
-                        regions
-                    );
-                }
+                panic!(
+                    "Organism {:?} not mapped to any region key (xi={}, yi={}). dims0 {:?} dims1 {:?}. Regions: {:?}",
+                    org,
+                    xi,
+                    yi,
+                    dims[0].range(),
+                    dims[1].range(),
+                    regions
+                );
             }
         }
 
