@@ -39,8 +39,13 @@ impl Dimensions {
 
             // Handle infinite ranges sensibly
             if start.is_infinite() || end.is_infinite() {
+                crate::warn!(
+                    "infinite range detected in dimension index {}",
+                    dimension_index
+                );
                 f64::INFINITY // Treat any infinite range as having infinite span
             } else {
+                crate::trace!("dimension range {}", end - start);
                 end - start
             }
         };
@@ -108,6 +113,7 @@ impl Dimensions {
             new_range.is_finite()
         } else {
             // Normal comparison for finite ranges
+            crate::debug!("range shrunk from {} to {}", original_range, new_range);
             new_range < original_range
         }
     }

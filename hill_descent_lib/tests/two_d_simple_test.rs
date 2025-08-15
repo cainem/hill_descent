@@ -46,11 +46,11 @@ pub fn execute() {
     let mut best_score = f64::MAX;
 
     // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..1100 {
-        // if i == 727 {
-        //     #[cfg(feature = "enable-tracing")]
-        //     hill_descent_lib::init_tracing();
-        // }
+    for i in 0..2000 {
+        if i == 1460 {
+            #[cfg(feature = "enable-tracing")]
+            hill_descent_lib::init_tracing();
+        }
 
         // Objective-function mode: no known outputs
         let at_resolution_limit = world.training_run(&[], &[]);
@@ -65,7 +65,7 @@ pub fn execute() {
         // Break early if we've reached the resolution limit
         if at_resolution_limit {
             println!("Resolution limit reached at epoch {i}");
-            //break;
+            break;
         }
 
         //if i % 100 == 0 {
