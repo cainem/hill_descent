@@ -177,7 +177,7 @@ mod tests {
         let _ = organisms.update_all_region_keys(&dims, None);
 
         let result = regions.adjust_regions(&mut organisms, &mut dims);
-        
+
         // The test should either succeed with DimensionExpanded (if adjust_limits works)
         // or fail with AtResolutionLimit (if both division and adjust_limits fail)
         // or return ExpansionNotNecessary if target regions already reached
@@ -188,11 +188,11 @@ mod tests {
                 assert_eq!(dims.get_dimension(0).number_of_doublings(), 53);
                 let range = dims.get_dimension(0).range();
                 assert!(range.end() - range.start() < 2000.0);
-            },
+            }
             AdjustRegionsResult::AtResolutionLimit => {
                 // Expected case: both division and adjust_limits failed
                 assert_eq!(dims.get_dimension(0).number_of_doublings(), 53);
-            },
+            }
             AdjustRegionsResult::ExpansionNotNecessary => {
                 // Target regions already reached, no expansion needed
                 assert_eq!(dims.get_dimension(0).number_of_doublings(), 53);
@@ -211,7 +211,8 @@ mod tests {
     }
 
     #[test]
-    fn given_precision_limit_and_adjust_limits_fails_when_adjust_regions_then_returns_at_resolution_limit() {
+    fn given_precision_limit_and_adjust_limits_fails_when_adjust_regions_then_returns_at_resolution_limit()
+     {
         let (mut regions, mut dims) = setup(10, vec![1.0..=2.0]);
         // Set the doublings to a high number to hit the precision limit.
         dims.get_dimension_mut(0).set_number_of_doublings(52);
@@ -248,11 +249,11 @@ mod tests {
             AdjustRegionsResult::DimensionExpanded { dimension_index } => {
                 // If we get here, either division succeeded or adjust_limits succeeded
                 assert_eq!(dimension_index, 0);
-            },
+            }
             AdjustRegionsResult::AtResolutionLimit => {
                 // This is the current behavior - get_most_diverse_dimension returns None
                 // so we never reach the fallback logic
-            },
+            }
             AdjustRegionsResult::ExpansionNotNecessary => {
                 // Target regions already reached
             }

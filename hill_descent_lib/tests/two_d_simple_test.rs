@@ -27,7 +27,7 @@ impl SingleValuedFunction for Himmelblau {
 }
 
 #[test]
-//#[ignore] // This test is long-running and should be run explicitly.
+#[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
     // #[cfg(feature = "enable-tracing")]
     // hill_descent_lib::init_tracing();
@@ -47,10 +47,10 @@ pub fn execute() {
 
     // Run for a number of epochs to allow the system to find a minimum.
     for i in 0..2000 {
-        if i == 1460 {
-            #[cfg(feature = "enable-tracing")]
-            hill_descent_lib::init_tracing();
-        }
+        // if i == 1460 {
+        //     #[cfg(feature = "enable-tracing")]
+        //     hill_descent_lib::init_tracing();
+        // }
 
         // Objective-function mode: no known outputs
         let at_resolution_limit = world.training_run(&[], &[]);
