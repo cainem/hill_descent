@@ -31,15 +31,11 @@ impl Dimension {
         let num_intervals = self.num_intervals();
         let interval_size = (end - start) / num_intervals;
 
-        // Handle case where range is tiny and interval_size is zero.
+        if num_intervals > usize::MAX as f64 {
+            panic!("Number of intervals exceeds maximum usize");
+        }
         if interval_size == 0.0 {
-            // If size is 0, all values are effectively at the start,
-            // except for the exact end value.
-            return if value == end {
-                Some((num_intervals as usize).saturating_sub(1))
-            } else {
-                Some(0)
-            };
+            panic!("Interval size has fallen to zero");
         }
 
         // Calculate which interval the value falls into.
@@ -215,5 +211,35 @@ mod tests {
         // Should still map to the same interval due to small precision differences
         let value = 0.1 + 0.1 + 0.1;
         assert_eq!(dimension.get_interval(value), Some(307));
+    }
+
+    #[test]
+    #[should_panic(expected = "Number of intervals exceeds maximum usize")]
+    fn given_65_doublings_when_get_interval_called_then_panics_num_intervals_exceeds_usize_max() {
+        // Using 65 doublings ensures 2^65 > usize::MAX as f64 (which rounds to 2^64),
+        // thus triggering the explicit panic guard in get_interval.
+        let dimension = Dimension {
+            range: 0.0..=1.0,
+            number_of_doublings: 65,
+        };
+
+        // Value within range to avoid early None path
+        let _ = dimension.get_interval(0.5);
+    }
+
+    #[test]
+    #[should_panic(expected = "Interval size has fallen to zero")]
+    fn given_min_positive_range_and_64_doublings_when_get_interval_called_then_panics_interval_size_zero()
+     {
+        // With range width = f64::MIN_POSITIVE (2^-1022) and 64 doublings, interval_size becomes
+        // 2^-1022 / 2^64 = 2^-1086 which underflows to 0.0 in f64, triggering the panic.
+        // We use 64 (not 65) doublings to avoid the previous usize overflow panic.
+        let dimension = Dimension {
+            range: 0.0..=f64::MIN_POSITIVE,
+            number_of_doublings: 64,
+        };
+
+        // Value within range to avoid early None path
+        let _ = dimension.get_interval(0.0);
     }
 }

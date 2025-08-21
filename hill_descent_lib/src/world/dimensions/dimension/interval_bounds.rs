@@ -26,12 +26,20 @@ impl Dimension {
 
         // Single-point range: regardless of doublings, only interval 0 is valid
         if start == end {
-            return if interval_index == 0 { Some((start, end)) } else { None };
+            return if interval_index == 0 {
+                Some((start, end))
+            } else {
+                None
+            };
         }
 
         // Zero doublings means exactly one interval; only index 0 is valid
         if num_intervals == 1 {
-            return if interval_index == 0 { Some((start, end)) } else { None };
+            return if interval_index == 0 {
+                Some((start, end))
+            } else {
+                None
+            };
         }
 
         let interval_size = (end - start) / num_intervals_f;
