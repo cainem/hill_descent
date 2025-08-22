@@ -1,7 +1,7 @@
 /// Compact handle representing a region in n-dimensional space.
 /// Contains a unique identifier and adjacency zone information for efficient
 /// region management and future carrying capacity allocation strategies.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
 pub struct RegionHandle {
     /// Unique, monotonic identifier for this region instance
