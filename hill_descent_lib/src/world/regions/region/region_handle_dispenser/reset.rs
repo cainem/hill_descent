@@ -1,4 +1,4 @@
-use crate::world::regions::region::region_key_dispenser::RegionHandleDispenser;
+use crate::world::regions::region::region_handle_dispenser::RegionHandleDispenser;
 
 impl RegionHandleDispenser {
     /// Clears all state and resets counters (next_id and next_adjacent_zone_id) back to 0.

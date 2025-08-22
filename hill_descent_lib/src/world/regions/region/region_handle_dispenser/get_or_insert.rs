@@ -1,5 +1,5 @@
-use crate::world::regions::region::region_key_dispenser::RegionHandleDispenser;
-use crate::world::regions::region::region_key_dispenser::region_handle::RegionHandle;
+use crate::world::regions::region::region_handle_dispenser::RegionHandleDispenser;
+use crate::world::regions::region::region_handle_dispenser::region_handle::RegionHandle;
 
 impl RegionHandleDispenser {
     /// Returns the existing RegionHandle for the given full_region_key if present,

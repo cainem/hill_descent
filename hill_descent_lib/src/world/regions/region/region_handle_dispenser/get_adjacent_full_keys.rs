@@ -1,4 +1,4 @@
-use crate::world::regions::region::region_key_dispenser::RegionHandleDispenser;
+use crate::world::regions::region::region_handle_dispenser::RegionHandleDispenser;
 
 impl RegionHandleDispenser {
     /// Returns all existing full_region_keys in the dispenser that are adjacent
