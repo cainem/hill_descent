@@ -1,4 +1,4 @@
-use crate::world::regions::region::region_handle_dispenser::RegionHandleDispenser;
+use crate::world::regions::region_handle_dispenser::RegionHandleDispenser;
 
 impl RegionHandleDispenser {
     /// Merge all provided zone IDs into a single canonical zone.

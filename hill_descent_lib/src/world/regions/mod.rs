@@ -14,6 +14,7 @@ pub mod find_most_diverse_index;
 pub mod get_most_common_key;
 pub mod get_most_diverse_dimension;
 mod refill;
+mod region_handle_dispenser;
 pub mod repopulate;
 pub mod update;
 pub mod update_all_region_min_scores;

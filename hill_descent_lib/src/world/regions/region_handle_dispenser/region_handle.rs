@@ -13,7 +13,10 @@ pub struct RegionHandle {
 impl RegionHandle {
     #[allow(dead_code)]
     pub fn new(id: usize, adjacent_zone_id: usize) -> Self {
-        Self { id, adjacent_zone_id }
+        Self {
+            id,
+            adjacent_zone_id,
+        }
     }
 
     #[allow(dead_code)]
