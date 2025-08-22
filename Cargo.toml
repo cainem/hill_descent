@@ -2,6 +2,9 @@
 members = ["hill_descent_lib", "hill_descent_server"]
 resolver = "2"
 
+[profile.bench]
+debug = true
+
 [workspace.dependencies]
 # Common dependencies that both crates might use
 xxhash-rust = { version = "0.8", features = ["xxh3"] }

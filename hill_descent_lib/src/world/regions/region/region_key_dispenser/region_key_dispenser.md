@@ -1,4 +1,13 @@
-# The RegionKeyDispenser
+# DEPRECATED: RegionKeyDispenser
+
+This document has been renamed. Please refer to `region_handle_dispenser.md` for the updated design and terminology:
+
+- RegionKeyDispenser -> RegionHandleDispenser
+- RegionKey -> RegionHandle
+- adjacent_zone_key -> adjacent_zone_id
+- full key -> full_region_key
+
+The content below is kept temporarily for historical context.
 
 The `RegionKeyDispenser` is a component that manages the keys for regions in a multi-dimensional space.
 It provides a way to efficiently retrieve and manage region keys, which are used to identify regions in the simulation.

@@ -1,7 +1,6 @@
 mod execute_reproduction_passes;
-mod reproduce;
-mod region_key;
 mod region_key_dispenser;
+mod reproduce;
 
 use std::rc::Rc;
 

@@ -35,5 +35,3 @@ criterion = "0.5"
 name = "hundred_parameter_benchmark"
 harness = false
 
-[profile.bench]
-debug = true
