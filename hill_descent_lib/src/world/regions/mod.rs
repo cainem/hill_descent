@@ -52,11 +52,19 @@ impl Regions {
         }
     }
 
+    #[deprecated(
+        since = "0.1.0",
+        note = "Use encapsulated methods instead: len(), is_empty(), get_region(), iter_regions(), etc. Direct access to the internal map will be removed in a future version."
+    )]
     pub fn regions(&self) -> &BTreeMap<Vec<usize>, Region> {
         &self.regions
     }
 
     /// Returns a mutable reference to the regions map.
+    #[deprecated(
+        since = "0.1.0", 
+        note = "Use encapsulated methods instead: get_region_mut(), insert_region(), remove_region(), retain_regions(), etc. Direct access to the internal map will be removed in a future version."
+    )]
     pub fn regions_mut(&mut self) -> &mut BTreeMap<Vec<usize>, Region> {
         &mut self.regions
     }
