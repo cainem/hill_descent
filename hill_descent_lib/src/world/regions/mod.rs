@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
+use rustc_hash::FxBuildHasher;
 
 use region::Region;
 
@@ -24,7 +25,7 @@ use crate::parameters::global_constants::GlobalConstants;
 #[derive(Debug, Clone)]
 // Container managing all Region instances and enforcing global constraints such as maximum regions and population size.
 pub struct Regions {
-    regions: BTreeMap<Vec<usize>, Region>,
+    regions: IndexMap<Vec<usize>, Region, FxBuildHasher>,
     // the target "ideal" number of regions
     // the algorithm doesn't strictly enforce it as a maximum number of regions
     // but it won't be more that target_regions * 2
@@ -32,6 +33,7 @@ pub struct Regions {
     population_size: usize,
 }
 
+#[allow(dead_code)] // These methods are kept for backward compatibility during migration
 impl Regions {
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
@@ -46,7 +48,7 @@ impl Regions {
             panic!("target_regions must be greater than 0 for Regions initialization.");
         }
         Self {
-            regions: BTreeMap::new(),
+            regions: IndexMap::with_hasher(FxBuildHasher),
             target_regions: global_constants.target_regions(),
             population_size: global_constants.population_size(), // Initialize population_size
         }
@@ -56,7 +58,7 @@ impl Regions {
         since = "0.1.0",
         note = "Use encapsulated methods instead: len(), is_empty(), get_region(), iter_regions(), etc. Direct access to the internal map will be removed in a future version."
     )]
-    pub fn regions(&self) -> &BTreeMap<Vec<usize>, Region> {
+    pub fn regions(&self) -> &IndexMap<Vec<usize>, Region, FxBuildHasher> {
         &self.regions
     }
 
@@ -65,7 +67,7 @@ impl Regions {
         since = "0.1.0",
         note = "Use encapsulated methods instead: get_region_mut(), insert_region(), remove_region(), retain_regions(), etc. Direct access to the internal map will be removed in a future version."
     )]
-    pub fn regions_mut(&mut self) -> &mut BTreeMap<Vec<usize>, Region> {
+    pub fn regions_mut(&mut self) -> &mut IndexMap<Vec<usize>, Region, FxBuildHasher> {
         &mut self.regions
     }
 
@@ -125,7 +127,7 @@ impl Regions {
 
     /// Removes a region with the given key. Returns the removed region if it existed.
     pub fn remove_region(&mut self, key: &[usize]) -> Option<Region> {
-        self.regions.remove(key)
+        self.regions.shift_remove(key)
     }
 
     /// Retains only the regions for which the predicate returns true.
@@ -518,7 +520,7 @@ mod encapsulation_tests {
         regions.insert_region(vec![1, 2], region2);
 
         // Keep only regions with min_score > 25.0
-        regions.retain_regions(|_, region| region.min_score().map_or(false, |score| score > 25.0));
+        regions.retain_regions(|_, region| region.min_score().is_some_and(|score| score > 25.0));
 
         assert_eq!(regions.len(), 1);
         assert!(regions.contains_region_key(&[1, 2]));

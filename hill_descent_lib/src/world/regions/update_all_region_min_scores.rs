@@ -42,7 +42,8 @@ mod tests {
     use crate::phenotype::Phenotype;
     use crate::world::organisms::{Organism, Organisms};
     use crate::world::regions::Region;
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
+    use rustc_hash::FxBuildHasher;
     use std::rc::Rc;
 
     fn create_test_regions_and_gc(
@@ -52,7 +53,7 @@ mod tests {
         if population_size == 0 {
             let gc_temp = GlobalConstants::new(1, target_regions);
             let regions = Regions {
-                regions: BTreeMap::new(),
+                regions: IndexMap::with_hasher(FxBuildHasher),
                 target_regions,
                 population_size: 0,
             };

@@ -7,7 +7,7 @@ impl super::Regions {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use indexmap::IndexMap;
     use std::rc::Rc;
 
     use crate::parameters::global_constants::GlobalConstants;
@@ -48,7 +48,7 @@ mod tests {
         region3.add_organism(Rc::clone(&organism_rc));
 
         regions.regions =
-            BTreeMap::from([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
+            IndexMap::from_iter([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
 
         assert_eq!(regions.regions.len(), 3);
         regions.prune_empty_regions();
@@ -69,7 +69,7 @@ mod tests {
         let mut region2 = Region::new();
         region2.add_organism(Rc::clone(&organism_rc));
 
-        regions.regions = BTreeMap::from([(vec![0], region1), (vec![1], region2)]);
+        regions.regions = IndexMap::from_iter([(vec![0], region1), (vec![1], region2)]);
 
         assert_eq!(regions.regions.len(), 2);
         regions.prune_empty_regions();
@@ -84,7 +84,7 @@ mod tests {
         let region1 = Region::new(); // Empty
         let region2 = Region::new(); // Empty
 
-        regions.regions = BTreeMap::from([(vec![0], region1), (vec![1], region2)]);
+        regions.regions = IndexMap::from_iter([(vec![0], region1), (vec![1], region2)]);
 
         assert_eq!(regions.regions.len(), 2);
         regions.prune_empty_regions();
