@@ -102,8 +102,7 @@ impl super::World {
 
         let regions: Vec<RegionState> = self
             .regions
-            .regions()
-            .iter()
+            .iter_regions()
             .map(|(k, r)| RegionState::from_region(k, r))
             .collect();
 

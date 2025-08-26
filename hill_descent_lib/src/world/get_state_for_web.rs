@@ -91,8 +91,7 @@ impl super::World {
 
         let regions: Vec<RegionState> = self
             .regions
-            .regions()
-            .iter()
+            .iter_regions()
             .map(|(key, region)| {
                 if let Some(score) = region.min_score() {
                     min_score_global = min_score_global.min(score);

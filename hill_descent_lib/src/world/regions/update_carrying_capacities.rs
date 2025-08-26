@@ -38,7 +38,7 @@ impl Regions {
         let total_population_size = self.population_size;
 
         // Second pass to set the carrying capacity for each region.
-        for (_, region) in self.regions_mut().iter_mut() {
+        for (_, region) in self.iter_regions_mut() {
             let mut capacity = 0;
 
             if sum_inverse_min_fitness > 0.0

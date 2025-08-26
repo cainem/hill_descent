@@ -1,7 +1,6 @@
 impl super::Regions {
     pub fn get_most_common_key(&self) -> Option<Vec<usize>> {
-        self.regions()
-            .iter()
+        self.iter_regions()
             .max_by_key(|(_, region)| region.organism_count())
             .map(|(key, _)| key.clone())
     }
@@ -26,7 +25,7 @@ pub mod tests {
         let global_constants = GlobalConstants::new(100, 10);
         let mut regions = Regions::new(&global_constants);
         let key = vec![1];
-        regions.regions_mut().insert(key.clone(), Region::new());
+        regions.insert_region(key.clone(), Region::new());
         assert_eq!(regions.get_most_common_key(), Some(key));
     }
 
@@ -47,9 +46,9 @@ pub mod tests {
         let key3 = vec![3];
         let region3 = Region::new(); // empty
 
-        regions.regions_mut().insert(key1, region1);
-        regions.regions_mut().insert(key2.clone(), region2);
-        regions.regions_mut().insert(key3, region3);
+        regions.insert_region(key1, region1);
+        regions.insert_region(key2.clone(), region2);
+        regions.insert_region(key3, region3);
 
         assert_eq!(regions.get_most_common_key(), Some(key2));
     }
@@ -67,8 +66,8 @@ pub mod tests {
         let mut region2 = Region::new();
         region2.add_organism(create_test_organism());
 
-        regions.regions_mut().insert(key1.clone(), region1);
-        regions.regions_mut().insert(key2.clone(), region2);
+        regions.insert_region(key1.clone(), region1);
+        regions.insert_region(key2.clone(), region2);
 
         // BTreeMap iterates keys in sorted order, so max_by_key will find key1 first in a tie.
         // If the implementation changes, this test might need adjustment.
@@ -84,8 +83,8 @@ pub mod tests {
         let key1 = vec![1];
         let key2 = vec![2];
 
-        regions.regions_mut().insert(key1.clone(), Region::new());
-        regions.regions_mut().insert(key2.clone(), Region::new());
+        regions.insert_region(key1.clone(), Region::new());
+        regions.insert_region(key2.clone(), Region::new());
 
         let most_common_key = regions.get_most_common_key();
         assert!(most_common_key.is_some());

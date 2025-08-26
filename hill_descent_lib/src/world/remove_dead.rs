@@ -17,12 +17,12 @@ impl World {
         self.organisms.retain_live();
 
         // 2. Each region ----------------------------------------------------
-        for region in self.regions.regions_mut().values_mut() {
+        for region in self.regions.iter_region_values_mut() {
             region.retain_live();
         }
 
         // 3. Drop regions that are now empty --------------------------------
-        self.regions.regions_mut().retain(|_, r| !r.is_empty());
+        self.regions.retain_regions(|_, r| !r.is_empty());
     }
 }
 

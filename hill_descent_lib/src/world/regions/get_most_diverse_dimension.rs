@@ -83,7 +83,7 @@ mod tests {
         let mut region = Region::new();
         let organism = create_test_organism(create_test_phenotype(vec![1.0, 2.0]));
         region.add_organism(organism);
-        regions.regions_mut().insert(key.clone(), region);
+        regions.insert_region(key.clone(), region);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), None);
     }
@@ -102,7 +102,7 @@ mod tests {
         let org2 = create_test_organism(create_test_phenotype(vec![1.0, 2.0]));
         region.add_organism(org1);
         region.add_organism(org2);
-        regions.regions_mut().insert(key.clone(), region);
+        regions.insert_region(key.clone(), region);
 
         // The function looks at problem dimensions, so index 1 is correct.
         assert_eq!(regions.get_most_diverse_dimension(&key), Some(1));
@@ -136,7 +136,7 @@ mod tests {
         let org2 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
         region.add_organism(org1);
         region.add_organism(org2);
-        regions.regions_mut().insert(key.clone(), region);
+        regions.insert_region(key.clone(), region);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), None);
     }
