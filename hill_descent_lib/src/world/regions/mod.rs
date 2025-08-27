@@ -56,21 +56,25 @@ impl Regions {
     // Encapsulated read operations
 
     /// Returns the number of regions.
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.regions.len()
     }
 
     /// Returns true if there are no regions.
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.regions.is_empty()
     }
 
     /// Returns a reference to the region associated with the given key.
+    #[allow(dead_code)]
     pub fn get_region(&self, key: &[usize]) -> Option<&Region> {
         self.regions.get(key)
     }
 
     /// Returns a mutable reference to the region associated with the given key.
+    #[allow(dead_code)]
     pub fn get_region_mut(&mut self, key: &[usize]) -> Option<&mut Region> {
         self.regions.get_mut(key)
     }
@@ -86,6 +90,7 @@ impl Regions {
     }
 
     /// Returns an iterator over region values only.
+    #[allow(dead_code)]
     pub fn iter_region_values(&self) -> impl Iterator<Item = &Region> {
         self.regions.values()
     }
@@ -96,6 +101,7 @@ impl Regions {
     }
 
     /// Returns an iterator over region keys only.
+    #[allow(dead_code)]
     pub fn iter_region_keys(&self) -> impl Iterator<Item = &Vec<usize>> {
         self.regions.keys()
     }
@@ -103,11 +109,13 @@ impl Regions {
     // Encapsulated write operations
 
     /// Inserts a region with the given key. Returns the previous region if one existed.
+    #[allow(dead_code)]
     pub fn insert_region(&mut self, key: Vec<usize>, region: Region) -> Option<Region> {
         self.regions.insert(key, region)
     }
 
     /// Removes a region with the given key. Returns the removed region if it existed.
+    #[allow(dead_code)]
     pub fn remove_region(&mut self, key: &[usize]) -> Option<Region> {
         self.regions.shift_remove(key)
     }
@@ -121,6 +129,7 @@ impl Regions {
     }
 
     /// Returns true if a region with the given key exists.
+    #[allow(dead_code)]
     pub fn contains_region_key(&self, key: &[usize]) -> bool {
         self.regions.contains_key(key)
     }
@@ -128,11 +137,13 @@ impl Regions {
     // Specialized operations for common patterns
 
     /// Collects all region keys into a vector. Useful for iteration when mutations are needed.
+    #[allow(dead_code)]
     pub fn collect_region_keys(&self) -> Vec<Vec<usize>> {
         self.regions.keys().cloned().collect()
     }
 
     /// Clears all regions from the collection.
+    #[allow(dead_code)]
     pub fn clear_regions(&mut self) {
         self.regions.clear()
     }
