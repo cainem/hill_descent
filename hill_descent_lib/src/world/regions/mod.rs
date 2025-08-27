@@ -33,7 +33,6 @@ pub struct Regions {
     population_size: usize,
 }
 
-#[allow(dead_code)] // These methods are kept for backward compatibility during migration
 impl Regions {
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
@@ -52,23 +51,6 @@ impl Regions {
             target_regions: global_constants.target_regions(),
             population_size: global_constants.population_size(), // Initialize population_size
         }
-    }
-
-    #[deprecated(
-        since = "0.1.0",
-        note = "Use encapsulated methods instead: len(), is_empty(), get_region(), iter_regions(), etc. Direct access to the internal map will be removed in a future version."
-    )]
-    pub fn regions(&self) -> &IndexMap<Vec<usize>, Region, FxBuildHasher> {
-        &self.regions
-    }
-
-    /// Returns a mutable reference to the regions map.
-    #[deprecated(
-        since = "0.1.0",
-        note = "Use encapsulated methods instead: get_region_mut(), insert_region(), remove_region(), retain_regions(), etc. Direct access to the internal map will be removed in a future version."
-    )]
-    pub fn regions_mut(&mut self) -> &mut IndexMap<Vec<usize>, Region, FxBuildHasher> {
-        &mut self.regions
     }
 
     // Encapsulated read operations

@@ -135,7 +135,7 @@ mod tests {
 
         // Check that regions have been created and organisms assigned.
         // With a small population and large target_regions, we expect at least one region.
-        assert!(!world.regions.regions().is_empty());
+        assert!(!world.regions.is_empty());
         // Every organism should have a region key after initialization.
         for organism in world.organisms.iter() {
             assert!(organism.region_key().is_some());

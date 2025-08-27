@@ -115,7 +115,7 @@ mod tests {
         let (mut regions, mut dims, _) = regions_and_dims(4, 10, vec![0.0..=1.0]);
         let mut organisms = orgs(vec![]);
         let at_resolution_limit = regions.update(&mut organisms, &mut dims);
-        assert!(regions.regions().is_empty());
+        assert!(regions.is_empty());
         assert!(
             at_resolution_limit,
             "Should return true when no organisms present - no point continuing"
@@ -129,7 +129,7 @@ mod tests {
         // precondition: zero doublings per dim from Dimensions::new (1 interval each)
         assert_eq!(dims.get_total_possible_regions(), 1);
         let at_resolution_limit = regions.update(&mut organisms, &mut dims);
-        assert_eq!(regions.regions().len(), 1);
+        assert_eq!(regions.len(), 1);
         assert_eq!(dims.get_total_possible_regions(), 1);
         assert!(
             at_resolution_limit,
@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(*range0.end(), 1.5);
         assert_eq!(dims.get_dimension(1).range().clone(), 0.0..=1.0);
         // Should have multiple regions due to variance
-        assert!(!regions.regions().is_empty());
+        assert!(!regions.is_empty());
         assert!(
             !at_resolution_limit,
             "Should return false when expansion occurs with sufficient variance"
@@ -170,7 +170,7 @@ mod tests {
         let mut organisms = orgs(vec![vec![0.2, 0.2], vec![0.8, 0.8]]);
         let at_resolution_limit = regions.update(&mut organisms, &mut dims);
         // Should have exactly 2 regions due to target being reached
-        assert_eq!(regions.regions().len(), 2);
+        assert_eq!(regions.len(), 2);
         assert!(
             !at_resolution_limit,
             "Should return false when target is reached (ExpansionNotNecessary)"
@@ -191,7 +191,7 @@ mod tests {
             at_resolution_limit,
             "Should return true - single organism has no variance for division"
         );
-        assert_eq!(regions.regions().len(), 1);
+        assert_eq!(regions.len(), 1);
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
             "Should return false when target is reached (ExpansionNotNecessary)"
         );
         assert_eq!(
-            regions.regions().len(),
+            regions.len(),
             1,
             "Should have exactly 1 region as per target"
         );
@@ -255,6 +255,6 @@ mod tests {
             at_resolution_limit,
             "Should return true when no organisms present - no point continuing"
         );
-        assert!(regions.regions().is_empty());
+        assert!(regions.is_empty());
     }
 }

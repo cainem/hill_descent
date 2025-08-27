@@ -21,7 +21,7 @@ impl Regions {
         let mut sum_inverse_min_fitness = 0.0;
 
         // First pass to calculate the sum of inverse fitnesses.
-        for (_, region) in self.regions.iter() {
+        for (_, region) in self.iter_regions() {
             if let Some(min_score) = region.min_score()
                 && min_score > 0.0
             {
@@ -121,15 +121,12 @@ mod test_update_carrying_capacities {
     fn given_no_regions_with_min_scores_when_update_capacities_then_all_capacities_zero() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(None));
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(None));
 
         regions_struct.update_carrying_capacities();
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key1)
+                .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
@@ -140,27 +137,22 @@ mod test_update_carrying_capacities {
     fn given_sum_inverse_fitness_zero_when_update_capacities_then_all_capacities_zero() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(Some(0.0)));
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
         regions_struct.update_carrying_capacities();
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key1)
+                .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
         );
 
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(Some(-5.0)));
+        // Test with negative score as well
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(-5.0)));
         regions_struct.update_carrying_capacities();
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key1)
+                .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
@@ -173,15 +165,12 @@ mod test_update_carrying_capacities {
         let population_size = 10;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
         let key1 = vec![1];
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(Some(5.0)));
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(5.0)));
 
         regions_struct.update_carrying_capacities();
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key1)
+                .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(population_size)
@@ -199,26 +188,20 @@ mod test_update_carrying_capacities {
         // F1 = 10, F2 = 40. Sum(1/F) = 1/10 + 1/40 = 0.1 + 0.025 = 0.125
         // Cap1 = P * (1/F1) / Sum(1/F) = 100 * (0.1 / 0.125) = 100 * 0.8 = 80
         // Cap2 = P * (1/F2) / Sum(1/F) = 100 * (0.025 / 0.125) = 100 * 0.2 = 20
-        regions_struct
-            .regions_mut()
-            .insert(key1.clone(), setup_region_with_min_score(Some(10.0)));
-        regions_struct
-            .regions_mut()
-            .insert(key2.clone(), setup_region_with_min_score(Some(40.0)));
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(10.0)));
+        regions_struct.insert_region(key2.clone(), setup_region_with_min_score(Some(40.0)));
 
         regions_struct.update_carrying_capacities();
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key1)
+                .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
             Some(80)
         );
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key2)
+                .get_region(&key2)
                 .unwrap()
                 .carrying_capacity(),
             Some(20)
@@ -232,21 +215,18 @@ mod test_update_carrying_capacities {
         let key_with_score = vec![1];
         let key_without_score = vec![2];
 
-        regions_struct.regions_mut().insert(
+        regions_struct.insert_region(
             key_with_score.clone(),
             setup_region_with_min_score(Some(10.0)),
         );
-        regions_struct
-            .regions_mut()
-            .insert(key_without_score.clone(), setup_region_with_min_score(None));
+        regions_struct.insert_region(key_without_score.clone(), setup_region_with_min_score(None));
 
         regions_struct.update_carrying_capacities();
 
         // Region with score gets full capacity
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key_with_score)
+                .get_region(&key_with_score)
                 .unwrap()
                 .carrying_capacity(),
             Some(population_size)
@@ -254,8 +234,7 @@ mod test_update_carrying_capacities {
         // Region without score gets zero capacity
         assert_eq!(
             regions_struct
-                .regions
-                .get(&key_without_score)
+                .get_region(&key_without_score)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)

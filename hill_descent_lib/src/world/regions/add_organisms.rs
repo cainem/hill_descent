@@ -55,7 +55,7 @@ mod tests {
 
         regions.add_organisms(&organisms);
 
-        assert_eq!(regions.regions().len(), 0);
+        assert_eq!(regions.len(), 0);
     }
 
     #[test]
@@ -92,10 +92,9 @@ mod tests {
 
         regions.add_organisms(&organisms_collection);
 
-        assert_eq!(regions.regions().len(), 1);
+        assert_eq!(regions.len(), 1);
         let region = regions
-            .regions()
-            .get(&region_key1)
+            .get_region(&region_key1)
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 1);
         assert!(Rc::ptr_eq(
@@ -124,10 +123,9 @@ mod tests {
 
         regions.add_organisms(&organisms_collection);
 
-        assert_eq!(regions.regions().len(), 1);
+        assert_eq!(regions.len(), 1);
         let region = regions
-            .regions()
-            .get(&region_key)
+            .get_region(&region_key)
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 2);
 
@@ -166,11 +164,10 @@ mod tests {
 
         regions.add_organisms(&organisms_collection);
 
-        assert_eq!(regions.regions().len(), 2);
+        assert_eq!(regions.len(), 2);
 
         let region1 = regions
-            .regions()
-            .get(&region_key1)
+            .get_region(&region_key1)
             .expect("Region 1 should exist");
         assert_eq!(region1.organism_count(), 1);
         assert!(Rc::ptr_eq(
@@ -179,8 +176,7 @@ mod tests {
         ));
 
         let region2 = regions
-            .regions()
-            .get(&region_key2)
+            .get_region(&region_key2)
             .expect("Region 2 should exist");
         assert_eq!(region2.organism_count(), 1);
         assert!(Rc::ptr_eq(
@@ -223,10 +219,9 @@ mod tests {
         regions.add_organisms(&new_organisms_to_add);
 
         // Assert
-        assert_eq!(regions.regions().len(), 1); // Still only one region
+        assert_eq!(regions.len(), 1); // Still only one region
         let region = regions
-            .regions()
-            .get(&region_key)
+            .get_region(&region_key)
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 2); // Should now have two orgtypes
 
