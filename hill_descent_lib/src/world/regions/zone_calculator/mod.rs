@@ -1,5 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
+pub mod zone_cache;
+
+pub use zone_cache::ZoneCache;
+
 /// Calculator for determining zones of adjacent regions using Union-Find algorithm.
 ///
 /// Zones are collections of regions where all regions in a zone are connected
