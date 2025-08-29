@@ -19,6 +19,7 @@ pub mod repopulate;
 pub mod update;
 pub mod update_all_region_min_scores;
 pub mod update_carrying_capacities;
+pub mod zone_calculator;
 
 use crate::parameters::global_constants::GlobalConstants;
 
