@@ -19,9 +19,12 @@ pub mod repopulate;
 pub mod update;
 pub mod update_all_region_min_scores;
 pub mod update_carrying_capacities;
+pub mod update_carrying_capacities_with_zones;
 pub mod zone_calculator;
+pub mod zone_capacity_allocation;
 
 use crate::parameters::global_constants::GlobalConstants;
+use zone_calculator::ZoneCache;
 
 #[derive(Debug, Clone)]
 // Container managing all Region instances and enforcing global constraints such as maximum regions and population size.
@@ -32,6 +35,7 @@ pub struct Regions {
     // but it won't be more that target_regions * 2
     target_regions: usize,
     population_size: usize,
+    zone_cache: ZoneCache,
 }
 
 impl Regions {
@@ -51,6 +55,7 @@ impl Regions {
             regions: IndexMap::with_hasher(FxBuildHasher),
             target_regions: global_constants.target_regions(),
             population_size: global_constants.population_size(), // Initialize population_size
+            zone_cache: ZoneCache::new(),
         }
     }
 
@@ -86,6 +91,7 @@ impl Regions {
     }
 
     /// Returns a mutable iterator over (key, region) pairs.
+    #[allow(dead_code)]
     pub fn iter_regions_mut(&mut self) -> impl Iterator<Item = (&Vec<usize>, &mut Region)> {
         self.regions.iter_mut()
     }

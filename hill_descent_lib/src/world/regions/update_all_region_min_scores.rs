@@ -56,6 +56,7 @@ mod tests {
                 regions: IndexMap::with_hasher(FxBuildHasher),
                 target_regions,
                 population_size: 0,
+                zone_cache: crate::world::regions::zone_calculator::ZoneCache::new(),
             };
             return (regions, gc_temp);
         }

@@ -78,6 +78,7 @@ impl ZoneCache {
     ///
     /// # Returns
     /// The new regions generation number
+    #[allow(dead_code)]
     pub fn mark_regions_changed(&mut self) -> u64 {
         self.regions_generation += 1;
         // Note: We don't explicitly invalidate here since the generation mismatch
@@ -88,6 +89,7 @@ impl ZoneCache {
     /// Gets the current regions generation number.
     ///
     /// This can be useful for tracking when regions were last modified
+    #[allow(dead_code)]
     /// and coordinating with other systems that need to know about structural changes.
     pub fn current_regions_generation(&self) -> u64 {
         self.regions_generation
@@ -97,6 +99,7 @@ impl ZoneCache {
     ///
     /// # Returns
     /// A tuple containing (cache_generation, regions_generation, has_cached_zones)
+    #[allow(dead_code)]
     pub fn cache_stats(&self) -> (u64, u64, bool) {
         (
             self.cache_generation,
@@ -109,6 +112,7 @@ impl ZoneCache {
     ///
     /// This provides a complete reset of the cache state, useful for
     /// testing or when starting fresh calculations.
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.cached_zones = None;
         self.cache_generation = 0;

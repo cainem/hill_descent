@@ -17,6 +17,7 @@ impl Regions {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self))
     )]
+    #[allow(dead_code)]
     pub(super) fn update_carrying_capacities(&mut self) {
         let mut sum_inverse_min_fitness = 0.0;
 
