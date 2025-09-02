@@ -53,6 +53,15 @@ impl Regions {
             panic!("Zone calculation returned empty zones for non-empty regions - this is a bug");
         }
 
+        // Create zone mapping for web visualization
+        let mut zone_mapping = std::collections::HashMap::new();
+        for (zone_idx, zone_regions) in zones.iter().enumerate() {
+            for region_key in zone_regions {
+                zone_mapping.insert(region_key.clone(), zone_idx);
+            }
+        }
+        self.set_zone_mapping(zone_mapping);
+
         // Calculate zone sizes
         let zone_sizes: Vec<usize> = zones.iter().map(|zone| zone.len()).collect();
 

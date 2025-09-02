@@ -275,6 +275,13 @@ The system proceeds in discrete rounds. Each round involves:
 * Maximum organism age: $A_{max}$ (must be a bounded parameter).  
 * Problem-specific parameters (e.g., neural network weights and biases).
 
+**6.2.1. System Parameter Evolution:**
+* System parameters (mutation probabilities and maximum age) evolve genetically through the same inheritance, crossover, and mutation mechanisms as problem-specific parameters.
+* However, system parameters do **not** influence spatial positioning or region assignment—only problem-specific parameters determine an organism's location in the niching space.
+* System parameter evolution occurs **indirectly**: organisms with system parameter values that help them succeed in the problem space will have more reproductive opportunities, causing beneficial system parameter combinations to proliferate.
+* This design ensures that evolutionary pressure on system parameters derives from their effectiveness at solving the actual problem, rather than from arbitrary spatial competition based on mutation rate values.
+* System parameters typically evolve more slowly than problem-specific parameters, which is often desirable for meta-evolutionary stability.
+
 **6.3. Derived Values:** * `n`: Total number of dimensions to be optimized.  
 * $e_0$: Smallest representable positive floating-point number.  
 * $\hat{P}$: Number of distinct points in space occupied by organisms (distinctness by bit-wise equality).

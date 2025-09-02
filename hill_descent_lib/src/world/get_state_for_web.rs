@@ -25,6 +25,7 @@ pub struct RegionState {
     pub carrying_capacity: usize,
     bounds: RegionBoundsState,
     min_score: Option<f64>,
+    zone: Option<usize>,
 }
 
 #[derive(Serialize, Debug)]
@@ -89,6 +90,9 @@ impl super::World {
         // Also capture the region keys so we can validate organism membership precisely.
         let mut region_keys: Vec<Vec<usize>> = Vec::new();
 
+        // Get zone mapping for including zone numbers in the response
+        let zone_mapping = self.regions.get_zone_mapping();
+
         let regions: Vec<RegionState> = self
             .regions
             .iter_regions()
@@ -116,6 +120,9 @@ impl super::World {
                 // Keep the key for later membership validation
                 region_keys.push(key.clone());
 
+                // Get zone number from zone mapping if available
+                let zone = zone_mapping.and_then(|mapping| mapping.get(key).copied());
+
                 RegionState {
                     bounds: RegionBoundsState {
                         x: bounds_x,
@@ -123,6 +130,7 @@ impl super::World {
                     },
                     min_score: region.min_score(),
                     carrying_capacity: region.carrying_capacity().unwrap_or(0),
+                    zone,
                 }
             })
             .collect();

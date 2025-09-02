@@ -57,6 +57,7 @@ mod tests {
                 target_regions,
                 population_size: 0,
                 zone_cache: crate::world::regions::zone_calculator::ZoneCache::new(),
+                zone_mapping: None,
             };
             return (regions, gc_temp);
         }
