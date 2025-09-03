@@ -123,10 +123,10 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 
 **Zone-Based Allocation System:**
 * **Zone Detection:** Adjacent regions (those with Chebyshev distance = 1 in region coordinate space) are automatically grouped into zones using a Union-Find algorithm with spatial indexing optimization.
-* **Zone Capacity Allocation:** Total population capacity `P` is distributed among zones proportional to the square of zone size: $ZoneCapacity_z = P \cdot \frac{size_z^2}{\sum_{j=1}^{Z_{count}} size_j^2}$
+* **Zone Capacity Allocation:** Total population capacity `P` is distributed among zones proportional to zone size: $ZoneCapacity_z = P \cdot \frac{size_z}{\sum_{j=1}^{Z_{count}} size_j}$
     * $size_z$: Number of regions in zone `z`
     * $Z_{count}$: Total number of zones
-    * This formula encourages exploration across different zones while focusing resources on larger connected areas.
+    * This formula provides fair representation for all zones while still allocating more resources to larger connected areas.
 * **Intra-Zone Distribution:** Within each zone, capacity is distributed among regions based on their relative fitness using the inverse fitness formula: $P_i = ZoneCapacity_z \cdot \frac{1/F_i}{\sum_{j \in zone_z} (1/F_j)}$
     * $F_i$: Minimum fitness in region `i` (recall fitness includes $+ e_0$, so $F_i > 0$)
     * The sum is over all regions within the same zone as region `i`

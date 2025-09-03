@@ -20,8 +20,8 @@ I will be looking to evaluate the minimum number of zones i.e. no two zones shou
 
 Zones will then be allocated a proportion of the total carrying capacity based on their size (the number of regions in the zone).
 
-The square of the number of elements will be used to determine the proportion of the total carrying capacity allocated to each zone.
+The zone size will be used directly to determine the proportion of the total carrying capacity allocated to each zone.
 
-So if there are 3 zones with sizes 2, 3 and 5 then the carrying capacities will be allocated in the ratio 4:9:25.
+So if there are 3 zones with sizes 2, 3 and 5 then the carrying capacities will be allocated in the ratio 2:3:5.
 
 Once the zone carrying capacities have been calculated then the carrying capacity of each region in the zone will be calculated based on the min score in that region compared to the min score in all regions in the zone (in that same that it is now except that currently the zone is the whole set of regions).

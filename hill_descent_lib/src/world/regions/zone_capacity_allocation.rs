@@ -1,8 +1,8 @@
 /// Calculates the allocation of total carrying capacity among zones based on their sizes.
 ///
 /// According to the zone allocation formula, zones receive carrying capacity proportional
-/// to the square of their size (number of regions). This encourages exploration across
-/// different zones while still focusing more resources on larger connected areas.
+/// to their size (number of regions). This encourages exploration across different zones
+/// while providing fair representation to all zones based on their size.
 ///
 /// # Arguments
 /// * `zone_sizes` - A slice containing the number of regions in each zone
@@ -37,29 +37,26 @@ pub fn calculate_zone_capacity_allocation(
         }
     }
 
-    // Calculate the square of each zone size
-    let zone_squares: Vec<usize> = zone_sizes.iter().map(|&size| size * size).collect();
+    // Calculate the sum of all zone sizes (linear allocation)
+    let total_size: usize = zone_sizes.iter().sum();
 
-    // Calculate the sum of all squares
-    let total_squares: usize = zone_squares.iter().sum();
-
-    if total_squares == 0 {
+    if total_size == 0 {
         panic!(
-            "Total of zone size squares is 0, which should not be possible with non-empty zones"
+            "Total of zone sizes is 0, which should not be possible with non-empty zones"
         );
     }
 
-    // Allocate capacity proportional to the square of zone size
+    // Allocate capacity proportional to zone size
     let mut allocations = Vec::with_capacity(zone_sizes.len());
     let mut allocated_so_far = 0;
 
-    for (i, &square) in zone_squares.iter().enumerate() {
-        let allocation = if i == zone_squares.len() - 1 {
+    for (i, &size) in zone_sizes.iter().enumerate() {
+        let allocation = if i == zone_sizes.len() - 1 {
             // For the last zone, allocate remaining capacity to avoid rounding errors
             total_capacity - allocated_so_far
         } else {
             // Calculate proportional allocation and round down
-            (total_capacity * square) / total_squares
+            (total_capacity * size) / total_size
         };
 
         allocations.push(allocation);
@@ -97,19 +94,19 @@ mod tests {
     fn test_multiple_zones_equal_size() {
         let zone_sizes = vec![3, 3, 3]; // All zones same size
         let allocations = calculate_zone_capacity_allocation(&zone_sizes, 90);
-        // Each gets 9/(9+9+9) = 1/3 of capacity = 30
+        // Each gets 3/(3+3+3) = 1/3 of capacity = 30
         assert_eq!(allocations, vec![30, 30, 30]);
     }
 
     #[test]
     fn test_multiple_zones_different_sizes() {
         let zone_sizes = vec![2, 3, 5];
-        let allocations = calculate_zone_capacity_allocation(&zone_sizes, 380);
+        let allocations = calculate_zone_capacity_allocation(&zone_sizes, 100);
 
-        // Squares: [4, 9, 25], total = 38
-        // Allocations: 4/38 * 380 = 40, 9/38 * 380 = 90, 25/38 * 380 = 250
-        assert_eq!(allocations, vec![40, 90, 250]);
-        assert_eq!(allocations.iter().sum::<usize>(), 380);
+        // Linear allocation: 2/(2+3+5) = 2/10 = 20%, 3/10 = 30%, 5/10 = 50%
+        // Allocations: 20, 30, 50
+        assert_eq!(allocations, vec![20, 30, 50]);
+        assert_eq!(allocations.iter().sum::<usize>(), 100);
     }
 
     #[test]
@@ -128,9 +125,9 @@ mod tests {
         let zone_sizes = vec![10, 20];
         let allocations = calculate_zone_capacity_allocation(&zone_sizes, 1000000);
 
-        // Squares: [100, 400], total = 500
-        // Allocations: 100/500 * 1000000 = 200000, 400/500 * 1000000 = 800000
-        assert_eq!(allocations, vec![200000, 800000]);
+        // Linear allocation: 10/(10+20) = 1/3, 20/(10+20) = 2/3
+        // Allocations: 1/3 * 1000000 = 333333, 2/3 * 1000000 = 666667
+        assert_eq!(allocations, vec![333333, 666667]);
         assert_eq!(allocations.iter().sum::<usize>(), 1000000);
     }
 
@@ -144,15 +141,15 @@ mod tests {
     #[test]
     fn test_allocation_proportions() {
         let zone_sizes = vec![1, 2, 3];
-        let allocations = calculate_zone_capacity_allocation(&zone_sizes, 140);
+        let allocations = calculate_zone_capacity_allocation(&zone_sizes, 120);
 
-        // Squares: [1, 4, 9], total = 14
-        // Proportions: 1/14, 4/14, 9/14
-        // Allocations: 10, 40, 90
-        assert_eq!(allocations, vec![10, 40, 90]);
+        // Linear allocation: 1/(1+2+3) = 1/6, 2/6, 3/6
+        // Proportions: 1/6, 2/6, 3/6 = 1/6, 1/3, 1/2
+        // Allocations: 20, 40, 60
+        assert_eq!(allocations, vec![20, 40, 60]);
 
         // Verify the proportions are correct (within rounding)
         let total: usize = allocations.iter().sum();
-        assert_eq!(total, 140);
+        assert_eq!(total, 120);
     }
 }
