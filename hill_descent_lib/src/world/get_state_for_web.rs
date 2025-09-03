@@ -39,6 +39,7 @@ struct OrganismState {
     params: OrganismParamsState,
     age: usize,
     max_age: usize,
+    score: Option<f64>,
 }
 
 #[derive(Serialize, Debug)]
@@ -80,6 +81,7 @@ impl super::World {
                     params,
                     age: o.age(),
                     max_age: o.phenotype().system_parameters().max_age().round() as usize,
+                    score: o.score(),
                 })
             })
             .collect();
