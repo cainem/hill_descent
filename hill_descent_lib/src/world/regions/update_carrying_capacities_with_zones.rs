@@ -5,12 +5,16 @@ use crate::world::regions::zone_capacity_allocation::calculate_zone_capacity_all
 impl Regions {
     /// Updates the carrying capacity for all regions using zone-based allocation.
     ///
-    /// This method implements the zone-based carrying capacity calculation described
-    /// in the zones.md specification:
+    /// This method implements a hybrid zone-based carrying capacity calculation:
     ///
     /// 1. Calculates zones using adjacency (Chebyshev distance = 1)
-    /// 2. Allocates total capacity among zones proportional to size²
-    /// 3. Within each zone, distributes capacity based on relative min_scores
+    /// 2. Splits carrying capacity 50/50 between global and zone-proportional funds
+    /// 3. Global fund: allocated based on zone scores (sum of inverse min_scores)
+    /// 4. Zone-proportional fund: allocated proportionally to zone sizes
+    /// 5. Within each zone, distributes capacity based on relative min_scores
+    ///
+    /// This hybrid approach balances exploitation (rewarding high-scoring regions)
+    /// with exploration (ensuring fair representation across zones).
     ///
     /// The zone cache is invalidated at the start of each call (temporary approach).
     ///
@@ -62,12 +66,32 @@ impl Regions {
         }
         self.set_zone_mapping(zone_mapping);
 
-        // Calculate zone sizes
+        // Calculate zone sizes and scores
         let zone_sizes: Vec<usize> = zones.iter().map(|zone| zone.len()).collect();
 
-        // Allocate total capacity among zones proportional to size²
+        // Calculate zone scores (sum of inverse min_scores for regions in each zone)
+        let zone_scores: Vec<f64> = zones
+            .iter()
+            .map(|zone_regions| {
+                let mut zone_score = 0.0;
+                for region_key in zone_regions {
+                    if let Some(region) = self.regions.get(region_key) {
+                        if let Some(min_score) = region.min_score() {
+                            if min_score > 0.0 {
+                                // Use inverse fitness as the score (lower min_score = higher attractiveness)
+                                zone_score += 1.0 / min_score;
+                            }
+                        }
+                    }
+                }
+                zone_score
+            })
+            .collect();
+
+        // Allocate total capacity among zones using hybrid approach
         let total_capacity = self.population_size;
-        let zone_capacities = calculate_zone_capacity_allocation(&zone_sizes, total_capacity);
+        let zone_capacities =
+            calculate_zone_capacity_allocation(&zone_sizes, &zone_scores, total_capacity);
 
         // Distribute capacity within each zone based on min_scores
         for (zone_idx, zone_regions) in zones.iter().enumerate() {
