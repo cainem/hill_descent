@@ -50,9 +50,8 @@ fn allocate_capacity_fairly(weights: &[f64], total_capacity: usize) -> Vec<usize
         fractional_parts.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Give 1 extra to the zones with the largest fractional parts
-        for i in 0..remainder {
-            let zone_index = fractional_parts[i].1;
-            allocations[zone_index] += 1;
+        for (_fractional_part, zone_index) in fractional_parts.iter().take(remainder) {
+            allocations[*zone_index] += 1;
         }
     }
 
@@ -194,7 +193,7 @@ mod tests {
         // All should be reasonably close to 10/3 ≈ 3.33
         // Allow range [2,5] to be safe
         for (i, &allocation) in allocations.iter().enumerate() {
-            assert!(allocation >= 2 && allocation <= 5, 
+            assert!((2..=5).contains(&allocation), 
                 "Zone {} allocation {} is outside expected range [2,5]", i, allocation);
         }
     }
