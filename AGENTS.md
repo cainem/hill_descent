@@ -1,7 +1,9 @@
 # Hill Descent Project - Agent Instructions
 
 ## Project Context
-This is a Rust-based hill descent optimization algorithm project for Windows. The main library is in `hill_descent_lib/` with a server component in `hill_descent_server/`. Product definition is documented in `hill_descent_lib/pdd.md`.
+This is a Rust-based hill descent optimization algorithm project for Windows. The main library is in `hill_descent_lib/` 
+There is a simple visual web project that utilizes the hill_descent_lib with a server component in `hill_descent_server/`. This exists to help visualise the behaviour and verify it seems correct.
+Product definition is documented in `hill_descent_lib/pdd.md`.
 
 ## Development Standards
 
@@ -33,6 +35,7 @@ This is a Rust-based hill descent optimization algorithm project for Windows. Th
 - **Never overwrite .env** - Always ask before modifying environment files
 
 ## Build & Test Commands
+- Format: `cargo fmt`
 - Build: `cargo build`
 - Test: `cargo test`
 - Benchmark: `cargo bench`
