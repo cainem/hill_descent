@@ -10,8 +10,16 @@ impl Organism {
     pub fn increment_age(&self) {
         // Atomically increment age and fetch the new value (previous + 1)
         let new_age = self.age.fetch_add(1, Ordering::Relaxed) + 1;
+        let max_age = self.phenotype.system_parameters().max_age();
+
         // If the new age exceeds the phenotype's max_age, mark the organism as dead
-        if (new_age as f64) > self.phenotype.system_parameters().max_age() {
+        if (new_age as f64) > max_age {
+            crate::debug!(
+                "Organism {} dying: age {} exceeds max_age {:.3}",
+                self.id(),
+                new_age,
+                max_age
+            );
             self.mark_dead();
         }
     }

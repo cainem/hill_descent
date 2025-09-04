@@ -27,6 +27,9 @@ impl Region {
             return Vec::new();
         }
 
+        // Store current population size for carrying capacity check
+        let current_population = self.organisms.len();
+
         // ------------- 1 & 2. Rank and select parents -----------------------
         // Sort organisms in-place by score (asc) then age (desc). No further
         // ordering is required once these two keys are equal.
@@ -40,8 +43,7 @@ impl Region {
             score_cmp.then_with(|| b.age().cmp(&a.age()))
         });
 
-        // Store original organisms for potential multiple reproduction passes
-        let original_organisms = slice.to_vec();
+        // Work with references to avoid cloning - organisms should never be cloned
         let parents_required = number_to_reproduce.min(slice.len());
 
         // Calculate maximum offspring per pass based on available parents
@@ -57,7 +59,6 @@ impl Region {
         let should_do_multiple_passes = if let Some(capacity) = self.carrying_capacity {
             // Only do multiple passes if current population + requested offspring would still be under capacity
             // and we can't satisfy the request in a single pass
-            let current_population = self.organisms.len();
             let total_desired = current_population + number_to_reproduce;
             total_desired <= capacity && number_to_reproduce > max_offspring_per_pass
         } else {
@@ -73,7 +74,7 @@ impl Region {
 
         // Execute reproduction passes
         Self::execute_reproduction_passes(
-            &original_organisms,
+            slice,
             parents_required,
             max_offspring_per_pass,
             number_to_reproduce,

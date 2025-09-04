@@ -36,9 +36,11 @@ struct OrganismParamsState {
 
 #[derive(Serialize, Debug)]
 struct OrganismState {
+    id: usize,
     params: OrganismParamsState,
     age: usize,
     max_age: usize,
+    raw_max_age: f64,
     score: Option<f64>,
 }
 
@@ -77,10 +79,15 @@ impl super::World {
                     x: expressed_values[crate::NUM_SYSTEM_PARAMETERS],
                     y: expressed_values[crate::NUM_SYSTEM_PARAMETERS + 1],
                 };
+                let raw_max_age = o.phenotype().system_parameters().max_age();
+                let rounded_max_age = raw_max_age.round() as usize;
+
                 Some(OrganismState {
+                    id: o.id(),
                     params,
                     age: o.age(),
-                    max_age: o.phenotype().system_parameters().max_age().round() as usize,
+                    max_age: rounded_max_age,
+                    raw_max_age,
                     score: o.score(),
                 })
             })

@@ -75,13 +75,12 @@ impl Regions {
             .map(|zone_regions| {
                 let mut zone_score = 0.0;
                 for region_key in zone_regions {
-                    if let Some(region) = self.regions.get(region_key) {
-                        if let Some(min_score) = region.min_score() {
-                            if min_score > 0.0 {
-                                // Use inverse fitness as the score (lower min_score = higher attractiveness)
-                                zone_score += 1.0 / min_score;
-                            }
-                        }
+                    if let Some(region) = self.regions.get(region_key)
+                        && let Some(min_score) = region.min_score()
+                        && min_score > 0.0
+                    {
+                        // Use inverse fitness as the score (lower min_score = higher attractiveness)
+                        zone_score += 1.0 / min_score;
                     }
                 }
                 zone_score

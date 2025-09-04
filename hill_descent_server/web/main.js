@@ -244,8 +244,12 @@ class OptimizationUI {
         this.elements.roundCounter.textContent = state.epoch;
         // Render D3 visualization from web-shaped JSON
         try {
-            console.log('[UI] StateResponse from server', state);
             const webState = JSON.parse(state.world_state);
+            // Log state with parsed world_state as JSON for better browser console viewing
+            console.log('[UI] StateResponse from server', {
+                ...state,
+                world_state: webState
+            });
             console.log('[UI] Parsed webState', {
                 world_bounds: webState.world_bounds,
                 score_range: webState.score_range,
@@ -255,6 +259,8 @@ class OptimizationUI {
             this.updateVisualization(webState);
         } catch (e) {
             console.error('Failed to parse world_state JSON', e);
+            // Fallback to original logging if parsing fails
+            console.log('[UI] StateResponse from server (raw)', state);
         }
     }
 
@@ -562,7 +568,7 @@ class OptimizationUI {
                 const tooltip = d3.select('#tooltip');
                 tooltip.transition().duration(200).style('opacity', 0.9);
                 tooltip.html(
-                    `Organism:<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}<br/>Score: ${d.score !== null && d.score !== undefined ? d.score.toFixed(6) : 'N/A'}`
+                    `Organism ID: ${d.id}<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}<br/>Max Age: ${d.max_age} (raw: ${d.raw_max_age.toFixed(3)})<br/>Score: ${d.score !== null && d.score !== undefined ? d.score.toFixed(6) : 'N/A'}`
                 )
                     .style('left', (event.pageX + 5) + 'px')
                     .style('top', (event.pageY - 28) + 'px');

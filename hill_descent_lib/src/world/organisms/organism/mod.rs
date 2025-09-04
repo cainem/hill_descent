@@ -8,9 +8,14 @@ pub mod increment_age;
 pub mod run;
 pub mod update_region_key;
 
+// Global counter for unique organism IDs
+static NEXT_ORGANISM_ID: AtomicUsize = AtomicUsize::new(1);
+
 #[derive(Debug)]
 // Simulation entity that holds phenotype, spatial key, fitness score, age, and alive/dead status.
 pub struct Organism {
+    /// Unique identifier for this organism, assigned at creation
+    id: usize,
     region_key: Mutex<Option<Vec<usize>>>,
     phenotype: Rc<Phenotype>,
     score: Mutex<Option<f64>>,
@@ -20,9 +25,15 @@ pub struct Organism {
     is_dead: AtomicBool,
 }
 
+// Clone implementation is only available in test builds to avoid production bugs
+// while allowing existing tests to continue working during the transition period.
+// Production code should use organism references instead of cloning.
+#[cfg(test)]
 impl Clone for Organism {
     fn clone(&self) -> Self {
+        // This should only be used in tests - create a new organism with new ID
         Self {
+            id: NEXT_ORGANISM_ID.fetch_add(1, Ordering::Relaxed),
             region_key: Mutex::new(self.region_key.lock().unwrap().clone()),
             phenotype: Rc::clone(&self.phenotype),
             score: Mutex::new(*self.score.lock().unwrap()),
@@ -41,12 +52,18 @@ impl Organism {
     /// * `age` - The initial age of the organism.
     pub fn new(phenotype: Rc<Phenotype>, age: usize) -> Self {
         Self {
+            id: NEXT_ORGANISM_ID.fetch_add(1, Ordering::Relaxed),
             region_key: Mutex::new(None),
             score: Mutex::new(None),
             phenotype,
             age: AtomicUsize::new(age),
             is_dead: AtomicBool::new(false),
         }
+    }
+
+    /// Returns the unique ID of this organism.
+    pub fn id(&self) -> usize {
+        self.id
     }
 
     /// Returns a reference to the organism's phenotype.
