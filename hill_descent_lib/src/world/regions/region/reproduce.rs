@@ -5,6 +5,10 @@ use crate::world::{organisms::organism::Organism, regions::region::Region};
 impl Region {
     /// Reproduces new organisms for this region based on the ranking rules in the PDD (§5.2.3).
     ///
+    /// **PRECONDITION**: Organisms in this region must already be sorted by fitness score (ascending)
+    /// then age (descending). This sorting should be done by calling `Regions::sort_regions()` before
+    /// calling this function.
+    ///
     /// When population is low relative to carrying capacity, organisms can reproduce multiple
     /// times (up to REPRODUCTION_FACTOR) to accelerate population growth.
     ///
@@ -12,13 +16,11 @@ impl Region {
     /// * `rng` – RNG used for crossover & mutation in the underlying phenotype reproduction.
     ///
     /// The algorithm follows the PDD exactly:
-    /// 1. Rank organisms by (a) fitness score ascending (lower is better),
-    ///    (b) age descending (older first). Any further tie is arbitrary.
-    /// 2. Select the top `number_to_reproduce` parents (or all organisms if fewer).
-    /// 3. If the selected count is odd, the top-ranked organism reproduces asexually to yield one
+    /// 1. Select the top `number_to_reproduce` parents from the pre-sorted list (or all organisms if fewer).
+    /// 2. If the selected count is odd, the top-ranked organism reproduces asexually to yield one
     ///    offspring, then the remainder (now even) are paired sequentially for sexual reproduction.
-    /// 4. Each pair produces two offspring.
-    /// 5. If carrying capacity allows and population is still low, repeat reproduction passes
+    /// 3. Each pair produces two offspring.
+    /// 4. If carrying capacity allows and population is still low, repeat reproduction passes
     ///    up to REPRODUCTION_FACTOR times using only the original organisms.
     ///
     /// The resulting offspring are returned as a `Vec<Organism>` with age 0 and no score.
@@ -30,18 +32,10 @@ impl Region {
         // Store current population size for carrying capacity check
         let current_population = self.organisms.len();
 
-        // ------------- 1 & 2. Rank and select parents -----------------------
-        // Sort organisms in-place by score (asc) then age (desc). No further
-        // ordering is required once these two keys are equal.
+        // ------------- Select parents from pre-sorted organisms -------------
+        // Organisms are assumed to be already sorted by score (asc) then age (desc)
+        // by a prior call to Regions::sort_regions()
         let slice = &mut self.organisms;
-        slice.sort_by(|a, b| {
-            let score_cmp = a
-                .score()
-                .unwrap_or(f64::INFINITY)
-                .partial_cmp(&b.score().unwrap_or(f64::INFINITY))
-                .unwrap_or(std::cmp::Ordering::Equal);
-            score_cmp.then_with(|| b.age().cmp(&a.age()))
-        });
 
         // Work with references to avoid cloning - organisms should never be cloned
         let parents_required = number_to_reproduce.min(slice.len());

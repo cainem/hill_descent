@@ -32,6 +32,13 @@ impl Regions {
         tracing::instrument(level = "debug", skip(self))
     )]
     pub fn update_carrying_capacities_with_zones(&mut self) {
+        // If FRACTIONAL_ZONE_ALLOCATION is 0.0, skip zone-based allocation entirely
+        // and use the original global score-based allocation
+        if Self::FRACTIONAL_ZONE_ALLOCATION == 0.0 {
+            self.update_carrying_capacities();
+            return;
+        }
+
         // Temporarily invalidate cache at start (as requested)
         // TODO: Implement proper cache invalidation based on structural changes
         self.zone_cache.invalidate();

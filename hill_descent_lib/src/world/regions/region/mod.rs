@@ -55,6 +55,10 @@ impl Region {
         &self.organisms
     }
 
+    pub fn organisms_mut(&mut self) -> &mut Vec<Rc<Organism>> {
+        &mut self.organisms
+    }
+
     // Setter for carrying capacity
     pub fn set_carrying_capacity(&mut self, capacity: Option<usize>) {
         self.carrying_capacity = capacity;

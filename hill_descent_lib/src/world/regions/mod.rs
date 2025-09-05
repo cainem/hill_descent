@@ -9,6 +9,14 @@ pub mod adjust_regions;
 pub mod handle_out_of_bounds;
 pub mod prune_empty_regions;
 pub mod region;
+pub mod sort_regions;
+pub mod truncate_regions;
+pub mod update;
+pub mod update_all_region_min_scores;
+pub mod update_carrying_capacities;
+pub mod update_carrying_capacities_with_zones;
+pub mod zone_calculator;
+pub mod zone_capacity_allocation;
 
 pub mod calculate_dimension_stats;
 pub mod count_unique_values_with_tolerance;
@@ -17,12 +25,6 @@ pub mod get_most_common_key;
 pub mod get_most_diverse_dimension;
 mod refill;
 pub mod repopulate;
-pub mod update;
-pub mod update_all_region_min_scores;
-pub mod update_carrying_capacities;
-pub mod update_carrying_capacities_with_zones;
-pub mod zone_calculator;
-pub mod zone_capacity_allocation;
 
 use crate::parameters::global_constants::GlobalConstants;
 use zone_calculator::ZoneCache;
@@ -46,7 +48,7 @@ impl Regions {
     /// 0.0 = all capacity allocated based on global score performance
     /// 1.0 = all capacity allocated proportionally to zone sizes
     /// 0.5 = equal split between global and zone-proportional allocation
-    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.5;
+    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.0;
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
             // Consistent with target_regions check, though population_size=0 might be a valid scenario for some tests.
