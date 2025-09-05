@@ -8,10 +8,15 @@ impl Regions {
     /// This method implements a hybrid zone-based carrying capacity calculation:
     ///
     /// 1. Calculates zones using adjacency (Chebyshev distance = 1)
-    /// 2. Splits carrying capacity 50/50 between global and zone-proportional funds
+    /// 2. Splits carrying capacity between global and zone-proportional funds based on FRACTIONAL_ZONE_ALLOCATION
     /// 3. Global fund: allocated based on zone scores (sum of inverse min_scores)
     /// 4. Zone-proportional fund: allocated proportionally to zone sizes
     /// 5. Within each zone, distributes capacity based on relative min_scores
+    ///
+    /// The allocation split is controlled by the FRACTIONAL_ZONE_ALLOCATION constant:
+    /// - 0.0: All capacity allocated based on global score performance
+    /// - 1.0: All capacity allocated proportionally to zone sizes  
+    /// - 0.5: Equal split between global and zone-proportional allocation (current default)
     ///
     /// This hybrid approach balances exploitation (rewarding high-scoring regions)
     /// with exploration (ensuring fair representation across zones).
@@ -89,8 +94,12 @@ impl Regions {
 
         // Allocate total capacity among zones using hybrid approach
         let total_capacity = self.population_size;
-        let zone_capacities =
-            calculate_zone_capacity_allocation(&zone_sizes, &zone_scores, total_capacity);
+        let zone_capacities = calculate_zone_capacity_allocation(
+            &zone_sizes,
+            &zone_scores,
+            total_capacity,
+            Self::FRACTIONAL_ZONE_ALLOCATION,
+        );
 
         // Distribute capacity within each zone based on min_scores
         for (zone_idx, zone_regions) in zones.iter().enumerate() {

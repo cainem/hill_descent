@@ -42,6 +42,11 @@ pub struct Regions {
 }
 
 impl Regions {
+    /// Fraction of total carrying capacity allocated to zone-proportional fund.
+    /// 0.0 = all capacity allocated based on global score performance
+    /// 1.0 = all capacity allocated proportionally to zone sizes
+    /// 0.5 = equal split between global and zone-proportional allocation
+    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.5;
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
             // Consistent with target_regions check, though population_size=0 might be a valid scenario for some tests.
