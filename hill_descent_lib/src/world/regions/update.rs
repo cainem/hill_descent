@@ -59,15 +59,15 @@ impl super::Regions {
                     continue;
                 }
                 AdjustRegionsResult::ExpansionNotNecessary => {
-                    // Update min scores and carrying capacities before returning
-                    self.update_all_region_min_scores(organisms);
+                    // Update carrying capacities before returning
+                    // Min scores are now updated automatically when organisms are added to regions
                     self.update_carrying_capacities_with_zones();
                     return false;
                 }
                 AdjustRegionsResult::AtResolutionLimit => {
                     crate::info!("at resolution limit");
-                    // Update min scores and carrying capacities before returning
-                    self.update_all_region_min_scores(organisms);
+                    // Update carrying capacities before returning
+                    // Min scores are now updated automatically when organisms are added to regions
                     self.update_carrying_capacities_with_zones();
                     return true;
                 }

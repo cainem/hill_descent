@@ -33,7 +33,7 @@ impl super::Regions {
         dimensions: &mut Dimensions,
     ) -> AdjustRegionsResult {
         // place the organisms in their appropriate regions and prune unused regions
-        self.refill(organisms);
+        self.refill(organisms, false);
 
         // current regions are greater than or equal to the allowed regions;
         // refill and return
@@ -64,6 +64,11 @@ impl super::Regions {
             if dimensions.divide_dimension(most_diverse_dimension) {
                 crate::trace!("most diverse dimension {most_diverse_dimension}");
                 crate::trace!("dimensions {dimensions:?}");
+
+                // Clear min_scores since dimension subdivision changes region keys
+                for region in self.regions.values_mut() {
+                    region.set_min_score(None);
+                }
 
                 AdjustRegionsResult::DimensionExpanded {
                     dimension_index: most_diverse_dimension,

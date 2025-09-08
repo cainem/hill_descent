@@ -12,7 +12,6 @@ pub mod region;
 pub mod sort_regions;
 pub mod truncate_regions;
 pub mod update;
-pub mod update_all_region_min_scores;
 pub mod update_carrying_capacities;
 pub mod update_carrying_capacities_with_zones;
 pub mod zone_calculator;

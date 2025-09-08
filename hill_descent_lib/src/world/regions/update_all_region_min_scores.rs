@@ -4,6 +4,11 @@ use crate::world::regions::Regions;
 impl Regions {
     /// Updates the minimum score for each region based on the scores of the organisms within them.
     ///
+    /// **DEPRECATED**: This function is now largely obsolete since min_scores are updated
+    /// automatically when organisms are added to regions via `Region::add_organism()`.
+    /// This function is kept for compatibility and potential edge cases, but should generally
+    /// not be needed in the normal flow.
+    ///
     /// This function iterates through all organisms. For each organism with a positive score,
     /// it checks if its score is lower than the current minimum score recorded for its region.
     /// If it is, or if the region has no minimum score yet, the region's minimum score is updated.
@@ -12,6 +17,7 @@ impl Regions {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, all_organisms))
     )]
+    #[allow(dead_code)] // Function kept for compatibility but no longer used in main flow
     pub(super) fn update_all_region_min_scores(&mut self, all_organisms: &Organisms) {
         for organism in all_organisms.iter() {
             if let (Some(key), Some(score)) = (organism.region_key(), organism.score()) {
