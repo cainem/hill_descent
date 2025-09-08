@@ -10,13 +10,12 @@ impl super::Regions {
     /// # Arguments
     ///
     /// * `organisms` - The organisms to add to regions
-    /// * `clear_min_scores` - Whether to clear min_scores due to region restructuring
     ///
     /// # Returns
     ///
     /// Returns `true` if the simulation has reached a stable state and should
     /// stop, `false` otherwise.
-    pub(super) fn refill(&mut self, organisms: &mut Organisms, clear_min_scores: bool) {
+    pub(super) fn refill(&mut self, organisms: &mut Organisms) {
         crate::trace!("refill: total organisms before: {}", organisms.len());
 
         // Before adding the current generation of organisms, clear the regions of any
@@ -24,10 +23,7 @@ impl super::Regions {
         // always in sync with the master organism list.
         for region in self.regions.values_mut() {
             region.clear_organisms();
-            // Only clear min_scores when regions have been restructured (bounds expanded or dimensions divided)
-            if clear_min_scores {
-                region.set_min_score(None);
-            }
+            // Min scores are not cleared here - they are cleared manually where dimensions change
         }
         self.add_organisms(organisms);
 
@@ -89,7 +85,7 @@ mod tests {
         let mut empty_organisms = Organisms::new_from_organisms(vec![]);
 
         // Act
-        regions.refill(&mut empty_organisms, true);
+        regions.refill(&mut empty_organisms);
 
         // Assert
         assert_eq!(
@@ -116,8 +112,11 @@ mod tests {
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
-        // Act
-        regions.refill(&mut organisms, true);
+        // Act - manually clear min scores first to test the scenario where dimensions changed
+        for region in regions.regions.values_mut() {
+            region.set_min_score(None);
+        }
+        regions.refill(&mut organisms);
 
         // Assert
         assert_eq!(regions.len(), 1);
@@ -143,7 +142,7 @@ mod tests {
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
         // Act
-        regions.refill(&mut organisms, true);
+        regions.refill(&mut organisms);
 
         // Assert
         assert_eq!(regions.len(), 2);
@@ -175,7 +174,7 @@ mod tests {
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
         // Act
-        regions.refill(&mut organisms, true);
+        regions.refill(&mut organisms);
 
         // Assert
         assert_eq!(regions.len(), 2, "Only populated regions should remain");
@@ -201,7 +200,7 @@ mod tests {
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2, organism3]);
 
         // Act
-        regions.refill(&mut organisms, true);
+        regions.refill(&mut organisms);
 
         // Assert
         let region = regions.get_region(&[0, 0]).unwrap();

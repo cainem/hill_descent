@@ -33,7 +33,7 @@ impl super::Regions {
         dimensions: &mut Dimensions,
     ) -> AdjustRegionsResult {
         // place the organisms in their appropriate regions and prune unused regions
-        self.refill(organisms, false);
+        self.refill(organisms);
 
         // current regions are greater than or equal to the allowed regions;
         // refill and return
@@ -81,6 +81,10 @@ impl super::Regions {
                 );
 
                 if dimensions.adjust_limits(most_diverse_dimension, organisms) {
+                    // Clear min_scores since dimension limit adjustment changes region keys
+                    for region in self.regions.values_mut() {
+                        region.set_min_score(None);
+                    }
                     AdjustRegionsResult::DimensionExpanded {
                         dimension_index: most_diverse_dimension,
                     }
@@ -266,5 +270,56 @@ mod tests {
 
         // The doublings should not have changed if division failed
         assert_eq!(dims.get_dimension(0).number_of_doublings(), 52);
+    }
+
+    #[test]
+    fn given_adjust_limits_succeeds_when_dimension_expanded_then_min_scores_are_cleared() {
+        // Test that min scores are cleared when adjust_limits succeeds
+        let (mut regions, mut dims) = setup(5, vec![-1000.0..=1000.0]);
+        dims.get_dimension_mut(0).set_number_of_doublings(52); // High enough to cause division failure
+
+        // Create organisms with tight clustering to ensure adjust_limits can shrink the range
+        let mut organisms = organisms_from_problem_values(vec![vec![5.0], vec![15.0]]);
+        let _ = organisms.update_all_region_keys(&dims, None);
+
+        // First, populate regions with organisms to create regions with scores
+        regions.refill(&mut organisms);
+
+        // Manually set some min scores in regions to verify they get cleared
+        for region in regions.regions.values_mut() {
+            region.set_min_score(Some(42.0)); // Set a test min score
+        }
+
+        // Verify that min scores were set
+        let has_min_scores_before = regions
+            .regions
+            .values()
+            .any(|region| region.min_score().is_some());
+        assert!(
+            has_min_scores_before,
+            "Min scores should be set before test"
+        );
+
+        let result = regions.adjust_regions(&mut organisms, &mut dims);
+
+        // Regardless of which expansion path was taken, if dimensions changed,
+        // min scores should be cleared
+        match result {
+            AdjustRegionsResult::DimensionExpanded { .. } => {
+                // Verify that min scores are cleared when dimensions change
+                let has_min_scores_after = regions
+                    .regions
+                    .values()
+                    .any(|region| region.min_score().is_some());
+                assert!(
+                    !has_min_scores_after,
+                    "Min scores should be cleared when dimensions are expanded"
+                );
+            }
+            AdjustRegionsResult::AtResolutionLimit | AdjustRegionsResult::ExpansionNotNecessary => {
+                // If no dimension change occurred, min scores might remain
+                // This is acceptable behavior
+            }
+        }
     }
 }
