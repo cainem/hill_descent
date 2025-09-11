@@ -37,7 +37,7 @@ pub fn execute() {
         RangeInclusive::new(-25000000.0, -5000000.0),
         RangeInclusive::new(-25000000.0, -5000000.0),
     ];
-    let global_constants = GlobalConstants::new(100, 10); // Larger population for 2D search
+    let global_constants = GlobalConstants::new(500, 10); // Larger population for 2D search
 
     let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
 

@@ -47,7 +47,7 @@ impl Regions {
     /// 0.0 = all capacity allocated based on global score performance
     /// 1.0 = all capacity allocated proportionally to zone sizes
     /// 0.5 = equal split between global and zone-proportional allocation
-    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.0;
+    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.1;
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
             // Consistent with target_regions check, though population_size=0 might be a valid scenario for some tests.

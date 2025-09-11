@@ -35,7 +35,7 @@ fn allocate_capacity_fairly(weights: &[f64], total_capacity: usize) -> Vec<usize
 
     // Calculate how much capacity we've allocated so far
     let allocated_so_far: usize = allocations.iter().sum();
-    let remainder = total_capacity - allocated_so_far;
+    let remainder = total_capacity.saturating_sub(allocated_so_far);
 
     // Distribute the remainder based on fractional parts
     if remainder > 0 {

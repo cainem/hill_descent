@@ -204,9 +204,9 @@ mod tests {
         region.add_organism(make_org(1.0, 5, 0));
         let mut rng = SmallRng::seed_from_u64(0);
         // Request way more offspring than REPRODUCTION_FACTOR allows
-        let offspring = region.reproduce(10, &mut rng);
-        // Single organism can produce 1 offspring per pass, limited by REPRODUCTION_FACTOR = 3
-        assert_eq!(offspring.len(), 3);
+        let offspring = region.reproduce(20, &mut rng);
+        // Single organism can produce 1 offspring per pass, limited by REPRODUCTION_FACTOR = 10
+        assert_eq!(offspring.len(), 10);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 

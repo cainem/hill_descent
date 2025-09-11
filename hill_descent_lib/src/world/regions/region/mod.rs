@@ -16,7 +16,7 @@ pub struct Region {
 impl Region {
     /// Maximum number of reproduction passes when population is low relative to carrying capacity.
     /// This allows rapid population growth when a region has few organisms but high carrying capacity.
-    const REPRODUCTION_FACTOR: usize = 3;
+    const REPRODUCTION_FACTOR: usize = 10;
 }
 
 impl Region {
