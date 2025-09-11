@@ -16,22 +16,43 @@ fn allocate_capacity_fairly(weights: &[f64], total_capacity: usize) -> Vec<usize
         return vec![0; weights.len()];
     }
 
-    let total_weight: f64 = weights.iter().sum();
-    if total_weight <= 0.0 {
+    // Sanitize weights: treat negative, NaN or infinite as zero.
+    let sanitized: Vec<f64> = weights
+        .iter()
+        .map(|w| if w.is_finite() && *w > 0.0 { *w } else { 0.0 })
+        .collect();
+
+    let total_weight: f64 = sanitized.iter().sum();
+    if !(total_weight.is_finite()) || total_weight <= 0.0 {
         return vec![0; weights.len()];
     }
 
-    // Calculate exact proportional allocations
-    let exact_allocations: Vec<f64> = weights
+    // Calculate exact proportional allocations, clamped to [0,total_capacity]
+    let exact_allocations: Vec<f64> = sanitized
         .iter()
-        .map(|&weight| (total_capacity as f64 * weight) / total_weight)
+        .map(|&weight| {
+            let proportion = weight / total_weight; // <= 1.0 and finite
+            let exact = (total_capacity as f64) * proportion;
+            if exact.is_finite() {
+                exact.clamp(0.0, total_capacity as f64)
+            } else {
+                0.0
+            }
+        })
         .collect();
 
-    // Take the floor of each allocation
+    // Floor to usize (safe after clamp). Cast NaN would become 0.0 earlier.
     let mut allocations: Vec<usize> = exact_allocations
         .iter()
         .map(|&exact| exact.floor() as usize)
         .collect();
+
+    // Ensure no single allocation exceeds total_capacity (belt & braces)
+    for a in &mut allocations {
+        if *a > total_capacity {
+            *a = total_capacity;
+        }
+    }
 
     // Calculate how much capacity we've allocated so far
     let allocated_so_far: usize = allocations.iter().sum();
@@ -39,22 +60,40 @@ fn allocate_capacity_fairly(weights: &[f64], total_capacity: usize) -> Vec<usize
 
     // Distribute the remainder based on fractional parts
     if remainder > 0 {
-        // Calculate fractional parts and their indices
         let mut fractional_parts: Vec<(f64, usize)> = exact_allocations
             .iter()
             .enumerate()
             .map(|(i, &exact)| (exact - exact.floor(), i))
             .collect();
 
-        // Sort by fractional part in descending order (largest fractions first)
         fractional_parts.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
-        // Give 1 extra to the zones with the largest fractional parts
         for (_fractional_part, zone_index) in fractional_parts.iter().take(remainder) {
-            allocations[*zone_index] += 1;
+            // Saturating add to guarantee no panic even in debug builds
+            allocations[*zone_index] = allocations[*zone_index].saturating_add(1);
         }
     }
 
+    // Final safety: cap any over-allocations (shouldn't happen but defensive)
+    let mut total: usize = allocations.iter().sum();
+    if total > total_capacity {
+        // Reduce from largest allocations until total matches
+        // (rare path; only triggered if something unexpected occurs)
+        let mut indices: Vec<usize> = (0..allocations.len()).collect();
+        indices.sort_by_key(|&i| std::cmp::Reverse(allocations[i]));
+        for i in indices {
+            if total <= total_capacity {
+                break;
+            }
+            if allocations[i] > 0 {
+                allocations[i] -= 1;
+                total -= 1;
+            }
+        }
+    }
+
+    debug_assert!(allocations.iter().all(|a| *a <= total_capacity));
+    debug_assert_eq!(allocations.iter().sum::<usize>(), total_capacity);
     allocations
 }
 
@@ -142,7 +181,24 @@ pub fn calculate_zone_capacity_allocation(
     // Combine both funds
     let mut final_allocations = Vec::with_capacity(zone_sizes.len());
     for i in 0..zone_sizes.len() {
-        final_allocations.push(global_allocations[i] + zone_allocations[i]);
+        // Use saturating_add to prevent debug overflow if invariants break.
+        final_allocations.push(global_allocations[i].saturating_add(zone_allocations[i]));
+    }
+
+    // Invariant: combined allocations sum to total_capacity (allow slight deficit due to flooring)
+    let sum: usize = final_allocations.iter().sum();
+    if sum > total_capacity {
+        // Trim excess conservatively (should not occur)
+        let mut excess = sum - total_capacity;
+        for alloc in final_allocations.iter_mut() {
+            if excess == 0 {
+                break;
+            }
+            if *alloc > 0 {
+                *alloc -= 1;
+                excess -= 1;
+            }
+        }
     }
 
     final_allocations
@@ -387,6 +443,98 @@ mod tests {
         // So: [2, 5, 3] (zone 0 gets the remainder due to 0.67 > 0.33)
         assert_eq!(allocations.iter().sum::<usize>(), total);
         assert_eq!(allocations, vec![2, 5, 3]);
+    }
+
+    #[test]
+    fn test_allocate_capacity_fairly_edge_cases() {
+        // Test negative weights are sanitized to zero
+        let weights = vec![-1.0, 2.0, 3.0];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations.iter().sum::<usize>(), 10);
+        assert_eq!(allocations[0], 0); // Negative weight becomes 0
+
+        // Test NaN weights are sanitized to zero
+        let weights = vec![f64::NAN, 2.0, 3.0];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations.iter().sum::<usize>(), 10);
+        assert_eq!(allocations[0], 0); // NaN weight becomes 0
+
+        // Test infinite weights are sanitized to zero
+        let weights = vec![f64::INFINITY, 2.0, 3.0];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations.iter().sum::<usize>(), 10);
+        assert_eq!(allocations[0], 0); // Infinite weight becomes 0
+
+        // Test all weights zero after sanitization
+        let weights = vec![-1.0, f64::NAN, f64::INFINITY];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations, vec![0, 0, 0]);
+
+        // Test zero weights
+        let weights = vec![0.0, 0.0, 0.0];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations, vec![0, 0, 0]);
+
+        // Test empty weights
+        let weights = vec![];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert!(allocations.is_empty());
+
+        // Test zero capacity
+        let weights = vec![1.0, 2.0, 3.0];
+        let allocations = allocate_capacity_fairly(&weights, 0);
+        assert_eq!(allocations, vec![0, 0, 0]);
+    }
+
+    #[test]
+    fn test_allocate_capacity_fairly_extreme_values() {
+        // Test very small weights that might cause precision issues
+        let weights = vec![1e-100, 2e-100, 3e-100];
+        let allocations = allocate_capacity_fairly(&weights, 6);
+        assert_eq!(allocations.iter().sum::<usize>(), 6);
+        // Should still allocate proportionally despite tiny values
+
+        // Test very large weights
+        let weights = vec![1e50, 2e50, 3e50];
+        let allocations = allocate_capacity_fairly(&weights, 6);
+        assert_eq!(allocations.iter().sum::<usize>(), 6);
+        // Should handle large values without overflow
+
+        // Test mixed very large and very small
+        let weights = vec![1e-100, 1e100, 1e-100];
+        let allocations = allocate_capacity_fairly(&weights, 10);
+        assert_eq!(allocations.iter().sum::<usize>(), 10);
+        assert!(allocations[1] >= 9); // Middle weight should dominate
+    }
+
+    #[test]
+    fn test_allocate_capacity_fairly_large_capacity() {
+        // Test case with large capacity that exercises large number arithmetic
+        let weights = vec![1.0, 1.0, 1.0];
+        let large_capacity = 999_999_999; // Large number divisible by 3
+        let allocations = allocate_capacity_fairly(&weights, large_capacity);
+        // Should not panic and should distribute capacity
+        assert!(allocations.iter().all(|&a| a > 0));
+        assert_eq!(allocations.iter().sum::<usize>(), large_capacity);
+        
+        // Each zone should get exactly equal allocation
+        let expected_per_zone = large_capacity / 3;
+        for allocation in &allocations {
+            assert_eq!(*allocation, expected_per_zone);
+        }
+    }
+
+    #[test]
+    fn test_calculate_zone_capacity_allocation_overflow_protection() {
+        // Test the invariant protection in calculate_zone_capacity_allocation
+        // This is hard to trigger naturally, but we can test with edge cases
+        let zone_sizes = vec![1, 1];
+        let zone_scores = vec![f64::MAX / 2.0, f64::MAX / 2.0];
+        let allocations = calculate_zone_capacity_allocation(&zone_sizes, &zone_scores, 100, 0.5);
+        
+        // Should not panic and should sum to total capacity
+        assert_eq!(allocations.iter().sum::<usize>(), 100);
+        assert!(allocations.iter().all(|&a| a <= 100));
     }
 
     #[test]
