@@ -48,6 +48,7 @@ Product definition is documented in `hill_descent_lib/pdd.md`.
 - Lint tests: `cargo clippy --tests`
 
 ## Before commit code to the repository
+- Ensure `cargo fmt` has been run
 - Ensure all tests pass: `cargo test`
 - Ensure linting passes: `cargo clippy` and `cargo clippy --tests`
 - Ensure code adheres to all outlined standards and guidelines
