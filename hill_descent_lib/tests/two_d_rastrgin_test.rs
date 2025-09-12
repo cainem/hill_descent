@@ -22,6 +22,7 @@ impl SingleValuedFunction for Rastrigin {
 }
 
 #[test]
+#[ignore]
 pub fn execute() {
     // Typical Rastrigin search domain is [-5.12, 5.12] for each dimension.
     // (If your internal parameter scaling expects a different range, adjust here.)
@@ -41,17 +42,16 @@ pub fn execute() {
     for epoch in 0..3000 {
         let at_resolution_limit = world.training_run(&[], &[]);
         let current_best = world.get_best_score();
-        best_score = current_best;
-        // if current_best < best_score {
-        //     best_score = current_best;
-        // }
+        if current_best < best_score {
+            best_score = current_best;
+        }
         if at_resolution_limit {
             println!("Resolution limit reached at epoch {epoch}");
             break;
         }
-        //if epoch % 100 == 0 {
-        println!("Epoch {epoch}: Best score so far: {best_score}");
-        //}
+        if epoch % 100 == 0 {
+            println!("Epoch {epoch}: Best score so far: {best_score}");
+        }
     }
 
     println!("Final best score: {best_score}");

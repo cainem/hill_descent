@@ -3,11 +3,20 @@ use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, web};
 use hill_descent_lib::{
     GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    world::world_function::WorldFunction,
 };
 use serde::{Deserialize, Serialize};
-use std::{ops::RangeInclusive, sync::Mutex};
+use std::{collections::HashMap, ops::RangeInclusive, sync::Mutex};
 
-// Test function
+/// Available optimization functions
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum FunctionType {
+    Himmelblau,
+    Rastrigin,
+}
+
+/// Himmelblau function implementation
 #[derive(Debug, Clone)]
 struct Himmelblau;
 
@@ -22,10 +31,92 @@ impl SingleValuedFunction for Himmelblau {
     }
 }
 
+/// Rastrigin function implementation (2D multimodal benchmark)
+/// f(x, y) = 20 + (x^2 - 10 cos(2πx)) + (y^2 - 10 cos(2πy))
+/// Global minimum at (0,0) with f = 0.0
+#[derive(Debug, Clone)]
+struct Rastrigin;
+
+impl SingleValuedFunction for Rastrigin {
+    fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
+        assert_eq!(2, phenotype_expressed_values.len());
+        let x = phenotype_expressed_values[0];
+        let y = phenotype_expressed_values[1];
+
+        let two_pi = 2.0 * std::f64::consts::PI;
+        20.0 + (x * x - 10.0 * (two_pi * x).cos()) + (y * y - 10.0 * (two_pi * y).cos())
+    }
+}
+
+/// Function metadata for the frontend
+#[derive(Debug, Clone, Serialize)]
+pub struct FunctionInfo {
+    pub name: String,
+    pub description: String,
+    pub param_ranges: Vec<(f64, f64)>,
+    pub global_minimum: Option<(f64, f64)>,
+}
+
+/// Function registry to create function instances and metadata
+pub struct FunctionRegistry {
+    functions: HashMap<FunctionType, FunctionInfo>,
+}
+
+impl Default for FunctionRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FunctionRegistry {
+    pub fn new() -> Self {
+        let mut functions = HashMap::new();
+
+        functions.insert(
+            FunctionType::Himmelblau,
+            FunctionInfo {
+                name: "Himmelblau".to_string(),
+                description: "Himmelblau's function - multimodal with 4 global minima".to_string(),
+                param_ranges: vec![(-25000000.0, -5000000.0), (-25000000.0, -5000000.0)],
+                global_minimum: Some((3.0, 2.0)), // One of the four minima
+            },
+        );
+
+        functions.insert(
+            FunctionType::Rastrigin,
+            FunctionInfo {
+                name: "Rastrigin".to_string(),
+                description: "Rastrigin function - highly multimodal with many local minima"
+                    .to_string(),
+                param_ranges: vec![(-5.12, 5.12), (-5.12, 5.12)],
+                global_minimum: Some((0.0, 0.0)),
+            },
+        );
+
+        Self { functions }
+    }
+
+    pub fn get_function_info(&self, function_type: &FunctionType) -> Option<&FunctionInfo> {
+        self.functions.get(function_type)
+    }
+
+    pub fn list_functions(&self) -> HashMap<FunctionType, FunctionInfo> {
+        self.functions.clone()
+    }
+
+    pub fn create_function(&self, function_type: &FunctionType) -> Option<Box<dyn WorldFunction>> {
+        match function_type {
+            FunctionType::Himmelblau => Some(Box::new(Himmelblau)),
+            FunctionType::Rastrigin => Some(Box::new(Rastrigin)),
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct StartRequest {
     population_size: Option<usize>,
     elite_size: Option<usize>,
+    function_type: Option<FunctionType>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -34,6 +125,7 @@ struct StateResponse {
     best_score: f64,
     world_state: String,
     at_resolution_limit: bool,
+    function_type: FunctionType,
 }
 
 #[derive(Serialize)]
@@ -49,6 +141,7 @@ struct Config {
     population_size: usize,
     elite_size: usize,
     param_ranges: Vec<(f64, f64)>,
+    function_type: FunctionType,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -64,22 +157,44 @@ async fn start_handler(
 ) -> Result<HttpResponse> {
     let population_size = req.population_size.unwrap_or(100);
     let elite_size = req.elite_size.unwrap_or(10);
-    let param_ranges = vec![(-25000000.0, -5000000.0), (-25000000.0, -5000000.0)];
+    let function_type = req
+        .function_type
+        .clone()
+        .unwrap_or(FunctionType::Himmelblau);
+
+    let registry = FunctionRegistry::new();
+    let function_info = registry
+        .get_function_info(&function_type)
+        .ok_or_else(|| format!("Unknown function type: {:?}", function_type))
+        .map_err(|e| {
+            eprintln!("Error: {}", e);
+            actix_web::error::ErrorBadRequest(e)
+        })?;
 
     let config = Config {
         population_size,
         elite_size,
-        param_ranges: param_ranges.clone(),
+        param_ranges: function_info.param_ranges.clone(),
+        function_type: function_type.clone(),
     };
 
     // Create initial world
-    let param_range: Vec<RangeInclusive<f64>> = param_ranges
-        .into_iter()
-        .map(|(min, max)| RangeInclusive::new(min, max))
+    let param_range: Vec<RangeInclusive<f64>> = function_info
+        .param_ranges
+        .iter()
+        .map(|(min, max)| RangeInclusive::new(*min, *max))
         .collect();
 
+    let function_impl = registry
+        .create_function(&function_type)
+        .ok_or("Failed to create function implementation")
+        .map_err(|e| {
+            eprintln!("Error: {}", e);
+            actix_web::error::ErrorInternalServerError(e)
+        })?;
+
     let global_constants = GlobalConstants::new(population_size, elite_size);
-    let world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
+    let world = setup_world(&param_range, global_constants, function_impl);
 
     let response_data = StateResponse {
         epoch: 0,
@@ -87,6 +202,7 @@ async fn start_handler(
         // Return the web-shaped JSON for the frontend visualization
         world_state: world.get_state_for_web(),
         at_resolution_limit: false,
+        function_type,
     };
 
     // Update state
@@ -126,8 +242,17 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
         .map(|(min, max)| RangeInclusive::new(min, max))
         .collect();
 
+    let registry = FunctionRegistry::new();
+    let function_impl = registry
+        .create_function(&config.function_type)
+        .ok_or("Failed to create function implementation")
+        .map_err(|e| {
+            eprintln!("Error: {}", e);
+            actix_web::error::ErrorInternalServerError(e)
+        })?;
+
     let global_constants = GlobalConstants::new(config.population_size, config.elite_size);
-    let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
+    let mut world = setup_world(&param_range, global_constants, function_impl);
 
     // Run to the new epoch
     let mut at_resolution_limit = false;
@@ -141,6 +266,7 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
         // Return the web-shaped JSON for the frontend visualization
         world_state: world.get_state_for_web(),
         at_resolution_limit,
+        function_type: config.function_type,
     };
 
     // Update state
@@ -172,6 +298,17 @@ async fn state_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpResp
             error: Some("No optimization session started".to_string()),
         }))
     }
+}
+
+async fn functions_handler() -> Result<HttpResponse> {
+    let registry = FunctionRegistry::new();
+    let functions = registry.list_functions();
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(functions),
+        error: None,
+    }))
 }
 
 async fn reset_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpResponse> {
@@ -208,6 +345,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/step", web::post().to(step_handler))
             .route("/api/state", web::get().to(state_handler))
             .route("/api/reset", web::post().to(reset_handler))
+            .route("/api/functions", web::get().to(functions_handler))
             .service({
                 // Serve static files from the server crate's web/ directory
                 let static_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("web");

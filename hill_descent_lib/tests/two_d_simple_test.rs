@@ -68,10 +68,10 @@ pub fn execute() {
             break;
         }
 
-        //if i % 100 == 0 {
-        println!("Epoch {i}: Best score so far: {best_score}");
-        //    println!("{}\n\n", world.get_state());
-        //}
+        if i % 100 == 0 {
+            println!("Epoch {i}: Best score so far: {best_score}");
+            //    println!("{}\n\n", world.get_state());
+        }
     }
 
     //println!("Final state:\n{}\n", world.get_state());

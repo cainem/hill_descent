@@ -516,7 +516,7 @@ mod tests {
         // Should not panic and should distribute capacity
         assert!(allocations.iter().all(|&a| a > 0));
         assert_eq!(allocations.iter().sum::<usize>(), large_capacity);
-        
+
         // Each zone should get exactly equal allocation
         let expected_per_zone = large_capacity / 3;
         for allocation in &allocations {
@@ -531,7 +531,7 @@ mod tests {
         let zone_sizes = vec![1, 1];
         let zone_scores = vec![f64::MAX / 2.0, f64::MAX / 2.0];
         let allocations = calculate_zone_capacity_allocation(&zone_sizes, &zone_scores, 100, 0.5);
-        
+
         // Should not panic and should sum to total capacity
         assert_eq!(allocations.iter().sum::<usize>(), 100);
         assert!(allocations.iter().all(|&a| a <= 100));

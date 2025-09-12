@@ -6,7 +6,7 @@ class HillDescentClient {
         this.autoInterval = null;
     }
 
-    async startOptimization(populationSize = 100, eliteSize = 10) {
+    async startOptimization(populationSize = 100, eliteSize = 10, functionType = 'himmelblau') {
         const response = await fetch(`${this.baseUrl}/api/start`, {
             method: 'POST',
             headers: {
@@ -15,13 +15,24 @@ class HillDescentClient {
             body: JSON.stringify({
                 population_size: populationSize,
                 elite_size: eliteSize,
-                // You can add param_ranges here if needed
+                function_type: functionType,
             }),
         });
 
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.error || 'Failed to start optimization');
+        }
+
+        return data.data;
+    }
+
+    async getFunctions() {
+        const response = await fetch(`${this.baseUrl}/api/functions`);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to get functions');
         }
 
         return data.data;
@@ -74,14 +85,17 @@ class OptimizationUI {
         this.isAutoRunning = false;
         this._stepInFlight = false;
         this.bestScores = [];
+        this.availableFunctions = {};
 
         this.initializeElements();
+        this.loadFunctions();
         this.initializeD3();
         this.bindEvents();
     }
 
     initializeElements() {
         this.elements = {
+            functionSelect: document.getElementById('function-select'),
             populationInput: document.getElementById('population'),
             eliteInput: document.getElementById('elite'),
             startBtn: document.getElementById('start-btn'),
@@ -91,10 +105,78 @@ class OptimizationUI {
             epochSpan: document.getElementById('epoch'),
             bestScoreSpan: document.getElementById('best-score'),
             statusSpan: document.getElementById('status'),
+            currentFunctionSpan: document.getElementById('current-function'),
+            functionInfo: document.getElementById('function-info'),
+            functionDescription: document.getElementById('function-description'),
+            functionDetails: document.getElementById('function-details'),
             visContainer: document.getElementById('visualization'),
             roundCounter: document.getElementById('round-counter'),
             tooltip: document.getElementById('tooltip'),
         };
+    }
+
+    async loadFunctions() {
+        try {
+            this.availableFunctions = await this.client.getFunctions();
+            this.populateFunctionSelect();
+        } catch (error) {
+            console.error('Failed to load functions:', error);
+            this.elements.functionSelect.innerHTML = '<option value="">Error loading functions</option>';
+        }
+    }
+
+    populateFunctionSelect() {
+        const select = this.elements.functionSelect;
+        select.innerHTML = '';
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select a function...';
+        select.appendChild(defaultOption);
+
+        // Add function options
+        Object.entries(this.availableFunctions).forEach(([key, info]) => {
+            const option = document.createElement('option');
+            option.value = key.toLowerCase();
+            option.textContent = info.name;
+            select.appendChild(option);
+        });
+
+        // Set default selection to Himmelblau if available
+        if (this.availableFunctions.himmelblau || this.availableFunctions.Himmelblau) {
+            select.value = 'himmelblau';
+            this.onFunctionChange();
+        }
+    }
+
+    onFunctionChange() {
+        const selectedFunction = this.elements.functionSelect.value;
+        if (!selectedFunction) {
+            this.elements.functionInfo.style.display = 'none';
+            return;
+        }
+
+        // Find the function info (case-insensitive)
+        const functionInfo = Object.entries(this.availableFunctions).find(([key, _]) =>
+            key.toLowerCase() === selectedFunction.toLowerCase()
+        )?.[1];
+
+        if (functionInfo) {
+            this.elements.functionDescription.textContent = functionInfo.description;
+
+            let details = `<strong>Parameter ranges:</strong><br>`;
+            functionInfo.param_ranges.forEach((range, index) => {
+                details += `Dimension ${index + 1}: [${range[0]}, ${range[1]}]<br>`;
+            });
+
+            if (functionInfo.global_minimum) {
+                details += `<br><strong>Global minimum:</strong> (${functionInfo.global_minimum[0]}, ${functionInfo.global_minimum[1]})`;
+            }
+
+            this.elements.functionDetails.innerHTML = details;
+            this.elements.functionInfo.style.display = 'block';
+        }
     }
 
     initializeD3() {
@@ -131,6 +213,7 @@ class OptimizationUI {
     }
 
     bindEvents() {
+        this.elements.functionSelect.addEventListener('change', () => this.onFunctionChange());
         this.elements.startBtn.addEventListener('click', () => this.start());
         this.elements.stepBtn.addEventListener('click', () => this.step());
         this.elements.autoBtn.addEventListener('click', () => this.toggleAuto());
@@ -143,8 +226,14 @@ class OptimizationUI {
 
             const populationSize = parseInt(this.elements.populationInput.value);
             const eliteSize = parseInt(this.elements.eliteInput.value);
+            const functionType = this.elements.functionSelect.value;
 
-            const state = await this.client.startOptimization(populationSize, eliteSize);
+            if (!functionType) {
+                alert('Please select an optimization function first.');
+                return;
+            }
+
+            const state = await this.client.startOptimization(populationSize, eliteSize, functionType);
             this.updateUI(state);
             this.bestScores = [state.best_score];
 
@@ -242,6 +331,15 @@ class OptimizationUI {
         this.elements.epochSpan.textContent = state.epoch;
         this.elements.bestScoreSpan.textContent = state.best_score.toFixed(6);
         this.elements.roundCounter.textContent = state.epoch;
+
+        // Update current function display
+        if (state.function_type) {
+            const functionInfo = Object.entries(this.availableFunctions).find(([key, _]) =>
+                key.toLowerCase() === state.function_type.toLowerCase()
+            )?.[1];
+            this.elements.currentFunctionSpan.textContent = functionInfo ? functionInfo.name : state.function_type;
+        }
+
         // Render D3 visualization from web-shaped JSON
         try {
             const webState = JSON.parse(state.world_state);
