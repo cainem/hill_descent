@@ -14,6 +14,7 @@ use std::{collections::HashMap, ops::RangeInclusive, sync::Mutex};
 pub enum FunctionType {
     Himmelblau,
     Rastrigin,
+    Ackley,
 }
 
 /// Himmelblau function implementation
@@ -45,6 +46,27 @@ impl SingleValuedFunction for Rastrigin {
 
         let two_pi = 2.0 * std::f64::consts::PI;
         20.0 + (x * x - 10.0 * (two_pi * x).cos()) + (y * y - 10.0 * (two_pi * y).cos())
+    }
+}
+
+/// Ackley function implementation (2D multimodal benchmark)
+/// f(x, y) = -20 * exp(-0.2 * sqrt(0.5 * (x^2 + y^2))) - exp(0.5 * (cos(2πx) + cos(2πy))) + e + 20
+/// Global minimum at (0,0) with f = 0.0
+#[derive(Debug, Clone)]
+struct Ackley;
+
+impl SingleValuedFunction for Ackley {
+    fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
+        assert_eq!(2, phenotype_expressed_values.len());
+        let x = phenotype_expressed_values[0];
+        let y = phenotype_expressed_values[1];
+
+        let two_pi = 2.0 * std::f64::consts::PI;
+        let term1 = -20.0 * (-0.2 * (0.5 * (x * x + y * y)).sqrt()).exp();
+        let term2 = -(0.5 * ((two_pi * x).cos() + (two_pi * y).cos())).exp();
+        let e = std::f64::consts::E;
+        
+        term1 + term2 + e + 20.0
     }
 }
 
@@ -93,6 +115,17 @@ impl FunctionRegistry {
             },
         );
 
+        functions.insert(
+            FunctionType::Ackley,
+            FunctionInfo {
+                name: "Ackley".to_string(),
+                description: "Ackley function - complex multimodal function with exponential terms"
+                    .to_string(),
+                param_ranges: vec![(-5.0, 5.0), (-5.0, 5.0)],
+                global_minimum: Some((0.0, 0.0)),
+            },
+        );
+
         Self { functions }
     }
 
@@ -108,6 +141,7 @@ impl FunctionRegistry {
         match function_type {
             FunctionType::Himmelblau => Some(Box::new(Himmelblau)),
             FunctionType::Rastrigin => Some(Box::new(Rastrigin)),
+            FunctionType::Ackley => Some(Box::new(Ackley)),
         }
     }
 }
