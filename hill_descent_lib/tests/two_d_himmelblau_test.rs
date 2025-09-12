@@ -27,7 +27,7 @@ impl SingleValuedFunction for Himmelblau {
 }
 
 #[test]
-#[ignore] // This test is long-running and should be run explicitly.
+//#[ignore] // This test is long-running and should be run explicitly.
 pub fn execute() {
     // #[cfg(feature = "enable-tracing")]
     // hill_descent_lib::init_tracing();
