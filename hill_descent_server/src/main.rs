@@ -15,6 +15,23 @@ pub enum FunctionType {
     Himmelblau,
     Rastrigin,
     Ackley,
+    BukinN6,
+}
+/// Bukin N.6 function implementation (2D, narrow curved valley)
+/// f(x, y) = 100 * sqrt(|y - 0.01x^2|) + 0.01 * |x + 10|
+/// Global minimum at (-10, 1) with f = 0.0
+#[derive(Debug, Clone)]
+struct BukinN6;
+
+impl SingleValuedFunction for BukinN6 {
+    fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
+        assert_eq!(2, phenotype_expressed_values.len());
+        let x = phenotype_expressed_values[0];
+        let y = phenotype_expressed_values[1];
+        let term1 = 100.0 * (y - 0.01 * x * x).abs().sqrt();
+        let term2 = 0.01 * (x + 10.0).abs();
+        term1 + term2
+    }
 }
 
 /// Himmelblau function implementation
@@ -126,6 +143,16 @@ impl FunctionRegistry {
             },
         );
 
+        functions.insert(
+            FunctionType::BukinN6,
+            FunctionInfo {
+                name: "Bukin N.6".to_string(),
+                description: "Bukin N.6 function - narrow curved valley, very challenging".to_string(),
+                param_ranges: vec![(-15.0, -5.0), (-3.0, 3.0)],
+                global_minimum: Some((-10.0, 1.0)),
+            },
+        );
+
         Self { functions }
     }
 
@@ -142,6 +169,7 @@ impl FunctionRegistry {
             FunctionType::Himmelblau => Some(Box::new(Himmelblau)),
             FunctionType::Rastrigin => Some(Box::new(Rastrigin)),
             FunctionType::Ackley => Some(Box::new(Ackley)),
+            FunctionType::BukinN6 => Some(Box::new(BukinN6)),
         }
     }
 }
