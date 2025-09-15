@@ -147,7 +147,8 @@ impl FunctionRegistry {
             FunctionType::BukinN6,
             FunctionInfo {
                 name: "Bukin N.6".to_string(),
-                description: "Bukin N.6 function - narrow curved valley, very challenging".to_string(),
+                description: "Bukin N.6 function - narrow curved valley, very challenging"
+                    .to_string(),
                 param_ranges: vec![(-15.0, -5.0), (-3.0, 3.0)],
                 global_minimum: Some((-10.0, 1.0)),
             },
