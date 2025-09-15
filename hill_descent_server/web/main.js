@@ -6,7 +6,7 @@ class HillDescentClient {
         this.autoInterval = null;
     }
 
-    async startOptimization(populationSize = 100, eliteSize = 10) {
+    async startOptimization(populationSize = 100, eliteSize = 10, functionType = 'himmelblau') {
         const response = await fetch(`${this.baseUrl}/api/start`, {
             method: 'POST',
             headers: {
@@ -15,15 +15,26 @@ class HillDescentClient {
             body: JSON.stringify({
                 population_size: populationSize,
                 elite_size: eliteSize,
-                // You can add param_ranges here if needed
+                function_type: functionType,
             }),
         });
-        
+
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.error || 'Failed to start optimization');
         }
-        
+
+        return data.data;
+    }
+
+    async getFunctions() {
+        const response = await fetch(`${this.baseUrl}/api/functions`);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to get functions');
+        }
+
         return data.data;
     }
 
@@ -31,23 +42,23 @@ class HillDescentClient {
         const response = await fetch(`${this.baseUrl}/api/step`, {
             method: 'POST',
         });
-        
+
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.error || 'Failed to step optimization');
         }
-        
+
         return data.data;
     }
 
     async getState() {
         const response = await fetch(`${this.baseUrl}/api/state`);
         const data = await response.json();
-        
+
         if (!data.success) {
             throw new Error(data.error || 'Failed to get state');
         }
-        
+
         return data.data;
     }
 
@@ -55,12 +66,12 @@ class HillDescentClient {
         const response = await fetch(`${this.baseUrl}/api/reset`, {
             method: 'POST',
         });
-        
+
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.error || 'Failed to reset');
         }
-        
+
         return data.data;
     }
 }
@@ -74,14 +85,17 @@ class OptimizationUI {
         this.isAutoRunning = false;
         this._stepInFlight = false;
         this.bestScores = [];
-        
+        this.availableFunctions = {};
+
         this.initializeElements();
+        this.loadFunctions();
         this.initializeD3();
         this.bindEvents();
     }
 
     initializeElements() {
         this.elements = {
+            functionSelect: document.getElementById('function-select'),
             populationInput: document.getElementById('population'),
             eliteInput: document.getElementById('elite'),
             startBtn: document.getElementById('start-btn'),
@@ -91,10 +105,78 @@ class OptimizationUI {
             epochSpan: document.getElementById('epoch'),
             bestScoreSpan: document.getElementById('best-score'),
             statusSpan: document.getElementById('status'),
+            currentFunctionSpan: document.getElementById('current-function'),
+            functionInfo: document.getElementById('function-info'),
+            functionDescription: document.getElementById('function-description'),
+            functionDetails: document.getElementById('function-details'),
             visContainer: document.getElementById('visualization'),
             roundCounter: document.getElementById('round-counter'),
             tooltip: document.getElementById('tooltip'),
         };
+    }
+
+    async loadFunctions() {
+        try {
+            this.availableFunctions = await this.client.getFunctions();
+            this.populateFunctionSelect();
+        } catch (error) {
+            console.error('Failed to load functions:', error);
+            this.elements.functionSelect.innerHTML = '<option value="">Error loading functions</option>';
+        }
+    }
+
+    populateFunctionSelect() {
+        const select = this.elements.functionSelect;
+        select.innerHTML = '';
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select a function...';
+        select.appendChild(defaultOption);
+
+        // Add function options
+        Object.entries(this.availableFunctions).forEach(([key, info]) => {
+            const option = document.createElement('option');
+            option.value = key.toLowerCase();
+            option.textContent = info.name;
+            select.appendChild(option);
+        });
+
+        // Set default selection to Himmelblau if available
+        if (this.availableFunctions.himmelblau || this.availableFunctions.Himmelblau) {
+            select.value = 'himmelblau';
+            this.onFunctionChange();
+        }
+    }
+
+    onFunctionChange() {
+        const selectedFunction = this.elements.functionSelect.value;
+        if (!selectedFunction) {
+            this.elements.functionInfo.style.display = 'none';
+            return;
+        }
+
+        // Find the function info (case-insensitive)
+        const functionInfo = Object.entries(this.availableFunctions).find(([key, _]) =>
+            key.toLowerCase() === selectedFunction.toLowerCase()
+        )?.[1];
+
+        if (functionInfo) {
+            this.elements.functionDescription.textContent = functionInfo.description;
+
+            let details = `<strong>Parameter ranges:</strong><br>`;
+            functionInfo.param_ranges.forEach((range, index) => {
+                details += `Dimension ${index + 1}: [${range[0]}, ${range[1]}]<br>`;
+            });
+
+            if (functionInfo.global_minimum) {
+                details += `<br><strong>Global minimum:</strong> (${functionInfo.global_minimum[0]}, ${functionInfo.global_minimum[1]})`;
+            }
+
+            this.elements.functionDetails.innerHTML = details;
+            this.elements.functionInfo.style.display = 'block';
+        }
     }
 
     initializeD3() {
@@ -108,7 +190,7 @@ class OptimizationUI {
         this.svg = d3.select('#visualization').append('svg')
             .attr('width', width + margin.left + margin.right)
             .attr('height', height + margin.top + margin.bottom)
-          .append('g')
+            .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
         this.svg.append('rect')
@@ -131,6 +213,7 @@ class OptimizationUI {
     }
 
     bindEvents() {
+        this.elements.functionSelect.addEventListener('change', () => this.onFunctionChange());
         this.elements.startBtn.addEventListener('click', () => this.start());
         this.elements.stepBtn.addEventListener('click', () => this.step());
         this.elements.autoBtn.addEventListener('click', () => this.toggleAuto());
@@ -140,22 +223,28 @@ class OptimizationUI {
     async start() {
         try {
             this.updateStatus('Starting optimization...');
-            
+
             const populationSize = parseInt(this.elements.populationInput.value);
             const eliteSize = parseInt(this.elements.eliteInput.value);
-            
-            const state = await this.client.startOptimization(populationSize, eliteSize);
+            const functionType = this.elements.functionSelect.value;
+
+            if (!functionType) {
+                alert('Please select an optimization function first.');
+                return;
+            }
+
+            const state = await this.client.startOptimization(populationSize, eliteSize, functionType);
             this.updateUI(state);
             this.bestScores = [state.best_score];
-            
+
             this.elements.startBtn.disabled = true;
             this.elements.stepBtn.disabled = false;
             this.elements.autoBtn.disabled = false;
             this.elements.resetBtn.disabled = false;
             this.isRunning = true;
-            
+
             this.updateStatus('Optimization started');
-            
+
         } catch (error) {
             this.updateStatus(`Error: ${error.message}`);
             console.error('Start error:', error);
@@ -171,12 +260,12 @@ class OptimizationUI {
             const data = await this.client.stepOptimization();
             this.updateUI(data);
             this.bestScores.push(data.best_score);
-            
+
             if (data.at_resolution_limit) {
                 this.updateStatus('Resolution limit reached!');
                 this.stopAuto();
             }
-            
+
         } catch (err) {
             console.error(err);
             this.updateStatus('Step failed');
@@ -219,19 +308,19 @@ class OptimizationUI {
         try {
             this.stopAuto();
             await this.client.reset();
-            
+
             this.elements.startBtn.disabled = false;
             this.elements.stepBtn.disabled = true;
             this.elements.autoBtn.disabled = true;
             this.elements.resetBtn.disabled = true;
             this.isRunning = false;
             this.bestScores = [];
-            
+
             this.elements.epochSpan.textContent = '-';
             this.elements.bestScoreSpan.textContent = '-';
             this.updateStatus('Reset complete');
             this.clearVisualization();
-            
+
         } catch (error) {
             this.updateStatus(`Error: ${error.message}`);
             console.error('Reset error:', error);
@@ -242,10 +331,23 @@ class OptimizationUI {
         this.elements.epochSpan.textContent = state.epoch;
         this.elements.bestScoreSpan.textContent = state.best_score.toFixed(6);
         this.elements.roundCounter.textContent = state.epoch;
+
+        // Update current function display
+        if (state.function_type) {
+            const functionInfo = Object.entries(this.availableFunctions).find(([key, _]) =>
+                key.toLowerCase() === state.function_type.toLowerCase()
+            )?.[1];
+            this.elements.currentFunctionSpan.textContent = functionInfo ? functionInfo.name : state.function_type;
+        }
+
         // Render D3 visualization from web-shaped JSON
         try {
-            console.log('[UI] StateResponse from server', state);
             const webState = JSON.parse(state.world_state);
+            // Log state with parsed world_state as JSON for better browser console viewing
+            console.log('[UI] StateResponse from server', {
+                ...state,
+                world_state: webState
+            });
             console.log('[UI] Parsed webState', {
                 world_bounds: webState.world_bounds,
                 score_range: webState.score_range,
@@ -255,6 +357,8 @@ class OptimizationUI {
             this.updateVisualization(webState);
         } catch (e) {
             console.error('Failed to parse world_state JSON', e);
+            // Fallback to original logging if parsing fails
+            console.log('[UI] StateResponse from server (raw)', state);
         }
     }
 
@@ -266,22 +370,22 @@ class OptimizationUI {
         // Simple canvas-based chart for best scores over time
         const canvas = this.elements.chart;
         const ctx = canvas.getContext('2d');
-        
+
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         if (this.bestScores.length < 2) return;
-        
+
         // Set up chart dimensions
         const padding = 50;
         const chartWidth = canvas.width - 2 * padding;
         const chartHeight = canvas.height - 2 * padding;
-        
+
         // Find min/max values
         const minScore = Math.min(...this.bestScores);
         const maxScore = Math.max(...this.bestScores);
         const scoreRange = maxScore - minScore || 1;
-        
+
         // Draw axes
         ctx.strokeStyle = '#ccc';
         ctx.lineWidth = 1;
@@ -290,7 +394,7 @@ class OptimizationUI {
         ctx.lineTo(padding, canvas.height - padding);
         ctx.lineTo(canvas.width - padding, canvas.height - padding);
         ctx.stroke();
-        
+
         // Draw grid lines
         ctx.strokeStyle = '#eee';
         for (let i = 1; i < 10; i++) {
@@ -300,16 +404,16 @@ class OptimizationUI {
             ctx.lineTo(canvas.width - padding, y);
             ctx.stroke();
         }
-        
+
         // Draw the line
         ctx.strokeStyle = '#007acc';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        
+
         for (let i = 0; i < this.bestScores.length; i++) {
             const x = padding + (chartWidth * i / (this.bestScores.length - 1));
             const y = canvas.height - padding - (chartHeight * (this.bestScores[i] - minScore) / scoreRange);
-            
+
             if (i === 0) {
                 ctx.moveTo(x, y);
             } else {
@@ -317,7 +421,7 @@ class OptimizationUI {
             }
         }
         ctx.stroke();
-        
+
         // Draw labels
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
@@ -395,12 +499,15 @@ class OptimizationUI {
         // Color scale for region min_score
         const scoreMin = state.score_range.min;
         const scoreMax = state.score_range.max;
-        
+
         // Use logarithmic scale for better color distribution across large score ranges
         const logScoreMin = Math.log10(scoreMin);
         const logScoreMax = Math.log10(scoreMax);
         const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
             .domain([logScoreMax, logScoreMin]); // lower scores are greener
+
+        // Create color scale for zones
+        const zoneColors = this.generateZoneColors(state.regions || []);
 
         // Render regions
         const regionsSel = this.gRegions.selectAll('.region')
@@ -423,8 +530,17 @@ class OptimizationUI {
                 if (d.min_score == null) return colorScale(logScoreMax);
                 return colorScale(Math.log10(d.min_score));
             })
-            .attr('stroke', '#ccc')
-            .attr('stroke-width', 0.5)
+            .attr('stroke', d => {
+                // Use zone color for border if zone information is available
+                if (d.zone !== undefined && d.zone !== null) {
+                    return zoneColors[d.zone] || '#ccc';
+                }
+                return '#ccc';
+            })
+            .attr('stroke-width', d => {
+                // Make zone borders more prominent
+                return (d.zone !== undefined && d.zone !== null) ? 2 : 0.5;
+            })
             .on('mouseover', (event, d) => {
                 const orgCount = (state.organisms || []).filter(o => isOrgInRegion(o, d)).length;
                 console.log('[UI] Region hover', { region: d, carrying_capacity: d.carrying_capacity, min_score: d.min_score, orgCount });
@@ -433,10 +549,13 @@ class OptimizationUI {
                 tooltip.html(
                     `Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]` +
                     `<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]` +
-                    `<br/>Min Score: ${d.min_score != null ? fmtDec(d.min_score) : 'N/A'}`
+                    `<br/>Min Score: ${d.min_score != null ? fmtDec(d.min_score) : 'N/A'}` +
+                    `<br/>Zone: ${d.zone !== undefined && d.zone !== null ? d.zone : 'N/A'}` +
+                    `<br/>Carrying Capacity: ${d.carrying_capacity}` +
+                    `<br/>Organisms: ${orgCount}`
                 )
-                .style('left', (event.pageX + 5) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
+                    .style('left', (event.pageX + 5) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
             })
             .on('mouseout', () => {
                 d3.select('#tooltip').transition().duration(500).style('opacity', 0);
@@ -507,10 +626,10 @@ class OptimizationUI {
 
         // Corner coordinate labels (show current view bounds)
         const corners = [
-            { key: 'tl', x: 0, y: 0,    label: `(${xMin.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'start', vy: '1em' },
-            { key: 'tr', x: width, y: 0,    label: `(${xMax.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'end',   vy: '1em' },
+            { key: 'tl', x: 0, y: 0, label: `(${xMin.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'start', vy: '1em' },
+            { key: 'tr', x: width, y: 0, label: `(${xMax.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'end', vy: '1em' },
             { key: 'bl', x: 0, y: height, label: `(${xMin.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'start', vy: '-0.3em' },
-            { key: 'br', x: width, y: height, label: `(${xMax.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'end',   vy: '-0.3em' },
+            { key: 'br', x: width, y: height, label: `(${xMax.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'end', vy: '-0.3em' },
         ];
 
         const cornerSel = this.gCorners.selectAll('.corner-label').data(corners, d => d.key);
@@ -547,16 +666,62 @@ class OptimizationUI {
                 const tooltip = d3.select('#tooltip');
                 tooltip.transition().duration(200).style('opacity', 0.9);
                 tooltip.html(
-                    `Organism:<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}`
+                    `Organism ID: ${d.id}<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}<br/>Max Age: ${d.max_age} (raw: ${d.raw_max_age.toFixed(3)})<br/>Score: ${d.score !== null && d.score !== undefined ? d.score.toFixed(6) : 'N/A'}`
                 )
-                .style('left', (event.pageX + 5) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
+                    .style('left', (event.pageX + 5) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
             })
             .on('mouseout', () => {
                 d3.select('#tooltip').transition().duration(500).style('opacity', 0);
             });
 
         orgSel.exit().remove();
+    }
+
+    // Generate distinct colors for each zone
+    generateZoneColors(regions) {
+        // Find all unique zone IDs
+        const zoneIds = [...new Set(regions.map(r => r.zone).filter(zone => zone !== undefined && zone !== null))];
+
+        // Create a color palette with distinct, visually appealing colors
+        const colorPalette = [
+            '#e41a1c', // red
+            '#377eb8', // blue  
+            '#4daf4a', // green
+            '#984ea3', // purple
+            '#ff7f00', // orange
+            '#ffff33', // yellow
+            '#a65628', // brown
+            '#f781bf', // pink
+            '#999999', // gray
+            '#1f78b4', // dark blue
+            '#33a02c', // dark green
+            '#fb9a99', // light red
+            '#a6cee3', // light blue
+            '#b2df8a', // light green
+            '#fdbf6f', // light orange
+            '#cab2d6', // light purple
+            '#ffff99', // light yellow
+            '#b15928', // dark brown
+            '#6a3d9a', // dark purple
+            '#ff1493'  // deep pink
+        ];
+
+        const zoneColors = {};
+        zoneIds.forEach((zoneId, index) => {
+            // Use palette colors first, then generate HSL colors for additional zones
+            if (index < colorPalette.length) {
+                zoneColors[zoneId] = colorPalette[index];
+            } else {
+                // Generate additional colors using HSL with varying hue
+                const hue = (index * 137.508) % 360; // Golden angle for good distribution
+                const saturation = 60 + (index % 3) * 15; // Vary saturation slightly
+                const lightness = 45 + (index % 4) * 10; // Vary lightness slightly
+                zoneColors[zoneId] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            }
+        });
+
+        return zoneColors;
     }
 }
 

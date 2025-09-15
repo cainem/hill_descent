@@ -119,13 +119,25 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 
 **4.2.4. Carrying Capacity ($P_i$):** 
 * The number of organisms a region `i` can support.  
-* Calculated for each populated region.  
-* Dependent on the minimum fitness $F_i$ found within that region. $F_i$ is the fitness score of the fittest organism within region `i` (recall fitness includes $+ e_0$, so $F_i > 0$).  
-* Formula: $P_i = P \cdot \frac{1/F_i}{\sum_{j=1}^{\hat{P}} (1/F_j)}$  
-    * $P$: Total target population size.  
-    * $F_i$: Minimum fitness in region `i`.  
-    * The sum is over all $\hat{P}$ populated regions (where $\hat{P}$ is the number of distinct points, implying distinct regions if $x=\hat{P}$).  
-* Recalculation: Required if previously empty regions become populated, previously populated regions become empty, or if the overall bounding box changes.
+* Calculated using a zone-based allocation system that groups adjacent regions and distributes capacity strategically.
+
+**Zone-Based Allocation System:**
+* **Zone Detection:** Adjacent regions (those with Chebyshev distance = 1 in region coordinate space) are automatically grouped into zones using a Union-Find algorithm with spatial indexing optimization.
+* **Zone Capacity Allocation:** Total population capacity `P` is distributed among zones proportional to zone size: $ZoneCapacity_z = P \cdot \frac{size_z}{\sum_{j=1}^{Z_{count}} size_j}$
+    * $size_z$: Number of regions in zone `z`
+    * $Z_{count}$: Total number of zones
+    * This formula provides fair representation for all zones while still allocating more resources to larger connected areas.
+* **Intra-Zone Distribution:** Within each zone, capacity is distributed among regions based on their relative fitness using the inverse fitness formula: $P_i = ZoneCapacity_z \cdot \frac{1/F_i}{\sum_{j \in zone_z} (1/F_j)}$
+    * $F_i$: Minimum fitness in region `i` (recall fitness includes $+ e_0$, so $F_i > 0$)
+    * The sum is over all regions within the same zone as region `i`
+
+**Performance Optimization:**
+* Zone calculations are cached with generation-based invalidation to avoid expensive recalculation when region structure hasn't changed.
+* Spatial indexing reduces adjacency checking complexity from O(n²) to O(n×k) where k is the average number of potential neighbors.
+
+**Recalculation Triggers:**
+* Required if previously empty regions become populated, previously populated regions become empty, or if the overall bounding box changes.
+* Cache is invalidated when region structure changes (dimension splits, boundary adjustments).
 
 ## 5. Key Processes
 
@@ -224,8 +236,8 @@ The system proceeds in discrete rounds. Each round involves:
 
 * **Region Recalculation Triggers:** 
     * If any offspring falls outside the current master bounding box: Recalculate the master bounding box, then recalculate all regions and reassign all organisms.  
-    * If previously empty regions become populated or populated regions become empty (due to births/deaths): Recalculate carrying capacities for all populated regions.  
-    * If the number of populated regions exceeds `Z`: Trigger a full recalculation of regions (and subsequently carrying capacities).
+    * If previously empty regions become populated or populated regions become empty (due to births/deaths): Recalculate zones and carrying capacities for all populated regions using the zone-based allocation system.  
+    * If the number of populated regions exceeds `Z`: Trigger a full recalculation of regions (and subsequently zones and carrying capacities).
 
 **5.2.6. Aging and Death:** 
 * Remove any organisms that have reached their maximum age ($A_{max}$).  
@@ -262,6 +274,13 @@ The system proceeds in discrete rounds. Each round involves:
 * Mutation probabilities: $m_1, m_2, m_3, m_4, m_5$.  
 * Maximum organism age: $A_{max}$ (must be a bounded parameter).  
 * Problem-specific parameters (e.g., neural network weights and biases).
+
+**6.2.1. System Parameter Evolution:**
+* System parameters (mutation probabilities and maximum age) evolve genetically through the same inheritance, crossover, and mutation mechanisms as problem-specific parameters.
+* However, system parameters do **not** influence spatial positioning or region assignment—only problem-specific parameters determine an organism's location in the niching space.
+* System parameter evolution occurs **indirectly**: organisms with system parameter values that help them succeed in the problem space will have more reproductive opportunities, causing beneficial system parameter combinations to proliferate.
+* This design ensures that evolutionary pressure on system parameters derives from their effectiveness at solving the actual problem, rather than from arbitrary spatial competition based on mutation rate values.
+* System parameters typically evolve more slowly than problem-specific parameters, which is often desirable for meta-evolutionary stability.
 
 **6.3. Derived Values:** * `n`: Total number of dimensions to be optimized.  
 * $e_0$: Smallest representable positive floating-point number.  

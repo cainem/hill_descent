@@ -17,12 +17,12 @@ impl World {
         self.organisms.retain_live();
 
         // 2. Each region ----------------------------------------------------
-        for region in self.regions.regions_mut().values_mut() {
+        for region in self.regions.iter_region_values_mut() {
             region.retain_live();
         }
 
         // 3. Drop regions that are now empty --------------------------------
-        self.regions.regions_mut().retain(|_, r| !r.is_empty());
+        self.regions.retain_regions(|_, r| !r.is_empty());
     }
 }
 
@@ -57,10 +57,10 @@ mod tests {
     fn given_no_dead_organisms_when_remove_dead_then_world_unchanged() {
         let gc = GlobalConstants::new(30, 10);
         let mut world = World::new(&default_bounds(), gc, Box::new(DummyFn));
-        let region_count_before = world.regions.regions().len();
+        let region_count_before = world.regions.len();
         world.remove_dead();
         assert_eq!(world.organisms.len(), 30);
-        assert_eq!(world.regions.regions().len(), region_count_before);
+        assert_eq!(world.regions.len(), region_count_before);
     }
 
     #[test]
@@ -76,8 +76,7 @@ mod tests {
         assert!(
             world
                 .regions
-                .regions()
-                .values()
+                .iter_region_values()
                 .all(|r| r.organisms().iter().all(|o| !o.is_dead()))
         );
     }
@@ -90,7 +89,7 @@ mod tests {
             o.mark_dead();
         }
         // Also mark the Rc clones stored in regions (they are distinct instances)
-        for region in world.regions.regions().values() {
+        for region in world.regions.iter_region_values() {
             for o in region.organisms() {
                 o.mark_dead();
             }
@@ -100,8 +99,7 @@ mod tests {
         assert!(
             world
                 .regions
-                .regions()
-                .values()
+                .iter_region_values()
                 .all(|r| r.organisms().iter().all(|o| o.is_dead()))
         );
     }

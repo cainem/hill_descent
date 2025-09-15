@@ -1,4 +1,5 @@
 use crate::world::{World, organisms::Organism};
+use std::rc::Rc;
 
 impl World {
     /// Applies one training epoch and returns the organism with the lowest fitness score (best fit).
@@ -9,17 +10,16 @@ impl World {
         &mut self,
         training_data: &[&[f64]],
         known_outputs: &[&[f64]],
-    ) -> Organism {
+    ) -> Rc<Organism> {
         // 1. Validate inputs.
         crate::world::validate_training_sets::validate_training_sets(training_data, known_outputs);
 
         // 2. Run one epoch across the entire dataset.
         self.run_epoch(training_data, known_outputs);
 
-        // 3. Return the fittest organism.
+        // 3. Return the fittest organism as Rc.
         self.organisms
             .best()
-            .map(|rc| rc.as_ref().clone())
             .expect("Population contains no scored organisms")
     }
 }

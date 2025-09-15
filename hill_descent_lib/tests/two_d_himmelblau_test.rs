@@ -37,7 +37,7 @@ pub fn execute() {
         RangeInclusive::new(-25000000.0, -5000000.0),
         RangeInclusive::new(-25000000.0, -5000000.0),
     ];
-    let global_constants = GlobalConstants::new(100, 10); // Larger population for 2D search
+    let global_constants = GlobalConstants::new(500, 10); // Larger population for 2D search
 
     let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
 
@@ -68,10 +68,10 @@ pub fn execute() {
             break;
         }
 
-        //if i % 100 == 0 {
-        println!("Epoch {i}: Best score so far: {best_score}");
-        //    println!("{}\n\n", world.get_state());
-        //}
+        if i % 100 == 0 {
+            println!("Epoch {i}: Best score so far: {best_score}");
+            //    println!("{}\n\n", world.get_state());
+        }
     }
 
     //println!("Final state:\n{}\n", world.get_state());
