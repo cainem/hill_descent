@@ -65,7 +65,7 @@ impl SingleValuedFunction for Ackley {
         let term1 = -20.0 * (-0.2 * (0.5 * (x * x + y * y)).sqrt()).exp();
         let term2 = -(0.5 * ((two_pi * x).cos() + (two_pi * y).cos())).exp();
         let e = std::f64::consts::E;
-        
+
         term1 + term2 + e + 20.0
     }
 }

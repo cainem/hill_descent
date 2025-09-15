@@ -3,15 +3,15 @@ use hill_descent_lib::{
 };
 use std::ops::RangeInclusive;
 
-// Himmelblau's function is a standard test function for optimization algorithms.
-// It has four identical local minima, making it a good test for an algorithm's
-// ability to find one of several optimal solutions.
-// f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
-// The global minimum is 0.
+// Schaffer function N.2 is a multimodal test function with smooth areas and ripples.
+// It has a complex surface that tests an algorithm's ability to navigate
+// between smooth regions and areas with high-frequency oscillations.
+// f(x, y) = 0.5 + (sin²(x² - y²) - 0.5) / (1 + 0.001(x² + y²))²
+// The global minimum is 0 at (0, 0).
 #[derive(Debug)]
-struct Himmelblau;
+struct SchafferN2;
 
-impl SingleValuedFunction for Himmelblau {
+impl SingleValuedFunction for SchafferN2 {
     fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
         // This function is 2-dimensional.
         assert_eq!(2, phenotype_expressed_values.len());
@@ -19,10 +19,14 @@ impl SingleValuedFunction for Himmelblau {
         let x = phenotype_expressed_values[0];
         let y = phenotype_expressed_values[1];
 
-        // f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
-        let term1 = (x.powi(2) + y - 11.0).powi(2);
-        let term2 = (x + y.powi(2) - 7.0).powi(2);
-        term1 + term2
+        // f(x, y) = 0.5 + (sin²(x² - y²) - 0.5) / (1 + 0.001(x² + y²))²
+        let x2_plus_y2 = x * x + y * y;
+        let x2_minus_y2 = x * x - y * y;
+
+        let numerator = x2_minus_y2.sin().powi(2) - 0.5;
+        let denominator = (1.0 + 0.001 * x2_plus_y2).powi(2);
+
+        0.5 + numerator / denominator
     }
 }
 
@@ -32,26 +36,19 @@ pub fn execute() {
     // #[cfg(feature = "enable-tracing")]
     // hill_descent_lib::init_tracing();
 
-    // The four minima are within the range [-5.0, 5.0] for both x and y.
+    // Schaffer N.2 is typically evaluated on [-100, 100] for both variables
     let param_range = vec![
-        RangeInclusive::new(-25000000.0, -5000000.0),
-        RangeInclusive::new(-25000000.0, -5000000.0),
+        RangeInclusive::new(-100.0, 100.0),
+        RangeInclusive::new(-100.0, 100.0),
     ];
     let global_constants = GlobalConstants::new(500, 10); // Larger population for 2D search
 
-    let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
-
-    //println!("Test initial state:\n{}\n", world.get_state());
+    let mut world = setup_world(&param_range, global_constants, Box::new(SchafferN2));
 
     let mut best_score = f64::MAX;
 
-    // Run for a number of epochs to allow the system to find a minimum.
-    for i in 0..2000 {
-        // if i == 1460 {
-        //     #[cfg(feature = "enable-tracing")]
-        //     hill_descent_lib::init_tracing();
-        // }
-
+    // Run for a number of epochs to allow the system to find the minimum.
+    for i in 0..3000 {
         // Objective-function mode: no known outputs
         let at_resolution_limit = world.training_run(&[], &[]);
 
@@ -70,15 +67,13 @@ pub fn execute() {
 
         if i % 100 == 0 {
             println!("Epoch {i}: Best score so far: {best_score}");
-            //    println!("{}\n\n", world.get_state());
         }
     }
 
-    //println!("Final state:\n{}\n", world.get_state());
     println!("Final best score: {best_score}");
 
     // The goal is to get the score very close to the global minimum of 0.
-    // A tolerance of 0.01 should be achievable.
+    // A tolerance of 0.01 should be achievable for this function.
     assert!(
         best_score < 0.01,
         "Final score {best_score} was not close enough to 0.0"

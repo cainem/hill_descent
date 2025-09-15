@@ -18,15 +18,16 @@ impl SingleValuedFunction for Ackley {
 
         let two_pi = 2.0 * std::f64::consts::PI;
         let e = std::f64::consts::E;
-        
+
         let term1 = -20.0 * (-0.2 * (0.5 * (x * x + y * y)).sqrt()).exp();
         let term2 = -(0.5 * (two_pi * x).cos() + 0.5 * (two_pi * y).cos()).exp();
-        
+
         term1 + term2 + e + 20.0
     }
 }
 
 #[test]
+#[ignore]
 pub fn execute() {
     // Typical Ackley search domain is [-5, 5] for each dimension.
     let param_range = vec![

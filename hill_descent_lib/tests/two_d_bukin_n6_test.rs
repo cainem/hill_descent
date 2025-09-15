@@ -3,15 +3,15 @@ use hill_descent_lib::{
 };
 use std::ops::RangeInclusive;
 
-// Himmelblau's function is a standard test function for optimization algorithms.
-// It has four identical local minima, making it a good test for an algorithm's
-// ability to find one of several optimal solutions.
-// f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
-// The global minimum is 0.
+// Bukin function N.6 is a challenging optimization test function with a narrow curved valley.
+// It has asymmetric bounds and is known for its difficulty due to the valley's shape.
+// f(x, y) = 100√|y - 0.01x²| + 0.01|x + 10|
+// The global minimum is 0 at (-10, 1).
+// Domain: x ∈ [-15, -5], y ∈ [-3, 3]
 #[derive(Debug)]
-struct Himmelblau;
+struct BukinN6;
 
-impl SingleValuedFunction for Himmelblau {
+impl SingleValuedFunction for BukinN6 {
     fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
         // This function is 2-dimensional.
         assert_eq!(2, phenotype_expressed_values.len());
@@ -19,9 +19,10 @@ impl SingleValuedFunction for Himmelblau {
         let x = phenotype_expressed_values[0];
         let y = phenotype_expressed_values[1];
 
-        // f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
-        let term1 = (x.powi(2) + y - 11.0).powi(2);
-        let term2 = (x + y.powi(2) - 7.0).powi(2);
+        // f(x, y) = 100√|y - 0.01x²| + 0.01|x + 10|
+        let term1 = 100.0 * (y - 0.01 * x * x).abs().sqrt();
+        let term2 = 0.01 * (x + 10.0).abs();
+
         term1 + term2
     }
 }
@@ -32,26 +33,19 @@ pub fn execute() {
     // #[cfg(feature = "enable-tracing")]
     // hill_descent_lib::init_tracing();
 
-    // The four minima are within the range [-5.0, 5.0] for both x and y.
+    // Bukin N.6 has asymmetric domain: x ∈ [-15, -5], y ∈ [-3, 3]
     let param_range = vec![
-        RangeInclusive::new(-25000000.0, -5000000.0),
-        RangeInclusive::new(-25000000.0, -5000000.0),
+        RangeInclusive::new(-15.0, -5.0),
+        RangeInclusive::new(-3.0, 3.0),
     ];
     let global_constants = GlobalConstants::new(500, 10); // Larger population for 2D search
 
-    let mut world = setup_world(&param_range, global_constants, Box::new(Himmelblau));
-
-    //println!("Test initial state:\n{}\n", world.get_state());
+    let mut world = setup_world(&param_range, global_constants, Box::new(BukinN6));
 
     let mut best_score = f64::MAX;
 
-    // Run for a number of epochs to allow the system to find a minimum.
+    // Run for a number of epochs to allow the system to find the minimum.
     for i in 0..2000 {
-        // if i == 1460 {
-        //     #[cfg(feature = "enable-tracing")]
-        //     hill_descent_lib::init_tracing();
-        // }
-
         // Objective-function mode: no known outputs
         let at_resolution_limit = world.training_run(&[], &[]);
 
@@ -70,17 +64,16 @@ pub fn execute() {
 
         if i % 100 == 0 {
             println!("Epoch {i}: Best score so far: {best_score}");
-            //    println!("{}\n\n", world.get_state());
         }
     }
 
-    //println!("Final state:\n{}\n", world.get_state());
     println!("Final best score: {best_score}");
 
     // The goal is to get the score very close to the global minimum of 0.
-    // A tolerance of 0.01 should be achievable.
+    // Bukin N.6 is extremely challenging due to its narrow curved valley.
+    // A tolerance of 0.1 is reasonable for this function.
     assert!(
-        best_score < 0.01,
+        best_score < 0.1,
         "Final score {best_score} was not close enough to 0.0"
     );
 }
