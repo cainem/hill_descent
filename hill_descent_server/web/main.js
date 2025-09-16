@@ -343,22 +343,9 @@ class OptimizationUI {
         // Render D3 visualization from web-shaped JSON
         try {
             const webState = JSON.parse(state.world_state);
-            // Log state with parsed world_state as JSON for better browser console viewing
-            console.log('[UI] StateResponse from server', {
-                ...state,
-                world_state: webState
-            });
-            console.log('[UI] Parsed webState', {
-                world_bounds: webState.world_bounds,
-                score_range: webState.score_range,
-                regions: webState.regions ? webState.regions.length : 0,
-                organisms: webState.organisms ? webState.organisms.length : 0,
-            });
             this.updateVisualization(webState);
         } catch (e) {
             console.error('Failed to parse world_state JSON', e);
-            // Fallback to original logging if parsing fails
-            console.log('[UI] StateResponse from server (raw)', state);
         }
     }
 
@@ -533,7 +520,6 @@ class OptimizationUI {
             .attr('stroke-width', 0.5)
             .on('mouseover', (event, d) => {
                 const orgCount = (state.organisms || []).filter(o => isOrgInRegion(o, d)).length;
-                console.log('[UI] Region hover', { region: d, carrying_capacity: d.carrying_capacity, min_score: d.min_score, orgCount });
                 const tooltip = d3.select('#tooltip');
                 tooltip.transition().duration(200).style('opacity', 0.9);
                 tooltip.html(
@@ -651,7 +637,6 @@ class OptimizationUI {
             .attr('cx', d => this.xScale(d.params.x))
             .attr('cy', d => this.yScale(d.params.y))
             .on('mouseover', (event, d) => {
-                console.log('[UI] Organism hover', d);
                 const tooltip = d3.select('#tooltip');
                 tooltip.transition().duration(200).style('opacity', 0.9);
                 tooltip.html(

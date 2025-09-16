@@ -1,6 +1,6 @@
+use crate::locus::locus_adjustment::DirectionOfTravel;
 use serde::Serialize;
 use serde_json;
-use crate::locus::locus_adjustment::DirectionOfTravel;
 
 // Helper structs purely for serialisation of the World state to match web_pdd.md
 #[derive(Serialize, Debug)]
@@ -129,7 +129,9 @@ impl GameteState {
 }
 
 impl SystemParametersState {
-    fn from_system_parameters(sys_params: &crate::parameters::system_parameters::SystemParameters) -> Self {
+    fn from_system_parameters(
+        sys_params: &crate::parameters::system_parameters::SystemParameters,
+    ) -> Self {
         Self {
             m1: sys_params.m1(),
             m2: sys_params.m2(),
@@ -148,7 +150,9 @@ impl PhenotypeState {
             gamete1: GameteState::from_gamete(phenotype.gamete1()),
             gamete2: GameteState::from_gamete(phenotype.gamete2()),
             expressed_values: phenotype.expressed_values().to_vec(),
-            system_parameters: SystemParametersState::from_system_parameters(phenotype.system_parameters()),
+            system_parameters: SystemParametersState::from_system_parameters(
+                phenotype.system_parameters(),
+            ),
             expressed_hash: phenotype.expressed_hash(),
         }
     }
