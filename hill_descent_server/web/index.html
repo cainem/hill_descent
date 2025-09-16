@@ -65,13 +65,67 @@
             <div id="function-details"></div>
         </div>
 
-        <div class="visualization">
-            <!-- D3 visualization matching old UI -->
-            <div id="stats" style="margin: 10px; font-family: sans-serif; font-size: 16px;">
-                <div>Round: <span id="round-counter">0</span></div>
+        <div class="main-content">
+            <div class="visualization">
+                <!-- D3 visualization matching old UI -->
+                <div id="stats" style="margin: 10px; font-family: sans-serif; font-size: 16px;">
+                    <div>Round: <span id="round-counter">0</span></div>
+                </div>
+                <div id="visualization"></div>
+                <div id="tooltip" class="tooltip" style="opacity:0;"></div>
             </div>
-            <div id="visualization"></div>
-            <div id="tooltip" class="tooltip" style="opacity:0;"></div>
+
+            <!-- Region Detail Panel -->
+            <div class="region-panel" id="region-panel" style="display: none;">
+                <div class="region-panel-header">
+                    <h3>Region Details</h3>
+                    <button class="close-btn" id="close-region-panel">×</button>
+                </div>
+                <div class="region-panel-content">
+                    <div class="region-info">
+                        <h4>Bounds</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>X Range:</label>
+                                <span id="region-x-bounds">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Y Range:</label>
+                                <span id="region-y-bounds">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="region-stats">
+                        <h4>Statistics</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Min Score:</label>
+                                <span id="region-min-score">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Carrying Capacity:</label>
+                                <span id="region-capacity">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Current Population:</label>
+                                <span id="region-population">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Population Status:</label>
+                                <span id="region-status">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="organism-section">
+                        <h4>Organisms in Region</h4>
+                        <div id="organism-list" class="organism-list">
+                            <!-- Organism list will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

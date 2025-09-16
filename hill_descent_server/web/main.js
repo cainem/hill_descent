@@ -86,6 +86,7 @@ class OptimizationUI {
         this._stepInFlight = false;
         this.bestScores = [];
         this.availableFunctions = {};
+        this.selectedRegion = null; // Track selected region for click interactions
 
         this.initializeElements();
         this.loadFunctions();
@@ -112,6 +113,16 @@ class OptimizationUI {
             visContainer: document.getElementById('visualization'),
             roundCounter: document.getElementById('round-counter'),
             tooltip: document.getElementById('tooltip'),
+            // Region panel elements
+            regionPanel: document.getElementById('region-panel'),
+            closeRegionPanel: document.getElementById('close-region-panel'),
+            regionXBounds: document.getElementById('region-x-bounds'),
+            regionYBounds: document.getElementById('region-y-bounds'),
+            regionMinScore: document.getElementById('region-min-score'),
+            regionCapacity: document.getElementById('region-capacity'),
+            regionPopulation: document.getElementById('region-population'),
+            regionStatus: document.getElementById('region-status'),
+            organismList: document.getElementById('organism-list'),
         };
     }
 
@@ -199,7 +210,14 @@ class OptimizationUI {
             .attr('y', 0)
             .attr('width', width)
             .attr('height', height)
-            .attr('fill', '#f0f0f0');
+            .attr('fill', '#f0f0f0')
+            .style('cursor', 'default')
+            .on('click', () => {
+                // Clear region selection when clicking on background
+                if (this.selectedRegion) {
+                    this.hideRegionPanel();
+                }
+            });
 
         // Explicit layer groups to control z-order
         // Order: regions (bottom) -> organisms (middle) -> overlays (top)
@@ -218,6 +236,7 @@ class OptimizationUI {
         this.elements.stepBtn.addEventListener('click', () => this.step());
         this.elements.autoBtn.addEventListener('click', () => this.toggleAuto());
         this.elements.resetBtn.addEventListener('click', () => this.reset());
+        this.elements.closeRegionPanel.addEventListener('click', () => this.hideRegionPanel());
     }
 
     async start() {
@@ -431,9 +450,117 @@ class OptimizationUI {
         }
     }
 
+    // Helper method to check if two regions are the same
+    isRegionSelected(region) {
+        return this.selectedRegion && 
+               this.selectedRegion.bounds.x[0] === region.bounds.x[0] && 
+               this.selectedRegion.bounds.x[1] === region.bounds.x[1] && 
+               this.selectedRegion.bounds.y[0] === region.bounds.y[0] && 
+               this.selectedRegion.bounds.y[1] === region.bounds.y[1];
+    }
+
+    // Show region detail panel
+    showRegionPanel() {
+        this.elements.regionPanel.style.display = 'block';
+    }
+
+    // Hide region detail panel
+    hideRegionPanel() {
+        this.elements.regionPanel.style.display = 'none';
+        this.selectedRegion = null;
+        if (this.currentState) {
+            this.updateVisualization(this.currentState);
+        }
+    }
+
+    // Update region panel with selected region data
+    updateRegionPanel(region, organisms) {
+        const fmtDec = (num) => {
+            if (num === 0) return '0';
+            if (num === null || num === undefined) return 'N/A';
+            return Number(num).toFixed(20).replace(/\.?0+$/, '');
+        };
+
+        // Update region bounds
+        this.elements.regionXBounds.textContent = `[${region.bounds.x[0].toFixed(2)}, ${region.bounds.x[1].toFixed(2)}]`;
+        this.elements.regionYBounds.textContent = `[${region.bounds.y[0].toFixed(2)}, ${region.bounds.y[1].toFixed(2)}]`;
+
+        // Update region statistics
+        this.elements.regionMinScore.textContent = fmtDec(region.min_score);
+        this.elements.regionCapacity.textContent = region.carrying_capacity.toString();
+        this.elements.regionPopulation.textContent = organisms.length.toString();
+
+        // Update population status
+        const isOverCapacity = organisms.length > region.carrying_capacity;
+        const statusText = isOverCapacity ? 'Over Capacity' : 'Within Capacity';
+        const statusColor = isOverCapacity ? '#d32f2f' : '#388e3c';
+        this.elements.regionStatus.textContent = statusText;
+        this.elements.regionStatus.style.color = statusColor;
+
+        // Update organism list
+        this.updateOrganismList(organisms);
+    }
+
+    // Update the organism list in the region panel
+    updateOrganismList(organisms) {
+        this.elements.organismList.innerHTML = '';
+
+        if (organisms.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'organism-item';
+            emptyMsg.style.fontStyle = 'italic';
+            emptyMsg.style.color = '#888';
+            emptyMsg.textContent = 'No organisms in this region';
+            this.elements.organismList.appendChild(emptyMsg);
+            return;
+        }
+
+        organisms.forEach(organism => {
+            const organismEl = document.createElement('div');
+            organismEl.className = 'organism-item';
+            
+            const header = document.createElement('div');
+            header.className = 'organism-header';
+            
+            const idEl = document.createElement('span');
+            idEl.className = 'organism-id';
+            idEl.textContent = `ID: ${organism.id}`;
+            
+            const scoreEl = document.createElement('span');
+            scoreEl.className = 'organism-score';
+            scoreEl.textContent = organism.score !== null && organism.score !== undefined ? 
+                `Score: ${organism.score.toFixed(6)}` : 'Score: N/A';
+            
+            header.appendChild(idEl);
+            header.appendChild(scoreEl);
+            
+            const details = document.createElement('div');
+            details.className = 'organism-details';
+            details.innerHTML = `
+                <span>X: ${organism.params.x.toFixed(4)}</span>
+                <span>Y: ${organism.params.y.toFixed(4)}</span>
+                <span>Age: ${organism.age}/${organism.max_age}</span>
+                <span>Age %: ${((organism.age / organism.max_age) * 100).toFixed(1)}%</span>
+            `;
+            
+            organismEl.appendChild(header);
+            organismEl.appendChild(details);
+            
+            // Future: Add click handler for detailed organism view (Phase 6)
+            organismEl.addEventListener('click', () => {
+                // TODO: Implement detailed organism treeview in Phase 6
+            });
+            
+            this.elements.organismList.appendChild(organismEl);
+        });
+    }
+
     // Ported rendering logic from main_old.js adjusted for server JSON
     updateVisualization(state) {
         if (!this.svg) return;
+        
+        // Store current state for region selection updates
+        this.currentState = state;
 
         const { width, height } = this.d3cfg;
 
@@ -516,24 +643,30 @@ class OptimizationUI {
                 if (d.min_score == null) return colorScale(logScoreMax);
                 return colorScale(Math.log10(d.min_score));
             })
-            .attr('stroke', '#ccc')
-            .attr('stroke-width', 0.5)
-            .on('mouseover', (event, d) => {
-                const orgCount = (state.organisms || []).filter(o => isOrgInRegion(o, d)).length;
-                const tooltip = d3.select('#tooltip');
-                tooltip.transition().duration(200).style('opacity', 0.9);
-                tooltip.html(
-                    `Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]` +
-                    `<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]` +
-                    `<br/>Min Score: ${d.min_score != null ? fmtDec(d.min_score) : 'N/A'}` +
-                    `<br/>Carrying Capacity: ${d.carrying_capacity}` +
-                    `<br/>Organisms: ${orgCount}`
-                )
-                    .style('left', (event.pageX + 5) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
-            })
-            .on('mouseout', () => {
-                d3.select('#tooltip').transition().duration(500).style('opacity', 0);
+            .attr('stroke', d => this.isRegionSelected(d) ? '#ff6600' : '#ccc')
+            .attr('stroke-width', d => this.isRegionSelected(d) ? 3 : 0.5)
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                // Stop event propagation to prevent clearing selection
+                event.stopPropagation();
+                
+                // Toggle selection
+                if (this.isRegionSelected(d)) {
+                    this.selectedRegion = null;
+                    this.hideRegionPanel();
+                } else {
+                    this.selectedRegion = d;
+                    
+                    // Find organisms in this region
+                    const organismsInRegion = (state.organisms || []).filter(o => isOrgInRegion(o, d));
+                    
+                    // Show and update the region panel
+                    this.showRegionPanel();
+                    this.updateRegionPanel(d, organismsInRegion);
+                }
+                
+                // Update visualization to show selection state
+                this.updateVisualization(this.currentState);
             });
 
         regionsSel.exit().remove();

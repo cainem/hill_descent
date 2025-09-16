@@ -184,6 +184,161 @@ button:disabled {
     color: #666;
 }
 
+/* Main content layout with sidebar */
+.main-content {
+    display: flex;
+    gap: 20px;
+    position: relative;
+}
+
+.visualization {
+    flex: 1;
+}
+
+/* Region Detail Panel */
+.region-panel {
+    width: 350px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 800px;
+    overflow-y: auto;
+}
+
+.region-panel-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+
+.region-panel-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.region-panel-content {
+    padding: 20px;
+}
+
+.region-info, .region-stats, .organism-section {
+    margin-bottom: 25px;
+}
+
+.region-info h4, .region-stats h4, .organism-section h4 {
+    margin: 0 0 15px 0;
+    color: #555;
+    font-size: 16px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 8px;
+}
+
+.info-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.info-item span {
+    color: #333;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+}
+
+.organism-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.organism-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.organism-item:hover {
+    background: #f0f8ff;
+}
+
+.organism-item:last-child {
+    border-bottom: none;
+}
+
+.organism-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.organism-id {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.organism-score {
+    font-size: 12px;
+    color: #666;
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.organism-details {
+    font-size: 12px;
+    color: #888;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
 @media (max-width: 768px) {
     .controls {
         flex-direction: column;
@@ -198,5 +353,14 @@ button:disabled {
     #optimization-chart {
         width: 100%;
         height: auto;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .region-panel {
+        width: 100%;
+        max-height: 400px;
     }
 }
