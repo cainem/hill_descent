@@ -106,7 +106,7 @@ mod tests {
         // Arrange
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         // Use very large population to ensure some organisms survive the new aging flow
-        let gc = GlobalConstants::new(1000, 1); // Use only 1 region to avoid zone capacity issues
+        let gc = GlobalConstants::new(1000, 1); // Use only 1 region for simplicity
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
         let inputs = vec![0.0];
         let known_outputs = vec![1.0];

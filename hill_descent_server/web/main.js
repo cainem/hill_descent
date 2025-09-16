@@ -506,8 +506,7 @@ class OptimizationUI {
         const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
             .domain([logScoreMax, logScoreMin]); // lower scores are greener
 
-        // Create color scale for zones
-        const zoneColors = this.generateZoneColors(state.regions || []);
+
 
         // Render regions
         const regionsSel = this.gRegions.selectAll('.region')
@@ -530,17 +529,8 @@ class OptimizationUI {
                 if (d.min_score == null) return colorScale(logScoreMax);
                 return colorScale(Math.log10(d.min_score));
             })
-            .attr('stroke', d => {
-                // Use zone color for border if zone information is available
-                if (d.zone !== undefined && d.zone !== null) {
-                    return zoneColors[d.zone] || '#ccc';
-                }
-                return '#ccc';
-            })
-            .attr('stroke-width', d => {
-                // Make zone borders more prominent
-                return (d.zone !== undefined && d.zone !== null) ? 2 : 0.5;
-            })
+            .attr('stroke', '#ccc')
+            .attr('stroke-width', 0.5)
             .on('mouseover', (event, d) => {
                 const orgCount = (state.organisms || []).filter(o => isOrgInRegion(o, d)).length;
                 console.log('[UI] Region hover', { region: d, carrying_capacity: d.carrying_capacity, min_score: d.min_score, orgCount });
@@ -550,7 +540,6 @@ class OptimizationUI {
                     `Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]` +
                     `<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]` +
                     `<br/>Min Score: ${d.min_score != null ? fmtDec(d.min_score) : 'N/A'}` +
-                    `<br/>Zone: ${d.zone !== undefined && d.zone !== null ? d.zone : 'N/A'}` +
                     `<br/>Carrying Capacity: ${d.carrying_capacity}` +
                     `<br/>Organisms: ${orgCount}`
                 )
@@ -678,51 +667,7 @@ class OptimizationUI {
         orgSel.exit().remove();
     }
 
-    // Generate distinct colors for each zone
-    generateZoneColors(regions) {
-        // Find all unique zone IDs
-        const zoneIds = [...new Set(regions.map(r => r.zone).filter(zone => zone !== undefined && zone !== null))];
 
-        // Create a color palette with distinct, visually appealing colors
-        const colorPalette = [
-            '#e41a1c', // red
-            '#377eb8', // blue  
-            '#4daf4a', // green
-            '#984ea3', // purple
-            '#ff7f00', // orange
-            '#ffff33', // yellow
-            '#a65628', // brown
-            '#f781bf', // pink
-            '#999999', // gray
-            '#1f78b4', // dark blue
-            '#33a02c', // dark green
-            '#fb9a99', // light red
-            '#a6cee3', // light blue
-            '#b2df8a', // light green
-            '#fdbf6f', // light orange
-            '#cab2d6', // light purple
-            '#ffff99', // light yellow
-            '#b15928', // dark brown
-            '#6a3d9a', // dark purple
-            '#ff1493'  // deep pink
-        ];
-
-        const zoneColors = {};
-        zoneIds.forEach((zoneId, index) => {
-            // Use palette colors first, then generate HSL colors for additional zones
-            if (index < colorPalette.length) {
-                zoneColors[zoneId] = colorPalette[index];
-            } else {
-                // Generate additional colors using HSL with varying hue
-                const hue = (index * 137.508) % 360; // Golden angle for good distribution
-                const saturation = 60 + (index % 3) * 15; // Vary saturation slightly
-                const lightness = 45 + (index % 4) * 10; // Vary lightness slightly
-                zoneColors[zoneId] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            }
-        });
-
-        return zoneColors;
-    }
 }
 
 // Initialize the application

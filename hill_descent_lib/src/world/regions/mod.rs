@@ -1,6 +1,5 @@
 use indexmap::IndexMap;
 use rustc_hash::FxBuildHasher;
-use std::collections::HashMap;
 
 use region::Region;
 
@@ -13,9 +12,6 @@ pub mod sort_regions;
 pub mod truncate_regions;
 pub mod update;
 pub mod update_carrying_capacities;
-pub mod update_carrying_capacities_with_zones;
-pub mod zone_calculator;
-pub mod zone_capacity_allocation;
 
 pub mod calculate_dimension_stats;
 pub mod count_unique_values_with_tolerance;
@@ -26,7 +22,6 @@ mod refill;
 pub mod repopulate;
 
 use crate::parameters::global_constants::GlobalConstants;
-use zone_calculator::ZoneCache;
 
 #[derive(Debug, Clone)]
 // Container managing all Region instances and enforcing global constraints such as maximum regions and population size.
@@ -37,17 +32,9 @@ pub struct Regions {
     // but it won't be more that target_regions * 2
     target_regions: usize,
     population_size: usize,
-    zone_cache: ZoneCache,
-    // Maps region keys to their zone numbers for web visualization
-    zone_mapping: Option<HashMap<Vec<usize>, usize>>,
 }
 
 impl Regions {
-    /// Fraction of total carrying capacity allocated to zone-proportional fund.
-    /// 0.0 = all capacity allocated based on global score performance
-    /// 1.0 = all capacity allocated proportionally to zone sizes
-    /// 0.5 = equal split between global and zone-proportional allocation
-    const FRACTIONAL_ZONE_ALLOCATION: f64 = 0.0;
     pub fn new(global_constants: &GlobalConstants) -> Self {
         if global_constants.population_size() == 0 {
             // Consistent with target_regions check, though population_size=0 might be a valid scenario for some tests.
@@ -64,8 +51,6 @@ impl Regions {
             regions: IndexMap::with_hasher(FxBuildHasher),
             target_regions: global_constants.target_regions(),
             population_size: global_constants.population_size(), // Initialize population_size
-            zone_cache: ZoneCache::new(),
-            zone_mapping: None,
         }
     }
 
@@ -163,18 +148,6 @@ impl Regions {
     #[allow(dead_code)]
     pub fn clear_regions(&mut self) {
         self.regions.clear()
-    }
-
-    // Zone mapping operations for web visualization
-
-    /// Returns a reference to the current zone mapping if it exists.
-    pub fn get_zone_mapping(&self) -> Option<&HashMap<Vec<usize>, usize>> {
-        self.zone_mapping.as_ref()
-    }
-
-    /// Sets the zone mapping from the provided HashMap.
-    pub fn set_zone_mapping(&mut self, mapping: HashMap<Vec<usize>, usize>) {
-        self.zone_mapping = Some(mapping);
     }
 }
 
