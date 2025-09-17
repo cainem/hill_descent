@@ -129,6 +129,54 @@
         </div>
     </div>
 
+    <!-- Organism Detail Modal -->
+    <div class="organism-modal" id="organism-modal" style="display: none;">
+        <div class="organism-modal-overlay" id="organism-modal-overlay"></div>
+        <div class="organism-modal-content">
+            <div class="organism-modal-header">
+                <h3>Organism Details</h3>
+                <button class="close-btn" id="close-organism-modal">×</button>
+            </div>
+            <div class="organism-modal-body">
+                <div class="organism-summary">
+                    <div class="organism-summary-grid">
+                        <div class="summary-item">
+                            <label>ID:</label>
+                            <span id="organism-detail-id">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Score:</label>
+                            <span id="organism-detail-score">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Position:</label>
+                            <span id="organism-detail-position">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Age:</label>
+                            <span id="organism-detail-age">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Status:</label>
+                            <span id="organism-detail-status">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Region Key:</label>
+                            <span id="organism-detail-region-key">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="organism-treeview">
+                    <h4>Genetic Structure</h4>
+                    <div class="treeview-container" id="organism-treeview">
+                        <!-- Tree structure will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- D3 for visualization -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="main.js"></script>

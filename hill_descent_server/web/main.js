@@ -123,6 +123,17 @@ class OptimizationUI {
             regionPopulation: document.getElementById('region-population'),
             regionStatus: document.getElementById('region-status'),
             organismList: document.getElementById('organism-list'),
+            // Organism modal elements
+            organismModal: document.getElementById('organism-modal'),
+            organismModalOverlay: document.getElementById('organism-modal-overlay'),
+            closeOrganismModal: document.getElementById('close-organism-modal'),
+            organismDetailId: document.getElementById('organism-detail-id'),
+            organismDetailScore: document.getElementById('organism-detail-score'),
+            organismDetailPosition: document.getElementById('organism-detail-position'),
+            organismDetailAge: document.getElementById('organism-detail-age'),
+            organismDetailStatus: document.getElementById('organism-detail-status'),
+            organismDetailRegionKey: document.getElementById('organism-detail-region-key'),
+            organismTreeview: document.getElementById('organism-treeview'),
         };
     }
 
@@ -237,6 +248,8 @@ class OptimizationUI {
         this.elements.autoBtn.addEventListener('click', () => this.toggleAuto());
         this.elements.resetBtn.addEventListener('click', () => this.reset());
         this.elements.closeRegionPanel.addEventListener('click', () => this.hideRegionPanel());
+        this.elements.closeOrganismModal.addEventListener('click', () => this.hideOrganismModal());
+        this.elements.organismModalOverlay.addEventListener('click', () => this.hideOrganismModal());
     }
 
     async start() {
@@ -546,13 +559,228 @@ class OptimizationUI {
             organismEl.appendChild(header);
             organismEl.appendChild(details);
             
-            // Future: Add click handler for detailed organism view (Phase 6)
+            // Click handler for detailed organism view
             organismEl.addEventListener('click', () => {
-                // TODO: Implement detailed organism treeview in Phase 6
+                this.showOrganismModal();
+                this.updateOrganismModal(organism);
             });
             
             this.elements.organismList.appendChild(organismEl);
         });
+    }
+
+    // Show organism detail modal
+    showOrganismModal() {
+        this.elements.organismModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    // Hide organism detail modal
+    hideOrganismModal() {
+        this.elements.organismModal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    // Update organism modal with detailed organism data
+    updateOrganismModal(organism) {
+        // Update organism summary
+        this.elements.organismDetailId.textContent = organism.id.toString();
+        this.elements.organismDetailScore.textContent = organism.score !== null && organism.score !== undefined ? 
+            organism.score.toFixed(8) : 'N/A';
+        this.elements.organismDetailPosition.textContent = `(${organism.params.x.toFixed(6)}, ${organism.params.y.toFixed(6)})`;
+        this.elements.organismDetailAge.textContent = `${organism.age} / ${organism.max_age}`;
+        this.elements.organismDetailStatus.textContent = organism.is_dead ? 'Dead' : 'Alive';
+        this.elements.organismDetailRegionKey.textContent = organism.region_key ? 
+            `[${organism.region_key.join(', ')}]` : 'None';
+
+        // Build and populate the treeview
+        this.buildOrganismTreeview(organism);
+    }
+
+    // Build hierarchical treeview for organism genetic structure
+    buildOrganismTreeview(organism) {
+        this.elements.organismTreeview.innerHTML = '';
+
+        const treeData = {
+            label: 'Phenotype',
+            icon: '🧬',
+            children: [
+                {
+                    label: 'Expressed Values',
+                    icon: '📊',
+                    children: organism.phenotype.expressed_values.map((value, idx) => ({
+                        label: `Value ${idx}`,
+                        icon: '•',
+                        value: value.toFixed(8),
+                        isLeaf: true
+                    }))
+                },
+                {
+                    label: 'Expressed Hash',
+                    icon: '🔢',
+                    value: organism.phenotype.expressed_hash.toString(),
+                    isLeaf: true
+                },
+                {
+                    label: 'System Parameters',
+                    icon: '⚙️',
+                    children: [
+                        { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: organism.phenotype.system_parameters.m1.toFixed(8), isLeaf: true },
+                        { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: organism.phenotype.system_parameters.m2.toFixed(8), isLeaf: true },
+                        { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: organism.phenotype.system_parameters.m3.toFixed(8), isLeaf: true },
+                        { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: organism.phenotype.system_parameters.m4.toFixed(8), isLeaf: true },
+                        { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: organism.phenotype.system_parameters.m5.toFixed(8), isLeaf: true },
+                        { label: 'Max Age', icon: '⏳', value: organism.phenotype.system_parameters.max_age.toFixed(2), isLeaf: true },
+                        { label: 'Crossover Points', icon: '🔀', value: organism.phenotype.system_parameters.crossover_points.toFixed(2), isLeaf: true }
+                    ]
+                },
+                {
+                    label: 'Gamete 1',
+                    icon: '🧬',
+                    children: organism.phenotype.gamete1.loci.map((locus, idx) => ({
+                        label: `Locus ${idx}`,
+                        icon: '🔗',
+                        children: [
+                            { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                            { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                            {
+                                label: 'Adjustment',
+                                icon: '⚡',
+                                children: [
+                                    { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                    { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                    { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                    { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                ]
+                            }
+                        ]
+                    }))
+                },
+                {
+                    label: 'Gamete 2',
+                    icon: '🧬',
+                    children: organism.phenotype.gamete2.loci.map((locus, idx) => ({
+                        label: `Locus ${idx}`,
+                        icon: '🔗',
+                        children: [
+                            { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                            { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                            {
+                                label: 'Adjustment',
+                                icon: '⚡',
+                                children: [
+                                    { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                    { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                    { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                    { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                ]
+                            }
+                        ]
+                    }))
+                }
+            ]
+        };
+
+        this.renderTreeNode(treeData, this.elements.organismTreeview, 0);
+    }
+
+    // Render a tree node recursively
+    renderTreeNode(node, container, level) {
+        const nodeEl = document.createElement('div');
+        nodeEl.className = `tree-node tree-level-${level % 5}`;
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'tree-node-header';
+
+        // Add toggle button for nodes with children
+        const toggleEl = document.createElement('div');
+        toggleEl.className = 'tree-node-toggle';
+        if (node.children && node.children.length > 0) {
+            toggleEl.textContent = '+';
+            toggleEl.style.cursor = 'pointer';
+        } else {
+            toggleEl.textContent = '';
+        }
+
+        // Add icon
+        const iconEl = document.createElement('div');
+        iconEl.className = 'tree-node-icon';
+        iconEl.textContent = node.icon || '•';
+
+        // Add label
+        const labelEl = document.createElement('div');
+        labelEl.className = 'tree-node-label';
+        labelEl.textContent = node.label;
+
+        // Add value if present
+        const valueEl = document.createElement('div');
+        valueEl.className = 'tree-node-value';
+        if (node.value !== undefined) {
+            valueEl.textContent = node.value;
+        }
+
+        headerEl.appendChild(toggleEl);
+        headerEl.appendChild(iconEl);
+        headerEl.appendChild(labelEl);
+        if (node.value !== undefined) {
+            headerEl.appendChild(valueEl);
+        }
+
+        nodeEl.appendChild(headerEl);
+
+        // Add children container
+        if (node.children && node.children.length > 0) {
+            const childrenEl = document.createElement('div');
+            childrenEl.className = 'tree-node-children';
+
+            // Add click handler for toggle
+            headerEl.addEventListener('click', () => {
+                const isExpanded = childrenEl.classList.contains('expanded');
+                if (isExpanded) {
+                    childrenEl.classList.remove('expanded');
+                    toggleEl.textContent = '+';
+                } else {
+                    childrenEl.classList.add('expanded');
+                    toggleEl.textContent = '−';
+                }
+            });
+
+            // Render children
+            node.children.forEach(child => {
+                if (child.isLeaf) {
+                    const leafEl = document.createElement('div');
+                    leafEl.className = `tree-node-leaf tree-level-${(level + 1) % 5}`;
+                    
+                    const leafHeaderEl = document.createElement('div');
+                    leafHeaderEl.className = 'tree-node-header';
+                    
+                    const leafIconEl = document.createElement('div');
+                    leafIconEl.className = 'tree-node-icon';
+                    leafIconEl.textContent = child.icon || '•';
+                    
+                    const leafLabelEl = document.createElement('div');
+                    leafLabelEl.className = 'tree-node-label';
+                    leafLabelEl.textContent = child.label;
+                    
+                    const leafValueEl = document.createElement('div');
+                    leafValueEl.className = 'tree-node-value';
+                    leafValueEl.textContent = child.value || '';
+                    
+                    leafHeaderEl.appendChild(leafIconEl);
+                    leafHeaderEl.appendChild(leafLabelEl);
+                    leafHeaderEl.appendChild(leafValueEl);
+                    leafEl.appendChild(leafHeaderEl);
+                    
+                    childrenEl.appendChild(leafEl);
+                } else {
+                    this.renderTreeNode(child, childrenEl, level + 1);
+                }
+            });
+
+            nodeEl.appendChild(childrenEl);
+        }
+
+        container.appendChild(nodeEl);
     }
 
     // Ported rendering logic from main_old.js adjusted for server JSON
@@ -780,7 +1008,16 @@ class OptimizationUI {
             })
             .on('mouseout', () => {
                 d3.select('#tooltip').transition().duration(500).style('opacity', 0);
-            });
+            })
+            .on('click', (event, d) => {
+                // Stop event propagation to prevent background clearing
+                event.stopPropagation();
+                
+                // Show organism detail modal
+                this.showOrganismModal();
+                this.updateOrganismModal(d);
+            })
+            .style('cursor', 'pointer');
 
         orgSel.exit().remove();
     }
