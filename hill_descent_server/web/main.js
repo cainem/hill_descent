@@ -997,18 +997,6 @@ class OptimizationUI {
             .attr('stroke-width', 0.75)
             .attr('cx', d => this.xScale(d.params.x))
             .attr('cy', d => this.yScale(d.params.y))
-            .on('mouseover', (event, d) => {
-                const tooltip = d3.select('#tooltip');
-                tooltip.transition().duration(200).style('opacity', 0.9);
-                tooltip.html(
-                    `Organism ID: ${d.id}<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}<br/>Max Age: ${d.max_age}<br/>Score: ${d.score !== null && d.score !== undefined ? d.score.toFixed(6) : 'N/A'}`
-                )
-                    .style('left', (event.pageX + 5) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
-            })
-            .on('mouseout', () => {
-                d3.select('#tooltip').transition().duration(500).style('opacity', 0);
-            })
             .on('click', (event, d) => {
                 // Stop event propagation to prevent background clearing
                 event.stopPropagation();
