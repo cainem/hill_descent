@@ -361,7 +361,7 @@ class OptimizationUI {
 
     updateUI(state) {
         this.elements.epochSpan.textContent = state.epoch;
-        this.elements.bestScoreSpan.textContent = state.best_score.toFixed(6);
+        this.elements.bestScoreSpan.textContent = state.best_score.toExponential(6);
         this.elements.roundCounter.textContent = state.epoch;
 
         // Update current function display
@@ -444,8 +444,8 @@ class OptimizationUI {
         // Draw labels
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
-        ctx.fillText(`Best: ${minScore.toFixed(6)}`, padding, 20);
-        ctx.fillText(`Worst: ${maxScore.toFixed(6)}`, padding, 35);
+        ctx.fillText(`Best: ${minScore.toExponential(3)}`, padding, 20);
+        ctx.fillText(`Worst: ${maxScore.toExponential(3)}`, padding, 35);
         ctx.fillText(`Epochs: ${this.bestScores.length}`, canvas.width - 100, 20);
     }
 
@@ -528,7 +528,15 @@ class OptimizationUI {
             return;
         }
 
-        organisms.forEach(organism => {
+        // Sort organisms by score (lowest/best first)
+        const sortedOrganisms = organisms.slice().sort((a, b) => {
+            // Handle null/undefined scores
+            if (a.score === null || a.score === undefined) return 1;
+            if (b.score === null || b.score === undefined) return -1;
+            return a.score - b.score; // Lower scores are better
+        });
+
+        sortedOrganisms.forEach(organism => {
             const organismEl = document.createElement('div');
             organismEl.className = 'organism-item';
             
@@ -542,7 +550,7 @@ class OptimizationUI {
             const scoreEl = document.createElement('span');
             scoreEl.className = 'organism-score';
             scoreEl.textContent = organism.score !== null && organism.score !== undefined ? 
-                `Score: ${organism.score.toFixed(6)}` : 'Score: N/A';
+                `Score: ${organism.score.toExponential(2)}` : 'Score: N/A';
             
             header.appendChild(idEl);
             header.appendChild(scoreEl);
@@ -586,7 +594,7 @@ class OptimizationUI {
         // Update organism summary
         this.elements.organismDetailId.textContent = organism.id.toString();
         this.elements.organismDetailScore.textContent = organism.score !== null && organism.score !== undefined ? 
-            organism.score.toFixed(8) : 'N/A';
+            organism.score.toExponential(6) : 'N/A';
         this.elements.organismDetailPosition.textContent = `(${organism.params.x.toFixed(6)}, ${organism.params.y.toFixed(6)})`;
         this.elements.organismDetailAge.textContent = `${organism.age} / ${organism.max_age}`;
         this.elements.organismDetailStatus.textContent = organism.is_dead ? 'Dead' : 'Alive';
