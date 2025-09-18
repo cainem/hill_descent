@@ -133,6 +133,8 @@ class OptimizationUI {
             organismDetailAge: document.getElementById('organism-detail-age'),
             organismDetailStatus: document.getElementById('organism-detail-status'),
             organismDetailRegionKey: document.getElementById('organism-detail-region-key'),
+            organismDetailParent1: document.getElementById('organism-detail-parent1'),
+            organismDetailParent2: document.getElementById('organism-detail-parent2'),
             organismTreeview: document.getElementById('organism-treeview'),
         };
     }
@@ -601,6 +603,12 @@ class OptimizationUI {
         this.elements.organismDetailRegionKey.textContent = organism.region_key ?
             `[${organism.region_key.join(', ')}]` : 'None';
 
+        // Display parent information
+        this.elements.organismDetailParent1.textContent = organism.parent_id_1 !== null && organism.parent_id_1 !== undefined ?
+            organism.parent_id_1.toString() : 'None';
+        this.elements.organismDetailParent2.textContent = organism.parent_id_2 !== null && organism.parent_id_2 !== undefined ?
+            organism.parent_id_2.toString() : 'None';
+
         // Build and populate the treeview
         this.buildOrganismTreeview(organism);
     }
@@ -609,82 +617,118 @@ class OptimizationUI {
     buildOrganismTreeview(organism) {
         this.elements.organismTreeview.innerHTML = '';
 
+        // Determine organism type and parent info for display
+        let organismType = 'Root';
+        const hasParent1 = organism.parent_id_1 !== null && organism.parent_id_1 !== undefined;
+        const hasParent2 = organism.parent_id_2 !== null && organism.parent_id_2 !== undefined;
+
+        if (hasParent1 && hasParent2) {
+            organismType = 'Sexual Offspring';
+        } else if (hasParent1) {
+            organismType = 'Asexual Offspring';
+        }
+
         const treeData = {
-            label: 'Phenotype',
-            icon: '🧬',
+            label: 'Organism',
+            icon: '🦠',
             children: [
                 {
-                    label: 'Expressed Values',
-                    icon: '📊',
-                    children: organism.phenotype.expressed_values.map((value, idx) => ({
-                        label: `Value ${idx}`,
-                        icon: '•',
-                        value: value.toFixed(8),
-                        isLeaf: true
-                    }))
-                },
-                {
-                    label: 'Expressed Hash',
-                    icon: '🔢',
-                    value: organism.phenotype.expressed_hash.toString(),
-                    isLeaf: true
-                },
-                {
-                    label: 'System Parameters',
-                    icon: '⚙️',
+                    label: 'Lineage',
+                    icon: '🌳',
                     children: [
-                        { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: organism.phenotype.system_parameters.m1.toFixed(8), isLeaf: true },
-                        { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: organism.phenotype.system_parameters.m2.toFixed(8), isLeaf: true },
-                        { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: organism.phenotype.system_parameters.m3.toFixed(8), isLeaf: true },
-                        { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: organism.phenotype.system_parameters.m4.toFixed(8), isLeaf: true },
-                        { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: organism.phenotype.system_parameters.m5.toFixed(8), isLeaf: true },
-                        { label: 'Max Age', icon: '⏳', value: organism.phenotype.system_parameters.max_age.toFixed(2), isLeaf: true },
-                        { label: 'Crossover Points', icon: '🔀', value: organism.phenotype.system_parameters.crossover_points.toFixed(2), isLeaf: true }
+                        { label: 'Organism Type', icon: '🏷️', value: organismType, isLeaf: true },
+                        {
+                            label: 'Parent 1',
+                            icon: hasParent1 ? '👨' : '❌',
+                            value: hasParent1 ? organism.parent_id_1.toString() : 'None',
+                            isLeaf: true
+                        },
+                        {
+                            label: 'Parent 2',
+                            icon: hasParent2 ? '👩' : '❌',
+                            value: hasParent2 ? organism.parent_id_2.toString() : 'None',
+                            isLeaf: true
+                        }
                     ]
                 },
                 {
-                    label: 'Gamete 1',
+                    label: 'Phenotype',
                     icon: '🧬',
-                    children: organism.phenotype.gamete1.loci.map((locus, idx) => ({
-                        label: `Locus ${idx}`,
-                        icon: '🔗',
-                        children: [
-                            { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
-                            { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
-                            {
-                                label: 'Adjustment',
-                                icon: '⚡',
+                    children: [
+                        {
+                            label: 'Expressed Values',
+                            icon: '📊',
+                            children: organism.phenotype.expressed_values.map((value, idx) => ({
+                                label: `Value ${idx}`,
+                                icon: '•',
+                                value: value.toFixed(8),
+                                isLeaf: true
+                            }))
+                        },
+                        {
+                            label: 'Expressed Hash',
+                            icon: '🔢',
+                            value: organism.phenotype.expressed_hash.toString(),
+                            isLeaf: true
+                        },
+                        {
+                            label: 'System Parameters',
+                            icon: '⚙️',
+                            children: [
+                                { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: organism.phenotype.system_parameters.m1.toFixed(8), isLeaf: true },
+                                { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: organism.phenotype.system_parameters.m2.toFixed(8), isLeaf: true },
+                                { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: organism.phenotype.system_parameters.m3.toFixed(8), isLeaf: true },
+                                { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: organism.phenotype.system_parameters.m4.toFixed(8), isLeaf: true },
+                                { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: organism.phenotype.system_parameters.m5.toFixed(8), isLeaf: true },
+                                { label: 'Max Age', icon: '⏳', value: organism.phenotype.system_parameters.max_age.toFixed(2), isLeaf: true },
+                                { label: 'Crossover Points', icon: '🔀', value: organism.phenotype.system_parameters.crossover_points.toFixed(2), isLeaf: true }
+                            ]
+                        },
+                        {
+                            label: 'Gamete 1',
+                            icon: '🧬',
+                            children: organism.phenotype.gamete1.loci.map((locus, idx) => ({
+                                label: `Locus ${idx}`,
+                                icon: '🔗',
                                 children: [
-                                    { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
-                                    { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
-                                    { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
-                                    { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                    { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                                    { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                                    {
+                                        label: 'Adjustment',
+                                        icon: '⚡',
+                                        children: [
+                                            { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                            { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                            { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                            { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                        ]
+                                    }
                                 ]
-                            }
-                        ]
-                    }))
-                },
-                {
-                    label: 'Gamete 2',
-                    icon: '🧬',
-                    children: organism.phenotype.gamete2.loci.map((locus, idx) => ({
-                        label: `Locus ${idx}`,
-                        icon: '🔗',
-                        children: [
-                            { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
-                            { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
-                            {
-                                label: 'Adjustment',
-                                icon: '⚡',
+                            }))
+                        },
+                        {
+                            label: 'Gamete 2',
+                            icon: '🧬',
+                            children: organism.phenotype.gamete2.loci.map((locus, idx) => ({
+                                label: `Locus ${idx}`,
+                                icon: '🔗',
                                 children: [
-                                    { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
-                                    { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
-                                    { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
-                                    { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                    { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                                    { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                                    {
+                                        label: 'Adjustment',
+                                        icon: '⚡',
+                                        children: [
+                                            { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                            { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                            { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                            { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                        ]
+                                    }
                                 ]
-                            }
-                        ]
-                    }))
+                            }))
+                        }
+                    ]
                 }
             ]
         };

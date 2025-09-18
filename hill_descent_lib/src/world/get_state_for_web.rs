@@ -84,6 +84,8 @@ struct OrganismState {
     score: Option<f64>,
     region_key: Option<Vec<usize>>,
     is_dead: bool,
+    parent_id_1: Option<usize>,
+    parent_id_2: Option<usize>,
     phenotype: PhenotypeState,
 }
 
@@ -188,6 +190,7 @@ impl super::World {
                 let raw_max_age = o.phenotype().system_parameters().max_age();
                 let rounded_max_age = raw_max_age.round() as usize;
 
+                let (parent_id_1, parent_id_2) = o.parent_ids();
                 Some(OrganismState {
                     id: o.id(),
                     params,
@@ -196,6 +199,8 @@ impl super::World {
                     score: o.score(),
                     region_key: o.region_key(),
                     is_dead: o.is_dead(),
+                    parent_id_1,
+                    parent_id_2,
                     phenotype: PhenotypeState::from_phenotype(o.phenotype()),
                 })
             })
