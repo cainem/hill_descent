@@ -1,3 +1,78 @@
+// Smart number formatting utility functions
+class NumberFormatter {
+    /**
+     * Formats a number with smart precision and scientific notation rules
+     * @param {number} num - The number to format
+     * @param {number} maxDecimals - Maximum decimal places for normal format (default: 6)
+     * @returns {string} Formatted number string
+     */
+    static format(num, maxDecimals = 6) {
+        if (num === null || num === undefined || !isFinite(num)) {
+            return 'N/A';
+        }
+
+        if (num === 0) {
+            return '0';
+        }
+
+        const absNum = Math.abs(num);
+        const exponent = Math.floor(Math.log10(absNum));
+
+        // Use normal format for exponents between -3 and +3 (inclusive)
+        if (exponent >= -3 && exponent <= 3) {
+            // For normal format, determine appropriate decimal places
+            let decimals;
+            if (absNum >= 100) {
+                decimals = Math.max(0, maxDecimals - 3); // e.g., 123.456
+            } else if (absNum >= 10) {
+                decimals = Math.max(0, maxDecimals - 2); // e.g., 12.3456
+            } else if (absNum >= 1) {
+                decimals = Math.max(0, maxDecimals - 1); // e.g., 1.23456
+            } else {
+                decimals = maxDecimals + Math.abs(exponent); // e.g., 0.001234
+            }
+            return num.toFixed(decimals).replace(/\.?0+$/, '');
+        } else {
+            // Use scientific notation for numbers outside the range
+            const precision = Math.max(2, maxDecimals - 1);
+            return num.toExponential(precision);
+        }
+    }
+
+    /**
+     * Creates a formatted number element with tooltip showing full precision
+     * @param {number} num - The number to format
+     * @param {number} maxDecimals - Maximum decimal places for display (default: 6)
+     * @returns {HTMLElement} Span element with formatted number and tooltip
+     */
+    static createFormattedElement(num, maxDecimals = 6) {
+        const span = document.createElement('span');
+        span.className = 'formatted-number';
+        span.textContent = NumberFormatter.format(num, maxDecimals);
+
+        if (num !== null && num !== undefined && isFinite(num)) {
+            span.title = num.toExponential(15); // Full precision tooltip
+            span.setAttribute('data-full-value', num.toString());
+        }
+
+        return span;
+    }
+
+    /**
+     * Formats a number and returns both display text and tooltip text
+     * @param {number} num - The number to format  
+     * @param {number} maxDecimals - Maximum decimal places for display (default: 6)
+     * @returns {object} Object with displayText and tooltipText properties
+     */
+    static formatWithTooltip(num, maxDecimals = 6) {
+        return {
+            displayText: NumberFormatter.format(num, maxDecimals),
+            tooltipText: (num !== null && num !== undefined && isFinite(num)) ?
+                num.toExponential(15) : 'N/A'
+        };
+    }
+}
+
 // API client for the hill descent server
 class HillDescentClient {
     constructor(baseUrl = 'http://127.0.0.1:3000') {
@@ -363,7 +438,8 @@ class OptimizationUI {
 
     updateUI(state) {
         this.elements.epochSpan.textContent = state.epoch;
-        this.elements.bestScoreSpan.textContent = state.best_score.toExponential(6);
+        this.elements.bestScoreSpan.innerHTML = '';
+        this.elements.bestScoreSpan.appendChild(NumberFormatter.createFormattedElement(state.best_score));
         this.elements.roundCounter.textContent = state.epoch;
 
         // Update current function display
@@ -446,8 +522,8 @@ class OptimizationUI {
         // Draw labels
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
-        ctx.fillText(`Best: ${minScore.toExponential(3)}`, padding, 20);
-        ctx.fillText(`Worst: ${maxScore.toExponential(3)}`, padding, 35);
+        ctx.fillText(`Best: ${NumberFormatter.format(minScore)}`, padding, 20);
+        ctx.fillText(`Worst: ${NumberFormatter.format(maxScore)}`, padding, 35);
         ctx.fillText(`Epochs: ${this.bestScores.length}`, canvas.width - 100, 20);
     }
 
@@ -490,18 +566,29 @@ class OptimizationUI {
 
     // Update region panel with selected region data
     updateRegionPanel(region, organisms) {
-        const fmtDec = (num) => {
-            if (num === 0) return '0';
-            if (num === null || num === undefined) return 'N/A';
-            return Number(num).toFixed(20).replace(/\.?0+$/, '');
-        };
 
-        // Update region bounds
-        this.elements.regionXBounds.textContent = `[${region.bounds.x[0].toFixed(2)}, ${region.bounds.x[1].toFixed(2)}]`;
-        this.elements.regionYBounds.textContent = `[${region.bounds.y[0].toFixed(2)}, ${region.bounds.y[1].toFixed(2)}]`;
+        // Update region bounds with tooltips
+        this.elements.regionXBounds.innerHTML = '';
+        const xBoundsContainer = document.createElement('span');
+        xBoundsContainer.textContent = '[';
+        xBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.x[0]));
+        xBoundsContainer.appendChild(document.createTextNode(', '));
+        xBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.x[1]));
+        xBoundsContainer.appendChild(document.createTextNode(']'));
+        this.elements.regionXBounds.appendChild(xBoundsContainer);
 
-        // Update region statistics
-        this.elements.regionMinScore.textContent = fmtDec(region.min_score);
+        this.elements.regionYBounds.innerHTML = '';
+        const yBoundsContainer = document.createElement('span');
+        yBoundsContainer.textContent = '[';
+        yBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.y[0]));
+        yBoundsContainer.appendChild(document.createTextNode(', '));
+        yBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.y[1]));
+        yBoundsContainer.appendChild(document.createTextNode(']'));
+        this.elements.regionYBounds.appendChild(yBoundsContainer);
+
+        // Update region statistics with tooltip
+        this.elements.regionMinScore.innerHTML = '';
+        this.elements.regionMinScore.appendChild(NumberFormatter.createFormattedElement(region.min_score));
         this.elements.regionCapacity.textContent = region.carrying_capacity.toString();
         this.elements.regionPopulation.textContent = organisms.length.toString();
 
@@ -551,20 +638,43 @@ class OptimizationUI {
 
             const scoreEl = document.createElement('span');
             scoreEl.className = 'organism-score';
-            scoreEl.textContent = organism.score !== null && organism.score !== undefined ?
-                `Score: ${organism.score.toExponential(2)}` : 'Score: N/A';
+            if (organism.score !== null && organism.score !== undefined) {
+                scoreEl.textContent = 'Score: ';
+                scoreEl.appendChild(NumberFormatter.createFormattedElement(organism.score));
+            } else {
+                scoreEl.textContent = 'Score: N/A';
+            }
 
             header.appendChild(idEl);
             header.appendChild(scoreEl);
 
             const details = document.createElement('div');
             details.className = 'organism-details';
-            details.innerHTML = `
-                <span>X: ${organism.params.x.toFixed(4)}</span>
-                <span>Y: ${organism.params.y.toFixed(4)}</span>
-                <span>Age: ${organism.age}/${organism.max_age}</span>
-                <span>Age %: ${((organism.age / organism.max_age) * 100).toFixed(1)}%</span>
-            `;
+
+            // Create X coordinate span
+            const xSpan = document.createElement('span');
+            xSpan.textContent = 'X: ';
+            xSpan.appendChild(NumberFormatter.createFormattedElement(organism.params.x));
+
+            // Create Y coordinate span  
+            const ySpan = document.createElement('span');
+            ySpan.textContent = 'Y: ';
+            ySpan.appendChild(NumberFormatter.createFormattedElement(organism.params.y));
+
+            // Create age span (no tooltip needed for integers)
+            const ageSpan = document.createElement('span');
+            ageSpan.textContent = `Age: ${organism.age}/${organism.max_age}`;
+
+            // Create age percentage span
+            const agePctSpan = document.createElement('span');
+            agePctSpan.textContent = 'Age %: ';
+            agePctSpan.appendChild(NumberFormatter.createFormattedElement((organism.age / organism.max_age) * 100));
+            agePctSpan.appendChild(document.createTextNode('%'));
+
+            details.appendChild(xSpan);
+            details.appendChild(ySpan);
+            details.appendChild(ageSpan);
+            details.appendChild(agePctSpan);
 
             organismEl.appendChild(header);
             organismEl.appendChild(details);
@@ -595,9 +705,21 @@ class OptimizationUI {
     updateOrganismModal(organism) {
         // Update organism summary
         this.elements.organismDetailId.textContent = organism.id.toString();
-        this.elements.organismDetailScore.textContent = organism.score !== null && organism.score !== undefined ?
-            organism.score.toExponential(6) : 'N/A';
-        this.elements.organismDetailPosition.textContent = `(${organism.params.x.toFixed(6)}, ${organism.params.y.toFixed(6)})`;
+
+        // Score with tooltip
+        this.elements.organismDetailScore.innerHTML = '';
+        this.elements.organismDetailScore.appendChild(NumberFormatter.createFormattedElement(organism.score));
+
+        // Position with tooltips
+        this.elements.organismDetailPosition.innerHTML = '';
+        const posContainer = document.createElement('span');
+        posContainer.textContent = '(';
+        posContainer.appendChild(NumberFormatter.createFormattedElement(organism.params.x));
+        posContainer.appendChild(document.createTextNode(', '));
+        posContainer.appendChild(NumberFormatter.createFormattedElement(organism.params.y));
+        posContainer.appendChild(document.createTextNode(')'));
+        this.elements.organismDetailPosition.appendChild(posContainer);
+
         this.elements.organismDetailAge.textContent = `${organism.age} / ${organism.max_age}`;
         this.elements.organismDetailStatus.textContent = organism.is_dead ? 'Dead' : 'Alive';
         this.elements.organismDetailRegionKey.textContent = organism.region_key ?
@@ -661,7 +783,8 @@ class OptimizationUI {
                             children: organism.phenotype.expressed_values.map((value, idx) => ({
                                 label: `Value ${idx}`,
                                 icon: '•',
-                                value: value.toFixed(8),
+                                value: NumberFormatter.format(value),
+                                fullValue: value,
                                 isLeaf: true
                             }))
                         },
@@ -675,13 +798,13 @@ class OptimizationUI {
                             label: 'System Parameters',
                             icon: '⚙️',
                             children: [
-                                { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: organism.phenotype.system_parameters.m1.toFixed(8), isLeaf: true },
-                                { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: organism.phenotype.system_parameters.m2.toFixed(8), isLeaf: true },
-                                { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: organism.phenotype.system_parameters.m3.toFixed(8), isLeaf: true },
-                                { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: organism.phenotype.system_parameters.m4.toFixed(8), isLeaf: true },
-                                { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: organism.phenotype.system_parameters.m5.toFixed(8), isLeaf: true },
-                                { label: 'Max Age', icon: '⏳', value: organism.phenotype.system_parameters.max_age.toFixed(2), isLeaf: true },
-                                { label: 'Crossover Points', icon: '🔀', value: organism.phenotype.system_parameters.crossover_points.toFixed(2), isLeaf: true }
+                                { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m1), fullValue: organism.phenotype.system_parameters.m1, isLeaf: true },
+                                { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m2), fullValue: organism.phenotype.system_parameters.m2, isLeaf: true },
+                                { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m3), fullValue: organism.phenotype.system_parameters.m3, isLeaf: true },
+                                { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m4), fullValue: organism.phenotype.system_parameters.m4, isLeaf: true },
+                                { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m5), fullValue: organism.phenotype.system_parameters.m5, isLeaf: true },
+                                { label: 'Max Age', icon: '⏳', value: NumberFormatter.format(organism.phenotype.system_parameters.max_age), fullValue: organism.phenotype.system_parameters.max_age, isLeaf: true },
+                                { label: 'Crossover Points', icon: '🔀', value: NumberFormatter.format(organism.phenotype.system_parameters.crossover_points), fullValue: organism.phenotype.system_parameters.crossover_points, isLeaf: true }
                             ]
                         },
                         {
@@ -691,13 +814,13 @@ class OptimizationUI {
                                 label: `Locus ${idx}`,
                                 icon: '🔗',
                                 children: [
-                                    { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                                    { label: 'Value', icon: '📊', value: NumberFormatter.format(locus.value), fullValue: locus.value, isLeaf: true },
                                     { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
                                     {
                                         label: 'Adjustment',
                                         icon: '⚡',
                                         children: [
-                                            { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                            { label: 'Adjustment Value', icon: '📊', value: NumberFormatter.format(locus.adjustment.adjustment_value), fullValue: locus.adjustment.adjustment_value, isLeaf: true },
                                             { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
                                             { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
                                             { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
@@ -713,13 +836,13 @@ class OptimizationUI {
                                 label: `Locus ${idx}`,
                                 icon: '🔗',
                                 children: [
-                                    { label: 'Value', icon: '📊', value: locus.value.toFixed(8), isLeaf: true },
+                                    { label: 'Value', icon: '📊', value: NumberFormatter.format(locus.value), fullValue: locus.value, isLeaf: true },
                                     { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
                                     {
                                         label: 'Adjustment',
                                         icon: '⚡',
                                         children: [
-                                            { label: 'Adjustment Value', icon: '📊', value: locus.adjustment.adjustment_value.toFixed(8), isLeaf: true },
+                                            { label: 'Adjustment Value', icon: '📊', value: NumberFormatter.format(locus.adjustment.adjustment_value), fullValue: locus.adjustment.adjustment_value, isLeaf: true },
                                             { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
                                             { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
                                             { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
@@ -768,7 +891,13 @@ class OptimizationUI {
         const valueEl = document.createElement('div');
         valueEl.className = 'tree-node-value';
         if (node.value !== undefined) {
-            valueEl.textContent = node.value;
+            if (node.fullValue !== undefined) {
+                // Use formatted number with tooltip for numeric values
+                const formattedElement = NumberFormatter.createFormattedElement(node.fullValue);
+                valueEl.appendChild(formattedElement);
+            } else {
+                valueEl.textContent = node.value;
+            }
         }
 
         headerEl.appendChild(toggleEl);
@@ -816,7 +945,13 @@ class OptimizationUI {
 
                     const leafValueEl = document.createElement('div');
                     leafValueEl.className = 'tree-node-value';
-                    leafValueEl.textContent = child.value || '';
+                    if (child.fullValue !== undefined) {
+                        // Use formatted number with tooltip for numeric values
+                        const formattedElement = NumberFormatter.createFormattedElement(child.fullValue);
+                        leafValueEl.appendChild(formattedElement);
+                    } else {
+                        leafValueEl.textContent = child.value || '';
+                    }
 
                     leafHeaderEl.appendChild(leafIconEl);
                     leafHeaderEl.appendChild(leafLabelEl);
@@ -906,10 +1041,7 @@ class OptimizationUI {
         const regionsSel = this.gRegions.selectAll('.region')
             .data(state.regions || [], d => `${d.bounds.x}-${d.bounds.y}`);
 
-        const fmtDec = (num) => {
-            if (num === 0) return '0';
-            return Number(num).toFixed(20).replace(/\.?0+$/, '');
-        };
+
 
         regionsSel.enter().append('rect')
             .attr('class', 'region')
@@ -1014,10 +1146,10 @@ class OptimizationUI {
 
         // Corner coordinate labels (show current view bounds)
         const corners = [
-            { key: 'tl', x: 0, y: 0, label: `(${xMin.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'start', vy: '1em' },
-            { key: 'tr', x: width, y: 0, label: `(${xMax.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'end', vy: '1em' },
-            { key: 'bl', x: 0, y: height, label: `(${xMin.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'start', vy: '-0.3em' },
-            { key: 'br', x: width, y: height, label: `(${xMax.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'end', vy: '-0.3em' },
+            { key: 'tl', x: 0, y: 0, label: `(${NumberFormatter.format(xMin)}, ${NumberFormatter.format(yMax)})`, anchor: 'start', vy: '1em' },
+            { key: 'tr', x: width, y: 0, label: `(${NumberFormatter.format(xMax)}, ${NumberFormatter.format(yMax)})`, anchor: 'end', vy: '1em' },
+            { key: 'bl', x: 0, y: height, label: `(${NumberFormatter.format(xMin)}, ${NumberFormatter.format(yMin)})`, anchor: 'start', vy: '-0.3em' },
+            { key: 'br', x: width, y: height, label: `(${NumberFormatter.format(xMax)}, ${NumberFormatter.format(yMin)})`, anchor: 'end', vy: '-0.3em' },
         ];
 
         const cornerSel = this.gCorners.selectAll('.corner-label').data(corners, d => d.key);

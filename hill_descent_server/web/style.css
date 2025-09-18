@@ -581,3 +581,47 @@ button:disabled {
 .tree-level-4 {
     border-left-color: #6f42c1;
 }
+
+/* Formatted number with tooltip styling */
+.formatted-number {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dotted #666;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 0.9em;
+}
+
+.formatted-number:hover {
+    background-color: #f0f8ff;
+    border-bottom-color: #007bff;
+}
+
+/* Enhanced browser tooltip for full precision numbers */
+.formatted-number[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.formatted-number[title]:hover::before {
+    content: "";
+    position: absolute;
+    bottom: 94%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+    pointer-events: none;
+}
