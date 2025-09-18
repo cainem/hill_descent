@@ -73,7 +73,7 @@ mod tests {
     fn create_organism_with_score_and_key(score: Option<f64>, key: Option<Vec<usize>>) -> Organism {
         let phenotype = Phenotype::new_for_test(vec![0.0; 7]);
         {
-            let organism = Organism::new(Rc::new(phenotype), 0);
+            let organism = Organism::new(Rc::new(phenotype), 0, (None, None));
             organism.set_score(score);
             organism.set_region_key(key);
             organism

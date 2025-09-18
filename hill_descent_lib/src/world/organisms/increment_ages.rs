@@ -24,7 +24,7 @@ mod tests {
         expressed[5] = max_age; // system parameter index for max_age
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
         let organisms: Vec<Organism> = (0..count)
-            .map(|_| Organism::new(Rc::clone(&phenotype), 0))
+            .map(|_| Organism::new(Rc::clone(&phenotype), 0, (None, None)))
             .collect();
         Organisms::new_from_organisms(organisms)
     }

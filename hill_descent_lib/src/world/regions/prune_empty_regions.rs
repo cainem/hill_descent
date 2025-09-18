@@ -30,7 +30,7 @@ mod tests {
             2.0,   // crossover_points
         ];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
-        Rc::new(Organism::new(Rc::clone(&phenotype), 0))
+        Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)))
     }
 
     #[test]

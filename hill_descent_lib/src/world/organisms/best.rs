@@ -26,7 +26,7 @@ mod tests {
     fn make_scored_organism(score: f64) -> Organism {
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), 0);
+        let org = Organism::new(Rc::clone(&phenotype), 0, (None, None));
         org.set_score(Some(score));
         org
     }
@@ -47,7 +47,7 @@ mod tests {
     fn given_no_scores_when_best_then_returns_none() {
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org1 = Organism::new(Rc::clone(&phenotype), 0);
+        let org1 = Organism::new(Rc::clone(&phenotype), 0, (None, None));
         let org2 = org1.clone();
         let orgs = Organisms::new_from_organisms(vec![org1, org2]);
 

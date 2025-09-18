@@ -53,24 +53,6 @@ impl Clone for Organism {
 }
 
 impl Organism {
-    /// Creates a new `Organism`.
-    ///
-    /// # Arguments
-    ///
-    /// * `phenotype` - The phenotype of the organism, wrapped in an `Rc` for shared ownership.
-    /// * `age` - The initial age of the organism.
-    pub fn new(phenotype: Rc<Phenotype>, age: usize) -> Self {
-        Self {
-            id: NEXT_ORGANISM_ID.fetch_add(1, Ordering::Relaxed),
-            parent_ids: (None, None), // Root organism - no parents
-            region_key: Mutex::new(None),
-            score: Mutex::new(None),
-            phenotype,
-            age: AtomicUsize::new(age),
-            is_dead: AtomicBool::new(false),
-        }
-    }
-
     /// Creates a new `Organism` with parent tracking for pedigree.
     ///
     /// # Arguments
@@ -81,7 +63,7 @@ impl Organism {
     ///   - Asexual reproduction: `(Some(parent_id), None)`
     ///   - Sexual reproduction: `(Some(parent1_id), Some(parent2_id))`
     ///   - Root/initial organisms: `(None, None)`
-    pub fn new_with_parents(
+    pub fn new(
         phenotype: Rc<Phenotype>,
         age: usize,
         parent_ids: (Option<usize>, Option<usize>),
@@ -193,7 +175,7 @@ mod tests {
     #[test]
     fn given_new_organism_with_age_when_age_is_checked_then_it_is_correct() {
         let phenotype = Rc::new(create_test_phenotype());
-        let organism = Organism::new(phenotype, 5);
+        let organism = Organism::new(phenotype, 5, (None, None));
         assert_eq!(organism.age(), 5);
         assert!(!organism.is_dead());
     }
@@ -201,7 +183,7 @@ mod tests {
     #[test]
     fn given_organism_when_mark_dead_then_is_dead_returns_true() {
         let phenotype = Rc::new(create_test_phenotype());
-        let organism = Organism::new(phenotype, 0);
+        let organism = Organism::new(phenotype, 0, (None, None));
         organism.mark_dead();
         assert!(organism.is_dead());
     }
@@ -209,7 +191,7 @@ mod tests {
     #[test]
     fn given_organism_created_with_new_when_parent_methods_called_then_returns_root_values() {
         let phenotype = Rc::new(create_test_phenotype());
-        let organism = Organism::new(phenotype, 0);
+        let organism = Organism::new(phenotype, 0, (None, None));
 
         assert!(organism.is_root());
         assert_eq!(organism.parent_count(), 0);
@@ -217,11 +199,11 @@ mod tests {
     }
 
     #[test]
-    fn given_organism_created_with_new_with_parents_asexual_when_parent_methods_called_then_returns_correct_values()
+    fn given_organism_created_with_new_asexual_when_parent_methods_called_then_returns_correct_values()
      {
         let phenotype = Rc::new(create_test_phenotype());
         let parent_id = 123;
-        let organism = Organism::new_with_parents(phenotype, 5, (Some(parent_id), None));
+        let organism = Organism::new(phenotype, 5, (Some(parent_id), None));
 
         assert!(!organism.is_root());
         assert_eq!(organism.parent_count(), 1);
@@ -230,13 +212,12 @@ mod tests {
     }
 
     #[test]
-    fn given_organism_created_with_new_with_parents_sexual_when_parent_methods_called_then_returns_correct_values()
+    fn given_organism_created_with_new_sexual_when_parent_methods_called_then_returns_correct_values()
      {
         let phenotype = Rc::new(create_test_phenotype());
         let parent1_id = 123;
         let parent2_id = 456;
-        let organism =
-            Organism::new_with_parents(phenotype, 10, (Some(parent1_id), Some(parent2_id)));
+        let organism = Organism::new(phenotype, 10, (Some(parent1_id), Some(parent2_id)));
 
         assert!(!organism.is_root());
         assert_eq!(organism.parent_count(), 2);
@@ -245,10 +226,9 @@ mod tests {
     }
 
     #[test]
-    fn given_organism_created_with_new_with_parents_root_when_parent_methods_called_then_returns_root_values()
-     {
+    fn given_organism_created_with_new_root_when_parent_methods_called_then_returns_root_values() {
         let phenotype = Rc::new(create_test_phenotype());
-        let organism = Organism::new_with_parents(phenotype, 7, (None, None));
+        let organism = Organism::new(phenotype, 7, (None, None));
 
         assert!(organism.is_root());
         assert_eq!(organism.parent_count(), 0);
@@ -262,8 +242,7 @@ mod tests {
         let phenotype = Rc::new(create_test_phenotype());
         let parent1_id = 789;
         let parent2_id = 101112;
-        let original =
-            Organism::new_with_parents(phenotype, 3, (Some(parent1_id), Some(parent2_id)));
+        let original = Organism::new(phenotype, 3, (Some(parent1_id), Some(parent2_id)));
 
         let cloned = original.clone();
 

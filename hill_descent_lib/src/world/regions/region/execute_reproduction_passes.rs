@@ -45,7 +45,7 @@ impl Region {
             if selected.len() % 2 == 1 && offspring.len() < offspring_this_pass {
                 let parent = &selected[0];
                 let child_pheno = parent.phenotype().asexual_reproduction(rng);
-                offspring.push(Organism::new_with_parents(
+                offspring.push(Organism::new(
                     Rc::new(child_pheno),
                     0,
                     (Some(parent.id()), None), // Asexual: one parent
@@ -62,13 +62,13 @@ impl Region {
                 if let [p1, p2] = chunk {
                     let (c1, c2) =
                         Phenotype::sexual_reproduction(p1.phenotype(), p2.phenotype(), rng);
-                    offspring.push(Organism::new_with_parents(
+                    offspring.push(Organism::new(
                         Rc::new(c1),
                         0,
                         (Some(p1.id()), Some(p2.id())), // Sexual: two parents
                     ));
                     if offspring.len() < offspring_this_pass {
-                        offspring.push(Organism::new_with_parents(
+                        offspring.push(Organism::new(
                             Rc::new(c2),
                             0,
                             (Some(p1.id()), Some(p2.id())), // Sexual: two parents
@@ -99,7 +99,7 @@ mod tests {
         // Expressed values: default 7 system parameters + one dummy problem param
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), age);
+        let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));
         Rc::new(org)
     }

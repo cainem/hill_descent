@@ -123,7 +123,7 @@ mod tests {
     }
 
     fn make_org(score: Option<f64>, age: usize) -> Rc<Organism> {
-        let o = Organism::new(test_phenotype(), age);
+        let o = Organism::new(test_phenotype(), age, (None, None));
         o.set_score(score);
         Rc::new(o)
     }

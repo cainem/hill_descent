@@ -108,8 +108,8 @@ mod tests {
     fn given_dead_organism_when_organisms_retain_live_then_removed() {
         let phenotype = Rc::new(Phenotype::new_for_test(default_sys_params()));
         let mut organisms = Organisms::new_from_organisms(vec![
-            Organism::new(Rc::clone(&phenotype), 0),
-            Organism::new(Rc::clone(&phenotype), 0),
+            Organism::new(Rc::clone(&phenotype), 0, (None, None)),
+            Organism::new(Rc::clone(&phenotype), 0, (None, None)),
         ]);
         organisms.iter().next().unwrap().mark_dead();
         organisms.retain_live();
@@ -121,8 +121,8 @@ mod tests {
     fn given_dead_organism_in_region_when_region_retain_live_then_removed() {
         use crate::world::regions::region::Region;
         let phenotype = Rc::new(Phenotype::new_for_test(default_sys_params()));
-        let live = Rc::new(Organism::new(Rc::clone(&phenotype), 0));
-        let dead = Rc::new(Organism::new(Rc::clone(&phenotype), 0));
+        let live = Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)));
+        let dead = Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)));
         dead.mark_dead();
         let mut region = Region::new();
         region.add_organism(Rc::clone(&live));

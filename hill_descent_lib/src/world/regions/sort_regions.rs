@@ -43,7 +43,7 @@ mod tests {
         // Create phenotype with default system parameters + one problem parameter
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let organism = Organism::new(phenotype, age);
+        let organism = Organism::new(phenotype, age, (None, None));
         organism.set_score(Some(score));
         Rc::new(organism)
     }

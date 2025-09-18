@@ -46,7 +46,7 @@ impl Organisms {
                         0
                     };
 
-                    Rc::new(Organism::new_with_parents(Rc::new(p), age, (None, None)))
+                    Rc::new(Organism::new(Rc::new(p), age, (None, None)))
                 })
                 .collect(),
         }

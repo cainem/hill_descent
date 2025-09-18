@@ -72,7 +72,7 @@ mod tests {
     }
 
     fn create_test_organism(phenotype: Phenotype) -> Rc<Organism> {
-        Rc::new(Organism::new(Rc::new(phenotype), 0))
+        Rc::new(Organism::new(Rc::new(phenotype), 0, (None, None)))
     }
 
     #[test]

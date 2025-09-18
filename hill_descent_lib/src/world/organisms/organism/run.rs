@@ -84,7 +84,7 @@ mod tests {
         let all_params = enhance_parameters(&user_defined_parameters);
         let expressed_values: Vec<f64> = all_params.iter().map(|p| *p.start()).collect();
         let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
-        Organism::new(phenotype, 0)
+        Organism::new(phenotype, 0, (None, None))
     }
 
     #[test]
