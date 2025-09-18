@@ -465,11 +465,11 @@ class OptimizationUI {
 
     // Helper method to check if two regions are the same
     isRegionSelected(region) {
-        return this.selectedRegion && 
-               this.selectedRegion.bounds.x[0] === region.bounds.x[0] && 
-               this.selectedRegion.bounds.x[1] === region.bounds.x[1] && 
-               this.selectedRegion.bounds.y[0] === region.bounds.y[0] && 
-               this.selectedRegion.bounds.y[1] === region.bounds.y[1];
+        return this.selectedRegion &&
+            this.selectedRegion.bounds.x[0] === region.bounds.x[0] &&
+            this.selectedRegion.bounds.x[1] === region.bounds.x[1] &&
+            this.selectedRegion.bounds.y[0] === region.bounds.y[0] &&
+            this.selectedRegion.bounds.y[1] === region.bounds.y[1];
     }
 
     // Show region detail panel
@@ -539,22 +539,22 @@ class OptimizationUI {
         sortedOrganisms.forEach(organism => {
             const organismEl = document.createElement('div');
             organismEl.className = 'organism-item';
-            
+
             const header = document.createElement('div');
             header.className = 'organism-header';
-            
+
             const idEl = document.createElement('span');
             idEl.className = 'organism-id';
             idEl.textContent = `ID: ${organism.id}`;
-            
+
             const scoreEl = document.createElement('span');
             scoreEl.className = 'organism-score';
-            scoreEl.textContent = organism.score !== null && organism.score !== undefined ? 
+            scoreEl.textContent = organism.score !== null && organism.score !== undefined ?
                 `Score: ${organism.score.toExponential(2)}` : 'Score: N/A';
-            
+
             header.appendChild(idEl);
             header.appendChild(scoreEl);
-            
+
             const details = document.createElement('div');
             details.className = 'organism-details';
             details.innerHTML = `
@@ -563,16 +563,16 @@ class OptimizationUI {
                 <span>Age: ${organism.age}/${organism.max_age}</span>
                 <span>Age %: ${((organism.age / organism.max_age) * 100).toFixed(1)}%</span>
             `;
-            
+
             organismEl.appendChild(header);
             organismEl.appendChild(details);
-            
+
             // Click handler for detailed organism view
             organismEl.addEventListener('click', () => {
                 this.showOrganismModal();
                 this.updateOrganismModal(organism);
             });
-            
+
             this.elements.organismList.appendChild(organismEl);
         });
     }
@@ -593,12 +593,12 @@ class OptimizationUI {
     updateOrganismModal(organism) {
         // Update organism summary
         this.elements.organismDetailId.textContent = organism.id.toString();
-        this.elements.organismDetailScore.textContent = organism.score !== null && organism.score !== undefined ? 
+        this.elements.organismDetailScore.textContent = organism.score !== null && organism.score !== undefined ?
             organism.score.toExponential(6) : 'N/A';
         this.elements.organismDetailPosition.textContent = `(${organism.params.x.toFixed(6)}, ${organism.params.y.toFixed(6)})`;
         this.elements.organismDetailAge.textContent = `${organism.age} / ${organism.max_age}`;
         this.elements.organismDetailStatus.textContent = organism.is_dead ? 'Dead' : 'Alive';
-        this.elements.organismDetailRegionKey.textContent = organism.region_key ? 
+        this.elements.organismDetailRegionKey.textContent = organism.region_key ?
             `[${organism.region_key.join(', ')}]` : 'None';
 
         // Build and populate the treeview
@@ -758,27 +758,27 @@ class OptimizationUI {
                 if (child.isLeaf) {
                     const leafEl = document.createElement('div');
                     leafEl.className = `tree-node-leaf tree-level-${(level + 1) % 5}`;
-                    
+
                     const leafHeaderEl = document.createElement('div');
                     leafHeaderEl.className = 'tree-node-header';
-                    
+
                     const leafIconEl = document.createElement('div');
                     leafIconEl.className = 'tree-node-icon';
                     leafIconEl.textContent = child.icon || '•';
-                    
+
                     const leafLabelEl = document.createElement('div');
                     leafLabelEl.className = 'tree-node-label';
                     leafLabelEl.textContent = child.label;
-                    
+
                     const leafValueEl = document.createElement('div');
                     leafValueEl.className = 'tree-node-value';
                     leafValueEl.textContent = child.value || '';
-                    
+
                     leafHeaderEl.appendChild(leafIconEl);
                     leafHeaderEl.appendChild(leafLabelEl);
                     leafHeaderEl.appendChild(leafValueEl);
                     leafEl.appendChild(leafHeaderEl);
-                    
+
                     childrenEl.appendChild(leafEl);
                 } else {
                     this.renderTreeNode(child, childrenEl, level + 1);
@@ -794,7 +794,7 @@ class OptimizationUI {
     // Ported rendering logic from main_old.js adjusted for server JSON
     updateVisualization(state) {
         if (!this.svg) return;
-        
+
         // Store current state for region selection updates
         this.currentState = state;
 
@@ -885,22 +885,22 @@ class OptimizationUI {
             .on('click', (event, d) => {
                 // Stop event propagation to prevent clearing selection
                 event.stopPropagation();
-                
+
                 // Toggle selection
                 if (this.isRegionSelected(d)) {
                     this.selectedRegion = null;
                     this.hideRegionPanel();
                 } else {
                     this.selectedRegion = d;
-                    
+
                     // Find organisms in this region
                     const organismsInRegion = (state.organisms || []).filter(o => isOrgInRegion(o, d));
-                    
+
                     // Show and update the region panel
                     this.showRegionPanel();
                     this.updateRegionPanel(d, organismsInRegion);
                 }
-                
+
                 // Update visualization to show selection state
                 this.updateVisualization(this.currentState);
             });
@@ -1008,7 +1008,7 @@ class OptimizationUI {
             .on('click', (event, d) => {
                 // Stop event propagation to prevent background clearing
                 event.stopPropagation();
-                
+
                 // Show organism detail modal
                 this.showOrganismModal();
                 this.updateOrganismModal(d);

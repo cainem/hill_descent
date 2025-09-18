@@ -246,11 +246,15 @@ button:disabled {
     padding: 20px;
 }
 
-.region-info, .region-stats, .organism-section {
+.region-info,
+.region-stats,
+.organism-section {
     margin-bottom: 25px;
 }
 
-.region-info h4, .region-stats h4, .organism-section h4 {
+.region-info h4,
+.region-stats h4,
+.organism-section h4 {
     margin: 0 0 15px 0;
     color: #555;
     font-size: 16px;
@@ -558,8 +562,22 @@ button:disabled {
 }
 
 /* Different colors for different tree levels */
-.tree-level-0 { border-left-color: #007bff; }
-.tree-level-1 { border-left-color: #28a745; }
-.tree-level-2 { border-left-color: #ffc107; }
-.tree-level-3 { border-left-color: #dc3545; }
-.tree-level-4 { border-left-color: #6f42c1; }
+.tree-level-0 {
+    border-left-color: #007bff;
+}
+
+.tree-level-1 {
+    border-left-color: #28a745;
+}
+
+.tree-level-2 {
+    border-left-color: #ffc107;
+}
+
+.tree-level-3 {
+    border-left-color: #dc3545;
+}
+
+.tree-level-4 {
+    border-left-color: #6f42c1;
+}
