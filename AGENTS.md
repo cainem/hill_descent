@@ -50,7 +50,7 @@ Product definition is documented in `hill_descent_lib/pdd.md`.
 ## Before commit code to the repository
 - Ensure `cargo fmt` has been run
 - Ensure all tests pass: `cargo test`
-- Ensure linting passes: `cargo clippy` and `cargo clippy --tests`. Address any warnings or errors.
+- Ensure linting passes: `cargo clippy` and `cargo clippy --tests`. Consider fixing warnings and errors as necessary changes.
 - Ensure code adheres to all outlined standards and guidelines
 - Ensure commit messages are clear and descriptive
 - Ensure all changed functions and structs have appropriate tests with full coverage
