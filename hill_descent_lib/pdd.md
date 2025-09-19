@@ -113,7 +113,7 @@ An organism is defined by its DNA, which determines its position in the n-dimens
     *   Unoccupied regions resulting from division are of no interest.
 
 **4.2.3. Bounding Box:** 
-* An n-dimensional hyperrectangle that encompasses all organisms in the population.  
+* An n-dimensional hyperrectangles that encompasses all organisms in the population.  
 * Initial Bounding Box: Calculated at startup to be twice the size (in each dimension) required to hold all initial organisms.  
 * Recalculation: If any new organism (offspring) falls outside the current bounding box, a new bounding box is calculated (again, twice the required size in each dimension), and all regions are recalculated.
 
@@ -232,7 +232,7 @@ The system proceeds in discrete rounds. Each round involves:
     * If previously empty regions become populated or populated regions become empty (due to births/deaths): Recalculate carrying capacities for all populated regions using the fitness-based allocation system.  
     * If the number of populated regions exceeds `Z`: Trigger a full recalculation of regions (and subsequently carrying capacities).
 
-**5.2.6. Aging and Death:** 
+**5.2.6. Ageing and Death:** 
 * Remove any organisms that have reached their maximum age ($A_{max}$).  
 * Increment the age of all surviving organisms by one round.
 
@@ -261,7 +261,7 @@ The system proceeds in discrete rounds. Each round involves:
 * Number of crossovers per gamete during sexual reproduction (predetermined constant).  
 * `K`: Number of unique problem sets (and thus number of rounds for main run).  
 * `S`: Size of the sample of problem sets used for final solution extraction.  
-* Seed for the pseudo-random number generator.
+* Seed for the pseudo-random number generator (configurable via GlobalConstants).
 
 **6.2. Evolvable Parameters (Part of the `n` dimensions):** 
 * Mutation probabilities: $m_1, m_2, m_3, m_4, m_5$.  
@@ -289,7 +289,7 @@ The system proceeds in discrete rounds. Each round involves:
 
 **7.2. Pseudo-Random Number Generation:** 
 * All random numbers (for initialization, mutation choices, crossover points, locus expression tie-breaking) are provided by a pseudo-random number generator (PRNG).  
-* The PRNG is seeded with a constant to ensure repeatability of runs.
+* The PRNG is seeded with a configurable value (via GlobalConstants) to ensure repeatability of runs.
 
 **7.3. Hashing:** 
 * The XXH3 algorithm is used to generate 64-bit positive integer checksums for `LocusAdjustment` states.
