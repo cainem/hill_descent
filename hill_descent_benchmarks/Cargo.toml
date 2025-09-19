@@ -1,0 +1,9 @@
+[package]
+name = "hill_descent_benchmarks"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hill_descent_lib = { path = "../hill_descent_lib" }
+rand = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
