@@ -4,22 +4,25 @@ use std::io::Write;
 use std::path::Path;
 
 /// Generate a timestamped filename for the algorithm results
-pub fn generate_filename(algorithm_name: &str) -> String {
+/// Generate a year-month subdirectory and timestamped filename for the algorithm results
+pub fn generate_subdir_and_filename(algorithm_name: &str) -> (String, String) {
     let now = chrono::Local::now();
-    format!("{}_{}.md", now.format("%Y%m%d_%H%M%S"), algorithm_name)
+    let subdir = now.format("%Y-%m").to_string();
+    let filename = format!("{}_{}.md", now.format("%Y%m%d_%H%M%S"), algorithm_name);
+    (subdir, filename)
 }
 
 /// Write algorithm results to a markdown file in the run_stats directory
+
 pub fn write_results_to_file(
     results: &AlgorithmResults,
     run_stats_dir: &Path,
 ) -> Result<(), std::io::Error> {
-    // Ensure the run_stats directory exists
-    fs::create_dir_all(run_stats_dir)?;
-
-    let filename = generate_filename(&results.algorithm_name);
-    let filepath = run_stats_dir.join(filename);
-
+    // Determine year-month subdirectory and filename
+    let (subdir, filename) = generate_subdir_and_filename(&results.algorithm_name);
+    let subdir_path = run_stats_dir.join(subdir);
+    fs::create_dir_all(&subdir_path)?;
+    let filepath = subdir_path.join(filename);
     let mut file = fs::File::create(&filepath)?;
 
     // Write header with timestamp and algorithm info

@@ -24,7 +24,7 @@ impl SingleValuedFunction for Ackley {
 }
 
 #[test]
-#[ignore] // This test demonstrates proper seeded convergence and should be run explicitly
+//#[ignore] // This test demonstrates proper seeded convergence and should be run explicitly
 pub fn given_ackley_with_small_population_when_properly_seeded_then_converges() {
     // Test that Ackley function converges with proper seeding:
     // Population: 100, Regions: 10, Seed: 2

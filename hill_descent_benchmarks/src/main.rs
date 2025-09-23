@@ -2,7 +2,10 @@ mod algorithms;
 mod output;
 mod runner;
 
-use algorithms::{AckleyAlgorithm, BenchmarkAlgorithm, HimmelblauAlgorithm};
+use algorithms::{
+    AckleyAlgorithm, BenchmarkAlgorithm, BukinN6Algorithm, HimmelblauAlgorithm, LeviN13Algorithm,
+    RastriginAlgorithm, SchafferN2Algorithm, StyblinskiTangAlgorithm,
+};
 use output::write_results_to_file;
 use runner::benchmark_algorithm;
 use std::path::Path;
@@ -16,8 +19,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let run_stats_dir = Path::new("run_stats");
 
     // List of algorithms to benchmark
-    let algorithms: Vec<Box<dyn BenchmarkAlgorithm>> =
-        vec![Box::new(HimmelblauAlgorithm), Box::new(AckleyAlgorithm)];
+    let algorithms: Vec<Box<dyn BenchmarkAlgorithm>> = vec![
+        Box::new(AckleyAlgorithm),
+        Box::new(HimmelblauAlgorithm),
+        Box::new(BukinN6Algorithm),
+        Box::new(LeviN13Algorithm),
+        Box::new(RastriginAlgorithm),
+        Box::new(SchafferN2Algorithm),
+        Box::new(StyblinskiTangAlgorithm),
+    ];
 
     // Run benchmarks for each algorithm
     for algorithm in algorithms.iter() {
