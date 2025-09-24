@@ -317,7 +317,7 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
     // Run to the new epoch
     let mut at_resolution_limit = false;
     for _ in 0..=current_epoch {
-        at_resolution_limit = world.training_run(&[], &[]);
+        at_resolution_limit = world.training_run(&[], None);
     }
 
     let response_data = StateResponse {

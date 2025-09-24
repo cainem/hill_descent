@@ -7,11 +7,29 @@ impl World {
     )]
     /// Runs a single training iteration.
     ///
+    /// # Panics
+    ///
+    /// This function will panic if:
+    /// - In supervised mode (`Some(&[f64])`), the known_outputs slice is empty
+    /// - In supervised mode (`Some(&[f64])`), any known_outputs contain non-finite numbers (NaN or Infinity)
+    ///
     /// # Returns
     ///
     /// Returns `true` if the resolution limit has been reached and no further
     /// meaningful splits are possible, `false` otherwise.
-    pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
+    pub fn training_run(&mut self, inputs: &[f64], known_outputs: Option<&[f64]>) -> bool {
+        // Validate known_outputs if in supervised mode
+        if let Some(expected_outputs) = known_outputs {
+            assert!(
+                !expected_outputs.is_empty(),
+                "known_outputs must not be empty in supervised mode"
+            );
+            assert!(
+                expected_outputs.iter().all(|&x| x.is_finite()),
+                "known_outputs must only contain finite numbers"
+            );
+        }
+
         let _initial_population = self.organisms.len();
         crate::info!(
             "=== TRAINING RUN START: Population = {} ===",
@@ -112,7 +130,7 @@ mod tests {
         let known_outputs = vec![1.0];
 
         // Act
-        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
+        let _at_resolution_limit = world.training_run(&inputs, Some(&known_outputs));
 
         // Assert
         // Note: With the new flow, organisms may die from aging but some should survive.
@@ -150,7 +168,7 @@ mod tests {
 
         // Act
         println!("Initial organism count: {}", world.organisms.len());
-        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
+        let _at_resolution_limit = world.training_run(&inputs, Some(&known_outputs));
         println!("Final organism count: {}", world.organisms.len());
 
         // Assert
@@ -174,5 +192,41 @@ mod tests {
 
         // The main assertion is that the training run completed successfully
         // (no assertion needed as success is demonstrated by reaching this point)
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must not be empty in supervised mode")]
+    fn given_empty_known_outputs_when_training_run_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![0.0];
+        let empty_outputs: &[f64] = &[];
+
+        world.training_run(&inputs, Some(empty_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must only contain finite numbers")]
+    fn given_infinite_known_outputs_when_training_run_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![0.0];
+        let infinite_outputs = vec![1.0, f64::INFINITY];
+
+        world.training_run(&inputs, Some(&infinite_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must only contain finite numbers")]
+    fn given_nan_known_outputs_when_training_run_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![0.0];
+        let nan_outputs = vec![f64::NAN];
+
+        world.training_run(&inputs, Some(&nan_outputs));
     }
 }

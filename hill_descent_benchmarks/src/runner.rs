@@ -130,7 +130,7 @@ fn run_single_benchmark(
         }
 
         // Run training and check if resolution limit reached
-        if world.training_run(&[], &[]) {
+        if world.training_run(&[], None) {
             hit_resolution_limit = true;
             break;
         }
