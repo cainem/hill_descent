@@ -1,4 +1,3 @@
-use crate::E0;
 use crate::world::{organisms::Organism, world_function::WorldFunction};
 
 impl Organism {
@@ -6,11 +5,11 @@ impl Organism {
     ///
     /// Behaviour depends on `known_outputs`:
     /// 1. **Supervised mode** – when `known_outputs` is `Some(&[f64])` the score is the
-    ///    sum-of-squared-errors between the world-function outputs and the `known_outputs`, plus `E0`.
+    ///    sum-of-squared-errors between the world-function outputs and the `known_outputs`.
     /// 2. **Objective-function mode** – when `known_outputs` is `None` the world function is assumed
     ///    to return a single scalar that is to be *minimised*. The first element of the output vector
-    ///    is taken directly as the fitness (again with `E0` added). This lets callers minimise an
-    ///    arbitrary n-dimensional function without knowing its true minimum.
+    ///    is taken directly as the fitness. This lets callers minimise an arbitrary n-dimensional
+    ///    function without knowing its true minimum.
     ///
     /// # Panics
     ///
@@ -39,7 +38,7 @@ impl Organism {
                         "World function returned no outputs, cannot evaluate objective-function mode."
                     );
                 }
-                outputs[0] + E0
+                outputs[0]
             }
             Some(expected_outputs) => {
                 // Supervised mode – minimise squared error to known outputs.
@@ -65,7 +64,6 @@ impl Organism {
                     .zip(expected_outputs.iter())
                     .map(|(a, b)| (a - b).powi(2))
                     .sum::<f64>()
-                    + E0
             }
         };
 
@@ -77,7 +75,7 @@ impl Organism {
 mod tests {
     use super::*;
     use crate::{
-        E0, parameters::parameter_enhancement::enhance_parameters, phenotype::Phenotype,
+        parameters::parameter_enhancement::enhance_parameters, phenotype::Phenotype,
         world::world_function::WorldFunction,
     };
     use std::{ops::RangeInclusive, rc::Rc};
@@ -112,7 +110,7 @@ mod tests {
             output_values: vec![1.0, 0.0], // These will produce a known error
         };
         // Sum of squared errors = (1.0 - 0.5)^2 + (0.0 - 0.5)^2 = 0.25 + 0.25 = 0.5
-        let expected_score = 0.5 + E0;
+        let expected_score = 0.5;
 
         // Act
         organism.run(&test_fn, &inputs, Some(&known_outputs));
@@ -131,7 +129,7 @@ mod tests {
             output_values: vec![1.0], // Perfect match
         };
         // Sum of squared errors = 0.0
-        let expected_score = E0;
+        let expected_score = 0.0;
 
         // Act
         organism.run(&test_fn, &inputs, Some(&known_outputs));
@@ -158,13 +156,13 @@ mod tests {
     }
 
     #[test]
-    fn given_empty_known_outputs_when_run_then_score_is_first_output_plus_e0() {
+    fn given_empty_known_outputs_when_run_then_score_is_first_output() {
         let organism = create_test_organism();
         let inputs = vec![1.0, 2.0];
         let test_fn = TestFn {
             output_values: vec![2.5],
         };
-        let expected = 2.5 + E0;
+        let expected = 2.5;
         organism.run(&test_fn, &inputs, None);
         assert_eq!(organism.score(), Some(expected));
     }

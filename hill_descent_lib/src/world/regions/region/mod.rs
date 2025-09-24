@@ -31,16 +31,14 @@ impl Region {
     /// Adds an organism to the region.
     ///
     /// Uses `Rc<Organism>` to allow shared ownership without unnecessary clones.
-    /// Also updates the region's min_score if the organism has a positive score
+    /// Also updates the region's min_score if the organism has a score
     /// that is lower than the current min_score.
     pub fn add_organism(&mut self, organism: Rc<Organism>) {
         // Add organism to the region
         self.organisms.push(organism.clone());
 
-        // Update min_score if this organism has a positive score
-        if let Some(score) = organism.score()
-            && score > 0.0
-        {
+        // Update min_score if this organism has a score
+        if let Some(score) = organism.score() {
             match self.min_score {
                 Some(current_min) => {
                     if score < current_min {

@@ -104,7 +104,6 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::E0;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
@@ -185,8 +184,8 @@ mod tests {
                 .filter_map(|o| o.score())
                 .fold(f64::MAX, f64::min);
             assert!(
-                (best_score - E0).abs() < f64::EPSILON,
-                "Surviving organisms should have perfect scores"
+                best_score.abs() < f64::EPSILON,
+                "Surviving organisms should have perfect scores (close to 0.0)"
             );
         }
 

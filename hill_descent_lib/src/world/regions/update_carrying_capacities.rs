@@ -27,9 +27,7 @@ impl Regions {
         let mut finite_fitness_data = Vec::new(); // (key, region_ref, inverse_fitness)
 
         for (key, region) in self.iter_regions() {
-            if let Some(min_score) = region.min_score()
-                && min_score > 0.0
-            {
+            if let Some(min_score) = region.min_score() {
                 let inverse_fitness = 1.0 / min_score;
                 if inverse_fitness.is_infinite() {
                     infinite_fitness_regions.push(key.clone());
@@ -167,7 +165,7 @@ mod test_update_carrying_capacities {
     }
 
     #[test]
-    fn given_sum_inverse_fitness_zero_when_update_capacities_then_all_capacities_zero() {
+    fn given_zero_min_score_when_update_capacities_then_gets_all_capacity() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
@@ -177,10 +175,10 @@ mod test_update_carrying_capacities {
                 .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
-            Some(0)
+            Some(10) // Zero score gets infinite fitness, so gets all capacity
         );
 
-        // Test with negative score as well
+        // Test with negative score as well - negative scores are finite and get proportional capacity
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(-5.0)));
         regions_struct.update_carrying_capacities();
         assert_eq!(
@@ -188,7 +186,7 @@ mod test_update_carrying_capacities {
                 .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
-            Some(0)
+            Some(10) // Negative score (fitness = 1/(-5) = -0.2) gets finite capacity
         );
     }
 
@@ -400,7 +398,7 @@ mod test_update_carrying_capacities {
     }
 
     #[test]
-    fn given_mix_of_zero_and_positive_min_scores_when_update_capacities_then_only_positive_get_capacity()
+    fn given_mix_of_zero_negative_and_positive_min_scores_when_update_capacities_then_zero_gets_infinite_capacity()
      {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
@@ -422,25 +420,25 @@ mod test_update_carrying_capacities {
 
         regions_struct.update_carrying_capacities();
 
-        // Only the positive score region gets capacity
+        // Zero score region gets infinite fitness (all capacity)
         assert_eq!(
             regions_struct
-                .get_region(&key_positive)
+                .get_region(&key_zero)
                 .unwrap()
                 .carrying_capacity(),
             Some(population_size)
         );
-        // All others get zero
+        // All others get zero capacity due to zero having infinite fitness
         assert_eq!(
             regions_struct
-                .get_region(&key_zero)
+                .get_region(&key_negative)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
         );
         assert_eq!(
             regions_struct
-                .get_region(&key_negative)
+                .get_region(&key_positive)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
