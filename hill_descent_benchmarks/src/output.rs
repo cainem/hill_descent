@@ -13,7 +13,6 @@ pub fn generate_subdir_and_filename(algorithm_name: &str) -> (String, String) {
 }
 
 /// Write algorithm results to a markdown file in the run_stats directory
-
 pub fn write_results_to_file(
     results: &AlgorithmResults,
     run_stats_dir: &Path,
