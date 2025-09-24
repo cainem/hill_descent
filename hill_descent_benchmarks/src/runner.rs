@@ -117,6 +117,12 @@ fn run_single_benchmark(
     for _round in 0..MAX_ROUNDS {
         rounds_taken += 1;
 
+        if _round == 564 {
+            // put breakpoint here to stop at round problem exists.
+            rounds_taken += 1;
+            rounds_taken -= 1;
+        }
+
         // Run training and check if resolution limit reached
         if world.training_run(&[], &[]) {
             hit_resolution_limit = true;
