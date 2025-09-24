@@ -3,8 +3,14 @@ use hill_descent_lib::{setup_world, GlobalConstants};
 use std::time::Instant;
 
 // Configuration constants
-pub const POPULATION_REGION_CONFIGS: &[(u32, u32)] =
-    &[(100, 10), (100, 10), (250, 10), (500, 20), (1000, 100)];
+pub const POPULATION_REGION_CONFIGS: &[(u32, u32)] = &[
+    (100, 10),
+    (250, 10),
+    (500, 20),
+    (750, 50),
+    (1000, 100),
+    (10_000, 1_000),
+];
 
 // Prime seeds for reproducible runs
 pub const PRIME_SEEDS: &[u64] = &[
