@@ -99,6 +99,7 @@ mod tests {
         let failing_organism = crate::world::organisms::organism::Organism::new(
             Rc::new(failing_p_phenotype.clone()),
             0,
+            (None, None),
         );
 
         // To make failing_organism fail, we create dimensions where its naturally-expressed value is out of bounds.
@@ -185,7 +186,8 @@ mod tests {
         // Now create a new organism with out-of-bounds value and manually set a cached key
         // to simulate the fast-path scenario where the cached key exists but new value is invalid
         let p_oob = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 5.0]); // problem values: [15.0, 5.0] - 15.0 > 10.0 bound
-        let organism_oob = crate::world::organisms::organism::Organism::new(Rc::new(p_oob), 0);
+        let organism_oob =
+            crate::world::organisms::organism::Organism::new(Rc::new(p_oob), 0, (None, None));
         organism_oob.set_region_key(Some(vec![1, 1])); // Set a cached key to trigger fast path
 
         let mut organisms_with_oob = Organisms::new_from_organisms(vec![organism_oob.clone()]);

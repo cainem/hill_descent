@@ -7,6 +7,8 @@ pub struct GlobalConstants {
     population_size: usize,
     /// Maximum number of regions the space can be divided into (Z).
     target_regions: usize,
+    /// Seed for the world's random number generator (for reproducible simulations).
+    world_seed: u64,
 }
 
 impl GlobalConstants {
@@ -20,7 +22,12 @@ impl GlobalConstants {
         self.target_regions
     }
 
-    /// Creates a new instance of GlobalConstants.
+    /// Returns the world seed for the random number generator.
+    pub fn world_seed(&self) -> u64 {
+        self.world_seed
+    }
+
+    /// Creates a new instance of GlobalConstants with default world seed.
     ///
     /// # Arguments
     ///
@@ -31,6 +38,22 @@ impl GlobalConstants {
     ///
     /// Panics if `population_size` or `target_regions` is zero.
     pub fn new(population_size: usize, target_regions: usize) -> Self {
+        const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
+        Self::new_with_seed(population_size, target_regions, DEFAULT_WORLD_SEED)
+    }
+
+    /// Creates a new instance of GlobalConstants with custom world seed.
+    ///
+    /// # Arguments
+    ///
+    /// * `population_size` - The total target population size.
+    /// * `target_regions` - The maximum number of regions.
+    /// * `world_seed` - The seed for the world's random number generator.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `population_size` or `target_regions` is zero.
+    pub fn new_with_seed(population_size: usize, target_regions: usize, world_seed: u64) -> Self {
         if population_size == 0 {
             panic!("Population size cannot be zero.");
         }
@@ -44,6 +67,7 @@ impl GlobalConstants {
         Self {
             population_size,
             target_regions,
+            world_seed,
         }
     }
 }
@@ -60,6 +84,19 @@ mod tests {
 
         assert_eq!(constants.population_size(), population_size);
         assert_eq!(constants.target_regions(), target_regions);
+        assert_eq!(constants.world_seed(), 2_147_483_647); // Default seed
+    }
+
+    #[test]
+    fn given_valid_inputs_with_custom_seed_when_new_with_seed_then_global_constants_is_created() {
+        let population_size = 100;
+        let target_regions = 10;
+        let world_seed = 12345;
+        let constants = GlobalConstants::new_with_seed(population_size, target_regions, world_seed);
+
+        assert_eq!(constants.population_size(), population_size);
+        assert_eq!(constants.target_regions(), target_regions);
+        assert_eq!(constants.world_seed(), world_seed);
     }
 
     #[test]

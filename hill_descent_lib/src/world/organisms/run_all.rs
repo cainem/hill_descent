@@ -40,7 +40,7 @@ mod tests {
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
         let organisms: Vec<Organism> = (0..count)
-            .map(|_| Organism::new(Rc::clone(&phenotype), 0))
+            .map(|_| Organism::new(Rc::clone(&phenotype), 0, (None, None)))
             .collect();
         Organisms::new_from_organisms(organisms)
     }

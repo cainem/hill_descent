@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn given_organism_when_increment_age_then_age_increments() {
         let phenotype = phenotype_with_max_age(100.0);
-        let organism = super::Organism::new(Rc::clone(&phenotype), 0);
+        let organism = super::Organism::new(Rc::clone(&phenotype), 0, (None, None));
         organism.increment_age();
         assert_eq!(organism.age(), 1);
         assert!(!organism.is_dead());
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn given_organism_when_age_exceeds_max_then_mark_dead() {
         let phenotype = phenotype_with_max_age(0.0);
-        let organism = super::Organism::new(Rc::clone(&phenotype), 0);
+        let organism = super::Organism::new(Rc::clone(&phenotype), 0, (None, None));
         organism.increment_age();
         assert_eq!(organism.age(), 1);
         assert!(organism.is_dead());

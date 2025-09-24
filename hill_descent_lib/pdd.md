@@ -113,31 +113,24 @@ An organism is defined by its DNA, which determines its position in the n-dimens
     *   Unoccupied regions resulting from division are of no interest.
 
 **4.2.3. Bounding Box:** 
-* An n-dimensional hyperrectangle that encompasses all organisms in the population.  
+* An n-dimensional hyperrectangles that encompasses all organisms in the population.  
 * Initial Bounding Box: Calculated at startup to be twice the size (in each dimension) required to hold all initial organisms.  
 * Recalculation: If any new organism (offspring) falls outside the current bounding box, a new bounding box is calculated (again, twice the required size in each dimension), and all regions are recalculated.
 
 **4.2.4. Carrying Capacity ($P_i$):** 
 * The number of organisms a region `i` can support.  
-* Calculated using a zone-based allocation system that groups adjacent regions and distributes capacity strategically.
+* Calculated based on the relative fitness performance of regions using an inverse fitness formula.
 
-**Zone-Based Allocation System:**
-* **Zone Detection:** Adjacent regions (those with Chebyshev distance = 1 in region coordinate space) are automatically grouped into zones using a Union-Find algorithm with spatial indexing optimization.
-* **Zone Capacity Allocation:** Total population capacity `P` is distributed among zones proportional to zone size: $ZoneCapacity_z = P \cdot \frac{size_z}{\sum_{j=1}^{Z_{count}} size_j}$
-    * $size_z$: Number of regions in zone `z`
-    * $Z_{count}$: Total number of zones
-    * This formula provides fair representation for all zones while still allocating more resources to larger connected areas.
-* **Intra-Zone Distribution:** Within each zone, capacity is distributed among regions based on their relative fitness using the inverse fitness formula: $P_i = ZoneCapacity_z \cdot \frac{1/F_i}{\sum_{j \in zone_z} (1/F_j)}$
+**Carrying Capacity Formula:**
+* Each region's capacity is allocated proportionally to its inverse fitness: $P_i = P \cdot \frac{1/F_i}{\sum_{j=1}^{R} (1/F_j)}$
+    * $P$: Total population capacity
     * $F_i$: Minimum fitness in region `i` (recall fitness includes $+ e_0$, so $F_i > 0$)
-    * The sum is over all regions within the same zone as region `i`
-
-**Performance Optimization:**
-* Zone calculations are cached with generation-based invalidation to avoid expensive recalculation when region structure hasn't changed.
-* Spatial indexing reduces adjacency checking complexity from O(n²) to O(n×k) where k is the average number of potential neighbors.
+    * $R$: Total number of populated regions
+    * This formula rewards regions with better performance (lower fitness scores) with higher carrying capacity
 
 **Recalculation Triggers:**
 * Required if previously empty regions become populated, previously populated regions become empty, or if the overall bounding box changes.
-* Cache is invalidated when region structure changes (dimension splits, boundary adjustments).
+* Recalculation occurs when region structure changes (dimension splits, boundary adjustments).
 
 ## 5. Key Processes
 
@@ -236,10 +229,10 @@ The system proceeds in discrete rounds. Each round involves:
 
 * **Region Recalculation Triggers:** 
     * If any offspring falls outside the current master bounding box: Recalculate the master bounding box, then recalculate all regions and reassign all organisms.  
-    * If previously empty regions become populated or populated regions become empty (due to births/deaths): Recalculate zones and carrying capacities for all populated regions using the zone-based allocation system.  
-    * If the number of populated regions exceeds `Z`: Trigger a full recalculation of regions (and subsequently zones and carrying capacities).
+    * If previously empty regions become populated or populated regions become empty (due to births/deaths): Recalculate carrying capacities for all populated regions using the fitness-based allocation system.  
+    * If the number of populated regions exceeds `Z`: Trigger a full recalculation of regions (and subsequently carrying capacities).
 
-**5.2.6. Aging and Death:** 
+**5.2.6. Ageing and Death:** 
 * Remove any organisms that have reached their maximum age ($A_{max}$).  
 * Increment the age of all surviving organisms by one round.
 
@@ -268,7 +261,7 @@ The system proceeds in discrete rounds. Each round involves:
 * Number of crossovers per gamete during sexual reproduction (predetermined constant).  
 * `K`: Number of unique problem sets (and thus number of rounds for main run).  
 * `S`: Size of the sample of problem sets used for final solution extraction.  
-* Seed for the pseudo-random number generator.
+* Seed for the pseudo-random number generator (configurable via GlobalConstants).
 
 **6.2. Evolvable Parameters (Part of the `n` dimensions):** 
 * Mutation probabilities: $m_1, m_2, m_3, m_4, m_5$.  
@@ -296,7 +289,7 @@ The system proceeds in discrete rounds. Each round involves:
 
 **7.2. Pseudo-Random Number Generation:** 
 * All random numbers (for initialization, mutation choices, crossover points, locus expression tie-breaking) are provided by a pseudo-random number generator (PRNG).  
-* The PRNG is seeded with a constant to ensure repeatability of runs.
+* The PRNG is seeded with a configurable value (via GlobalConstants) to ensure repeatability of runs.
 
 **7.3. Hashing:** 
 * The XXH3 algorithm is used to generate 64-bit positive integer checksums for `LocusAdjustment` states.

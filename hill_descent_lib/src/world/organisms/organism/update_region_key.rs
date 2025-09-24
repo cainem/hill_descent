@@ -92,7 +92,7 @@ mod tests {
         let mut expressed: Vec<f64> = vec![0.0; NUM_SYSTEM_PARAMETERS];
         expressed.extend(problem_values);
         let phenotype = Phenotype::new_for_test(expressed);
-        let organism = Organism::new(Rc::new(phenotype), 0);
+        let organism = Organism::new(Rc::new(phenotype), 0, (None, None));
         organism.set_region_key(None);
         organism
     }

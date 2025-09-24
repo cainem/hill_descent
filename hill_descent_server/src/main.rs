@@ -229,10 +229,7 @@ async fn start_handler(
     let function_info = registry
         .get_function_info(&function_type)
         .ok_or_else(|| format!("Unknown function type: {:?}", function_type))
-        .map_err(|e| {
-            eprintln!("Error: {}", e);
-            actix_web::error::ErrorBadRequest(e)
-        })?;
+        .map_err(actix_web::error::ErrorBadRequest)?;
 
     let config = Config {
         population_size,

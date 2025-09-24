@@ -8,8 +8,6 @@ use std::ops::RangeInclusive;
 
 use world_function::WorldFunction;
 
-const DEFAULT_WORLD_SEED: u64 = 2_147_483_647; // A Mersenne prime (2^31 - 1)
-
 mod dimensions;
 mod get_best_organism;
 mod get_best_score;
@@ -78,7 +76,7 @@ impl World {
         global_constants: GlobalConstants,
         function: Box<dyn WorldFunction>,
     ) -> Self {
-        let mut rng = StdRng::seed_from_u64(DEFAULT_WORLD_SEED);
+        let mut rng = StdRng::seed_from_u64(global_constants.world_seed());
         let mut organisms =
             Organisms::new(user_defined_parameter_bounds, &global_constants, &mut rng);
 

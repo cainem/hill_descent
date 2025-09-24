@@ -137,7 +137,7 @@ mod tests {
             full_values.push(0.0); // Pad with zeros
         }
         let phenotype = Phenotype::new_for_test(full_values);
-        Rc::new(Organism::new(Rc::new(phenotype), 0))
+        Rc::new(Organism::new(Rc::new(phenotype), 0, (None, None)))
     }
 
     #[test]

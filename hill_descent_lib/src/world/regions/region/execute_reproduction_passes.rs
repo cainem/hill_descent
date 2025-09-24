@@ -45,7 +45,11 @@ impl Region {
             if selected.len() % 2 == 1 && offspring.len() < offspring_this_pass {
                 let parent = &selected[0];
                 let child_pheno = parent.phenotype().asexual_reproduction(rng);
-                offspring.push(Organism::new(Rc::new(child_pheno), 0));
+                offspring.push(Organism::new(
+                    Rc::new(child_pheno),
+                    0,
+                    (Some(parent.id()), None), // Asexual: one parent
+                ));
                 // Remove the first so that the remainder is even
                 selected.remove(0);
             }
@@ -58,9 +62,17 @@ impl Region {
                 if let [p1, p2] = chunk {
                     let (c1, c2) =
                         Phenotype::sexual_reproduction(p1.phenotype(), p2.phenotype(), rng);
-                    offspring.push(Organism::new(Rc::new(c1), 0));
+                    offspring.push(Organism::new(
+                        Rc::new(c1),
+                        0,
+                        (Some(p1.id()), Some(p2.id())), // Sexual: two parents
+                    ));
                     if offspring.len() < offspring_this_pass {
-                        offspring.push(Organism::new(Rc::new(c2), 0));
+                        offspring.push(Organism::new(
+                            Rc::new(c2),
+                            0,
+                            (Some(p1.id()), Some(p2.id())), // Sexual: two parents
+                        ));
                     }
                 }
             }
@@ -87,7 +99,7 @@ mod tests {
         // Expressed values: default 7 system parameters + one dummy problem param
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), age);
+        let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));
         Rc::new(org)
     }
@@ -231,5 +243,87 @@ mod tests {
         // Should get 3 offspring over 3 passes (1 per pass)
         assert_eq!(offspring.len(), 3);
         assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_single_organism_when_execute_then_offspring_has_correct_asexual_parent_id() {
+        let parent = make_org(1.0, 5, 0);
+        let parent_id = parent.id();
+        let organisms = vec![parent];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring = Region::execute_reproduction_passes(
+            &organisms, 1, // parents_required
+            1, // max_offspring_per_pass
+            1, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        );
+
+        assert_eq!(offspring.len(), 1);
+        let child = &offspring[0];
+        assert_eq!(child.parent_count(), 1);
+        assert_eq!(child.parent_ids(), (Some(parent_id), None));
+        assert!(!child.is_root());
+    }
+
+    #[test]
+    fn given_two_organisms_when_execute_then_offspring_have_correct_sexual_parent_ids() {
+        let parent1 = make_org(1.0, 5, 0);
+        let parent2 = make_org(2.0, 3, 1);
+        let parent1_id = parent1.id();
+        let parent2_id = parent2.id();
+        let organisms = vec![parent1, parent2];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring = Region::execute_reproduction_passes(
+            &organisms, 2, // parents_required
+            2, // max_offspring_per_pass
+            2, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        );
+
+        assert_eq!(offspring.len(), 2);
+
+        // Both offspring should have both parents
+        for child in &offspring {
+            assert_eq!(child.parent_count(), 2);
+            assert_eq!(child.parent_ids(), (Some(parent1_id), Some(parent2_id)));
+            assert!(!child.is_root());
+        }
+    }
+
+    #[test]
+    fn given_three_organisms_when_execute_then_mixed_reproduction_has_correct_parent_ids() {
+        let parent1 = make_org(1.0, 5, 0);
+        let parent2 = make_org(2.0, 3, 1);
+        let parent3 = make_org(3.0, 2, 2);
+        let parent1_id = parent1.id();
+        let parent2_id = parent2.id();
+        let parent3_id = parent3.id();
+        let organisms = vec![parent1, parent2, parent3];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring = Region::execute_reproduction_passes(
+            &organisms, 3, // parents_required
+            3, // max_offspring_per_pass (3 organisms: 1 asexual + 2 sexual = 3)
+            3, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        );
+
+        assert_eq!(offspring.len(), 3);
+
+        // First offspring should be from asexual reproduction (parent1)
+        let asexual_child = &offspring[0];
+        assert_eq!(asexual_child.parent_count(), 1);
+        assert_eq!(asexual_child.parent_ids(), (Some(parent1_id), None));
+
+        // Remaining offspring should be from sexual reproduction (parent2 & parent3)
+        for child in &offspring[1..] {
+            assert_eq!(child.parent_count(), 2);
+            assert_eq!(child.parent_ids(), (Some(parent2_id), Some(parent3_id)));
+        }
     }
 }

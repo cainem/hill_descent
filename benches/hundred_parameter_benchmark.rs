@@ -43,3 +43,4 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
 criterion_group!(benches, hill_descent_100d_benchmark);
 criterion_main!(benches);
+

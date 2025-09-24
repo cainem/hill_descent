@@ -1,3 +1,78 @@
+// Smart number formatting utility functions
+class NumberFormatter {
+    /**
+     * Formats a number with smart precision and scientific notation rules
+     * @param {number} num - The number to format
+     * @param {number} maxDecimals - Maximum decimal places for normal format (default: 6)
+     * @returns {string} Formatted number string
+     */
+    static format(num, maxDecimals = 6) {
+        if (num === null || num === undefined || !isFinite(num)) {
+            return 'N/A';
+        }
+
+        if (num === 0) {
+            return '0';
+        }
+
+        const absNum = Math.abs(num);
+        const exponent = Math.floor(Math.log10(absNum));
+
+        // Use normal format for exponents between -3 and +3 (inclusive)
+        if (exponent >= -3 && exponent <= 3) {
+            // For normal format, determine appropriate decimal places
+            let decimals;
+            if (absNum >= 100) {
+                decimals = Math.max(0, maxDecimals - 3); // e.g., 123.456
+            } else if (absNum >= 10) {
+                decimals = Math.max(0, maxDecimals - 2); // e.g., 12.3456
+            } else if (absNum >= 1) {
+                decimals = Math.max(0, maxDecimals - 1); // e.g., 1.23456
+            } else {
+                decimals = maxDecimals + Math.abs(exponent); // e.g., 0.001234
+            }
+            return num.toFixed(decimals).replace(/\.?0+$/, '');
+        } else {
+            // Use scientific notation for numbers outside the range
+            const precision = Math.max(2, maxDecimals - 1);
+            return num.toExponential(precision);
+        }
+    }
+
+    /**
+     * Creates a formatted number element with tooltip showing full precision
+     * @param {number} num - The number to format
+     * @param {number} maxDecimals - Maximum decimal places for display (default: 6)
+     * @returns {HTMLElement} Span element with formatted number and tooltip
+     */
+    static createFormattedElement(num, maxDecimals = 6) {
+        const span = document.createElement('span');
+        span.className = 'formatted-number';
+        span.textContent = NumberFormatter.format(num, maxDecimals);
+
+        if (num !== null && num !== undefined && isFinite(num)) {
+            span.title = num.toExponential(15); // Full precision tooltip
+            span.setAttribute('data-full-value', num.toString());
+        }
+
+        return span;
+    }
+
+    /**
+     * Formats a number and returns both display text and tooltip text
+     * @param {number} num - The number to format  
+     * @param {number} maxDecimals - Maximum decimal places for display (default: 6)
+     * @returns {object} Object with displayText and tooltipText properties
+     */
+    static formatWithTooltip(num, maxDecimals = 6) {
+        return {
+            displayText: NumberFormatter.format(num, maxDecimals),
+            tooltipText: (num !== null && num !== undefined && isFinite(num)) ?
+                num.toExponential(15) : 'N/A'
+        };
+    }
+}
+
 // API client for the hill descent server
 class HillDescentClient {
     constructor(baseUrl = 'http://127.0.0.1:3000') {
@@ -86,6 +161,7 @@ class OptimizationUI {
         this._stepInFlight = false;
         this.bestScores = [];
         this.availableFunctions = {};
+        this.selectedRegion = null; // Track selected region for click interactions
 
         this.initializeElements();
         this.loadFunctions();
@@ -112,6 +188,29 @@ class OptimizationUI {
             visContainer: document.getElementById('visualization'),
             roundCounter: document.getElementById('round-counter'),
             tooltip: document.getElementById('tooltip'),
+            // Region panel elements
+            regionPanel: document.getElementById('region-panel'),
+            closeRegionPanel: document.getElementById('close-region-panel'),
+            regionXBounds: document.getElementById('region-x-bounds'),
+            regionYBounds: document.getElementById('region-y-bounds'),
+            regionMinScore: document.getElementById('region-min-score'),
+            regionCapacity: document.getElementById('region-capacity'),
+            regionPopulation: document.getElementById('region-population'),
+            regionStatus: document.getElementById('region-status'),
+            organismList: document.getElementById('organism-list'),
+            // Organism modal elements
+            organismModal: document.getElementById('organism-modal'),
+            organismModalOverlay: document.getElementById('organism-modal-overlay'),
+            closeOrganismModal: document.getElementById('close-organism-modal'),
+            organismDetailId: document.getElementById('organism-detail-id'),
+            organismDetailScore: document.getElementById('organism-detail-score'),
+            organismDetailPosition: document.getElementById('organism-detail-position'),
+            organismDetailAge: document.getElementById('organism-detail-age'),
+            organismDetailStatus: document.getElementById('organism-detail-status'),
+            organismDetailRegionKey: document.getElementById('organism-detail-region-key'),
+            organismDetailParent1: document.getElementById('organism-detail-parent1'),
+            organismDetailParent2: document.getElementById('organism-detail-parent2'),
+            organismTreeview: document.getElementById('organism-treeview'),
         };
     }
 
@@ -199,7 +298,14 @@ class OptimizationUI {
             .attr('y', 0)
             .attr('width', width)
             .attr('height', height)
-            .attr('fill', '#f0f0f0');
+            .attr('fill', '#f0f0f0')
+            .style('cursor', 'default')
+            .on('click', () => {
+                // Clear region selection when clicking on background
+                if (this.selectedRegion) {
+                    this.hideRegionPanel();
+                }
+            });
 
         // Explicit layer groups to control z-order
         // Order: regions (bottom) -> organisms (middle) -> overlays (top)
@@ -218,6 +324,9 @@ class OptimizationUI {
         this.elements.stepBtn.addEventListener('click', () => this.step());
         this.elements.autoBtn.addEventListener('click', () => this.toggleAuto());
         this.elements.resetBtn.addEventListener('click', () => this.reset());
+        this.elements.closeRegionPanel.addEventListener('click', () => this.hideRegionPanel());
+        this.elements.closeOrganismModal.addEventListener('click', () => this.hideOrganismModal());
+        this.elements.organismModalOverlay.addEventListener('click', () => this.hideOrganismModal());
     }
 
     async start() {
@@ -329,7 +438,8 @@ class OptimizationUI {
 
     updateUI(state) {
         this.elements.epochSpan.textContent = state.epoch;
-        this.elements.bestScoreSpan.textContent = state.best_score.toFixed(6);
+        this.elements.bestScoreSpan.innerHTML = '';
+        this.elements.bestScoreSpan.appendChild(NumberFormatter.createFormattedElement(state.best_score));
         this.elements.roundCounter.textContent = state.epoch;
 
         // Update current function display
@@ -343,22 +453,9 @@ class OptimizationUI {
         // Render D3 visualization from web-shaped JSON
         try {
             const webState = JSON.parse(state.world_state);
-            // Log state with parsed world_state as JSON for better browser console viewing
-            console.log('[UI] StateResponse from server', {
-                ...state,
-                world_state: webState
-            });
-            console.log('[UI] Parsed webState', {
-                world_bounds: webState.world_bounds,
-                score_range: webState.score_range,
-                regions: webState.regions ? webState.regions.length : 0,
-                organisms: webState.organisms ? webState.organisms.length : 0,
-            });
             this.updateVisualization(webState);
         } catch (e) {
             console.error('Failed to parse world_state JSON', e);
-            // Fallback to original logging if parsing fails
-            console.log('[UI] StateResponse from server (raw)', state);
         }
     }
 
@@ -425,8 +522,8 @@ class OptimizationUI {
         // Draw labels
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
-        ctx.fillText(`Best: ${minScore.toFixed(6)}`, padding, 20);
-        ctx.fillText(`Worst: ${maxScore.toFixed(6)}`, padding, 35);
+        ctx.fillText(`Best: ${NumberFormatter.format(minScore)}`, padding, 20);
+        ctx.fillText(`Worst: ${NumberFormatter.format(maxScore)}`, padding, 35);
         ctx.fillText(`Epochs: ${this.bestScores.length}`, canvas.width - 100, 20);
     }
 
@@ -444,9 +541,441 @@ class OptimizationUI {
         }
     }
 
+    // Helper method to check if two regions are the same
+    isRegionSelected(region) {
+        return this.selectedRegion &&
+            this.selectedRegion.bounds.x[0] === region.bounds.x[0] &&
+            this.selectedRegion.bounds.x[1] === region.bounds.x[1] &&
+            this.selectedRegion.bounds.y[0] === region.bounds.y[0] &&
+            this.selectedRegion.bounds.y[1] === region.bounds.y[1];
+    }
+
+    // Show region detail panel
+    showRegionPanel() {
+        this.elements.regionPanel.style.display = 'block';
+    }
+
+    // Hide region detail panel
+    hideRegionPanel() {
+        this.elements.regionPanel.style.display = 'none';
+        this.selectedRegion = null;
+        if (this.currentState) {
+            this.updateVisualization(this.currentState);
+        }
+    }
+
+    // Update region panel with selected region data
+    updateRegionPanel(region, organisms) {
+
+        // Update region bounds with tooltips
+        this.elements.regionXBounds.innerHTML = '';
+        const xBoundsContainer = document.createElement('span');
+        xBoundsContainer.textContent = '[';
+        xBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.x[0]));
+        xBoundsContainer.appendChild(document.createTextNode(', '));
+        xBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.x[1]));
+        xBoundsContainer.appendChild(document.createTextNode(']'));
+        this.elements.regionXBounds.appendChild(xBoundsContainer);
+
+        this.elements.regionYBounds.innerHTML = '';
+        const yBoundsContainer = document.createElement('span');
+        yBoundsContainer.textContent = '[';
+        yBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.y[0]));
+        yBoundsContainer.appendChild(document.createTextNode(', '));
+        yBoundsContainer.appendChild(NumberFormatter.createFormattedElement(region.bounds.y[1]));
+        yBoundsContainer.appendChild(document.createTextNode(']'));
+        this.elements.regionYBounds.appendChild(yBoundsContainer);
+
+        // Update region statistics with tooltip
+        this.elements.regionMinScore.innerHTML = '';
+        this.elements.regionMinScore.appendChild(NumberFormatter.createFormattedElement(region.min_score));
+        this.elements.regionCapacity.textContent = region.carrying_capacity.toString();
+        this.elements.regionPopulation.textContent = organisms.length.toString();
+
+        // Update population status
+        const isOverCapacity = organisms.length > region.carrying_capacity;
+        const statusText = isOverCapacity ? 'Over Capacity' : 'Within Capacity';
+        const statusColor = isOverCapacity ? '#d32f2f' : '#388e3c';
+        this.elements.regionStatus.textContent = statusText;
+        this.elements.regionStatus.style.color = statusColor;
+
+        // Update organism list
+        this.updateOrganismList(organisms);
+    }
+
+    // Update the organism list in the region panel
+    updateOrganismList(organisms) {
+        this.elements.organismList.innerHTML = '';
+
+        if (organisms.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'organism-item';
+            emptyMsg.style.fontStyle = 'italic';
+            emptyMsg.style.color = '#888';
+            emptyMsg.textContent = 'No organisms in this region';
+            this.elements.organismList.appendChild(emptyMsg);
+            return;
+        }
+
+        // Sort organisms by score (lowest/best first)
+        const sortedOrganisms = organisms.slice().sort((a, b) => {
+            // Handle null/undefined scores
+            if (a.score === null || a.score === undefined) return 1;
+            if (b.score === null || b.score === undefined) return -1;
+            return a.score - b.score; // Lower scores are better
+        });
+
+        sortedOrganisms.forEach(organism => {
+            const organismEl = document.createElement('div');
+            organismEl.className = 'organism-item';
+
+            const header = document.createElement('div');
+            header.className = 'organism-header';
+
+            const idEl = document.createElement('span');
+            idEl.className = 'organism-id';
+            idEl.textContent = `ID: ${organism.id}`;
+
+            const scoreEl = document.createElement('span');
+            scoreEl.className = 'organism-score';
+            if (organism.score !== null && organism.score !== undefined) {
+                scoreEl.textContent = 'Score: ';
+                scoreEl.appendChild(NumberFormatter.createFormattedElement(organism.score));
+            } else {
+                scoreEl.textContent = 'Score: N/A';
+            }
+
+            header.appendChild(idEl);
+            header.appendChild(scoreEl);
+
+            const details = document.createElement('div');
+            details.className = 'organism-details';
+
+            // Create X coordinate span
+            const xSpan = document.createElement('span');
+            xSpan.textContent = 'X: ';
+            xSpan.appendChild(NumberFormatter.createFormattedElement(organism.params.x));
+
+            // Create Y coordinate span  
+            const ySpan = document.createElement('span');
+            ySpan.textContent = 'Y: ';
+            ySpan.appendChild(NumberFormatter.createFormattedElement(organism.params.y));
+
+            // Create age span (no tooltip needed for integers)
+            const ageSpan = document.createElement('span');
+            ageSpan.textContent = `Age: ${organism.age}/${organism.max_age}`;
+
+            // Create age percentage span
+            const agePctSpan = document.createElement('span');
+            agePctSpan.textContent = 'Age %: ';
+            agePctSpan.appendChild(NumberFormatter.createFormattedElement((organism.age / organism.max_age) * 100));
+            agePctSpan.appendChild(document.createTextNode('%'));
+
+            details.appendChild(xSpan);
+            details.appendChild(ySpan);
+            details.appendChild(ageSpan);
+            details.appendChild(agePctSpan);
+
+            organismEl.appendChild(header);
+            organismEl.appendChild(details);
+
+            // Click handler for detailed organism view
+            organismEl.addEventListener('click', () => {
+                this.showOrganismModal();
+                this.updateOrganismModal(organism);
+            });
+
+            this.elements.organismList.appendChild(organismEl);
+        });
+    }
+
+    // Show organism detail modal
+    showOrganismModal() {
+        this.elements.organismModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    // Hide organism detail modal
+    hideOrganismModal() {
+        this.elements.organismModal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    // Update organism modal with detailed organism data
+    updateOrganismModal(organism) {
+        // Update organism summary
+        this.elements.organismDetailId.textContent = organism.id.toString();
+
+        // Score with tooltip
+        this.elements.organismDetailScore.innerHTML = '';
+        this.elements.organismDetailScore.appendChild(NumberFormatter.createFormattedElement(organism.score));
+
+        // Position with tooltips
+        this.elements.organismDetailPosition.innerHTML = '';
+        const posContainer = document.createElement('span');
+        posContainer.textContent = '(';
+        posContainer.appendChild(NumberFormatter.createFormattedElement(organism.params.x));
+        posContainer.appendChild(document.createTextNode(', '));
+        posContainer.appendChild(NumberFormatter.createFormattedElement(organism.params.y));
+        posContainer.appendChild(document.createTextNode(')'));
+        this.elements.organismDetailPosition.appendChild(posContainer);
+
+        this.elements.organismDetailAge.textContent = `${organism.age} / ${organism.max_age}`;
+        this.elements.organismDetailStatus.textContent = organism.is_dead ? 'Dead' : 'Alive';
+        this.elements.organismDetailRegionKey.textContent = organism.region_key ?
+            `[${organism.region_key.join(', ')}]` : 'None';
+
+        // Display parent information
+        this.elements.organismDetailParent1.textContent = organism.parent_id_1 !== null && organism.parent_id_1 !== undefined ?
+            organism.parent_id_1.toString() : 'None';
+        this.elements.organismDetailParent2.textContent = organism.parent_id_2 !== null && organism.parent_id_2 !== undefined ?
+            organism.parent_id_2.toString() : 'None';
+
+        // Build and populate the treeview
+        this.buildOrganismTreeview(organism);
+    }
+
+    // Build hierarchical treeview for organism genetic structure
+    buildOrganismTreeview(organism) {
+        this.elements.organismTreeview.innerHTML = '';
+
+        // Determine organism type and parent info for display
+        let organismType = 'Root';
+        const hasParent1 = organism.parent_id_1 !== null && organism.parent_id_1 !== undefined;
+        const hasParent2 = organism.parent_id_2 !== null && organism.parent_id_2 !== undefined;
+
+        if (hasParent1 && hasParent2) {
+            organismType = 'Sexual Offspring';
+        } else if (hasParent1) {
+            organismType = 'Asexual Offspring';
+        }
+
+        const treeData = {
+            label: 'Organism',
+            icon: '🦠',
+            children: [
+                {
+                    label: 'Lineage',
+                    icon: '🌳',
+                    children: [
+                        { label: 'Organism Type', icon: '🏷️', value: organismType, isLeaf: true },
+                        {
+                            label: 'Parent 1',
+                            icon: hasParent1 ? '👨' : '❌',
+                            value: hasParent1 ? organism.parent_id_1.toString() : 'None',
+                            isLeaf: true
+                        },
+                        {
+                            label: 'Parent 2',
+                            icon: hasParent2 ? '👩' : '❌',
+                            value: hasParent2 ? organism.parent_id_2.toString() : 'None',
+                            isLeaf: true
+                        }
+                    ]
+                },
+                {
+                    label: 'Phenotype',
+                    icon: '🧬',
+                    children: [
+                        {
+                            label: 'Expressed Values',
+                            icon: '📊',
+                            children: organism.phenotype.expressed_values.map((value, idx) => ({
+                                label: `Value ${idx}`,
+                                icon: '•',
+                                value: NumberFormatter.format(value),
+                                fullValue: value,
+                                isLeaf: true
+                            }))
+                        },
+                        {
+                            label: 'Expressed Hash',
+                            icon: '🔢',
+                            value: organism.phenotype.expressed_hash.toString(),
+                            isLeaf: true
+                        },
+                        {
+                            label: 'System Parameters',
+                            icon: '⚙️',
+                            children: [
+                                { label: 'M1 (Mutation Rate 1)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m1), fullValue: organism.phenotype.system_parameters.m1, isLeaf: true },
+                                { label: 'M2 (Mutation Rate 2)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m2), fullValue: organism.phenotype.system_parameters.m2, isLeaf: true },
+                                { label: 'M3 (Mutation Rate 3)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m3), fullValue: organism.phenotype.system_parameters.m3, isLeaf: true },
+                                { label: 'M4 (Mutation Rate 4)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m4), fullValue: organism.phenotype.system_parameters.m4, isLeaf: true },
+                                { label: 'M5 (Mutation Rate 5)', icon: '🎯', value: NumberFormatter.format(organism.phenotype.system_parameters.m5), fullValue: organism.phenotype.system_parameters.m5, isLeaf: true },
+                                { label: 'Max Age', icon: '⏳', value: NumberFormatter.format(organism.phenotype.system_parameters.max_age), fullValue: organism.phenotype.system_parameters.max_age, isLeaf: true },
+                                { label: 'Crossover Points', icon: '🔀', value: NumberFormatter.format(organism.phenotype.system_parameters.crossover_points), fullValue: organism.phenotype.system_parameters.crossover_points, isLeaf: true }
+                            ]
+                        },
+                        {
+                            label: 'Gamete 1',
+                            icon: '🧬',
+                            children: organism.phenotype.gamete1.loci.map((locus, idx) => ({
+                                label: `Locus ${idx}`,
+                                icon: '🔗',
+                                children: [
+                                    { label: 'Value', icon: '📊', value: NumberFormatter.format(locus.value), fullValue: locus.value, isLeaf: true },
+                                    { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                                    {
+                                        label: 'Adjustment',
+                                        icon: '⚡',
+                                        children: [
+                                            { label: 'Adjustment Value', icon: '📊', value: NumberFormatter.format(locus.adjustment.adjustment_value), fullValue: locus.adjustment.adjustment_value, isLeaf: true },
+                                            { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                            { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                            { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                        ]
+                                    }
+                                ]
+                            }))
+                        },
+                        {
+                            label: 'Gamete 2',
+                            icon: '🧬',
+                            children: organism.phenotype.gamete2.loci.map((locus, idx) => ({
+                                label: `Locus ${idx}`,
+                                icon: '🔗',
+                                children: [
+                                    { label: 'Value', icon: '📊', value: NumberFormatter.format(locus.value), fullValue: locus.value, isLeaf: true },
+                                    { label: 'Apply Flag', icon: '🏴', value: locus.apply_adjustment_flag.toString(), isLeaf: true },
+                                    {
+                                        label: 'Adjustment',
+                                        icon: '⚡',
+                                        children: [
+                                            { label: 'Adjustment Value', icon: '📊', value: NumberFormatter.format(locus.adjustment.adjustment_value), fullValue: locus.adjustment.adjustment_value, isLeaf: true },
+                                            { label: 'Direction', icon: '➡️', value: locus.adjustment.direction_of_travel, isLeaf: true },
+                                            { label: 'Double/Half Flag', icon: '🔢', value: locus.adjustment.doubling_or_halving_flag.toString(), isLeaf: true },
+                                            { label: 'Checksum', icon: '✔️', value: locus.adjustment.checksum.toString(), isLeaf: true }
+                                        ]
+                                    }
+                                ]
+                            }))
+                        }
+                    ]
+                }
+            ]
+        };
+
+        this.renderTreeNode(treeData, this.elements.organismTreeview, 0);
+    }
+
+    // Render a tree node recursively
+    renderTreeNode(node, container, level) {
+        const nodeEl = document.createElement('div');
+        nodeEl.className = `tree-node tree-level-${level % 5}`;
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'tree-node-header';
+
+        // Add toggle button for nodes with children
+        const toggleEl = document.createElement('div');
+        toggleEl.className = 'tree-node-toggle';
+        if (node.children && node.children.length > 0) {
+            toggleEl.textContent = '+';
+            toggleEl.style.cursor = 'pointer';
+        } else {
+            toggleEl.textContent = '';
+        }
+
+        // Add icon
+        const iconEl = document.createElement('div');
+        iconEl.className = 'tree-node-icon';
+        iconEl.textContent = node.icon || '•';
+
+        // Add label
+        const labelEl = document.createElement('div');
+        labelEl.className = 'tree-node-label';
+        labelEl.textContent = node.label;
+
+        // Add value if present
+        const valueEl = document.createElement('div');
+        valueEl.className = 'tree-node-value';
+        if (node.value !== undefined) {
+            if (node.fullValue !== undefined) {
+                // Use formatted number with tooltip for numeric values
+                const formattedElement = NumberFormatter.createFormattedElement(node.fullValue);
+                valueEl.appendChild(formattedElement);
+            } else {
+                valueEl.textContent = node.value;
+            }
+        }
+
+        headerEl.appendChild(toggleEl);
+        headerEl.appendChild(iconEl);
+        headerEl.appendChild(labelEl);
+        if (node.value !== undefined) {
+            headerEl.appendChild(valueEl);
+        }
+
+        nodeEl.appendChild(headerEl);
+
+        // Add children container
+        if (node.children && node.children.length > 0) {
+            const childrenEl = document.createElement('div');
+            childrenEl.className = 'tree-node-children';
+
+            // Add click handler for toggle
+            headerEl.addEventListener('click', () => {
+                const isExpanded = childrenEl.classList.contains('expanded');
+                if (isExpanded) {
+                    childrenEl.classList.remove('expanded');
+                    toggleEl.textContent = '+';
+                } else {
+                    childrenEl.classList.add('expanded');
+                    toggleEl.textContent = '−';
+                }
+            });
+
+            // Render children
+            node.children.forEach(child => {
+                if (child.isLeaf) {
+                    const leafEl = document.createElement('div');
+                    leafEl.className = `tree-node-leaf tree-level-${(level + 1) % 5}`;
+
+                    const leafHeaderEl = document.createElement('div');
+                    leafHeaderEl.className = 'tree-node-header';
+
+                    const leafIconEl = document.createElement('div');
+                    leafIconEl.className = 'tree-node-icon';
+                    leafIconEl.textContent = child.icon || '•';
+
+                    const leafLabelEl = document.createElement('div');
+                    leafLabelEl.className = 'tree-node-label';
+                    leafLabelEl.textContent = child.label;
+
+                    const leafValueEl = document.createElement('div');
+                    leafValueEl.className = 'tree-node-value';
+                    if (child.fullValue !== undefined) {
+                        // Use formatted number with tooltip for numeric values
+                        const formattedElement = NumberFormatter.createFormattedElement(child.fullValue);
+                        leafValueEl.appendChild(formattedElement);
+                    } else {
+                        leafValueEl.textContent = child.value || '';
+                    }
+
+                    leafHeaderEl.appendChild(leafIconEl);
+                    leafHeaderEl.appendChild(leafLabelEl);
+                    leafHeaderEl.appendChild(leafValueEl);
+                    leafEl.appendChild(leafHeaderEl);
+
+                    childrenEl.appendChild(leafEl);
+                } else {
+                    this.renderTreeNode(child, childrenEl, level + 1);
+                }
+            });
+
+            nodeEl.appendChild(childrenEl);
+        }
+
+        container.appendChild(nodeEl);
+    }
+
     // Ported rendering logic from main_old.js adjusted for server JSON
     updateVisualization(state) {
         if (!this.svg) return;
+
+        // Store current state for region selection updates
+        this.currentState = state;
 
         const { width, height } = this.d3cfg;
 
@@ -506,17 +1035,13 @@ class OptimizationUI {
         const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
             .domain([logScoreMax, logScoreMin]); // lower scores are greener
 
-        // Create color scale for zones
-        const zoneColors = this.generateZoneColors(state.regions || []);
+
 
         // Render regions
         const regionsSel = this.gRegions.selectAll('.region')
             .data(state.regions || [], d => `${d.bounds.x}-${d.bounds.y}`);
 
-        const fmtDec = (num) => {
-            if (num === 0) return '0';
-            return Number(num).toFixed(20).replace(/\.?0+$/, '');
-        };
+
 
         regionsSel.enter().append('rect')
             .attr('class', 'region')
@@ -530,35 +1055,30 @@ class OptimizationUI {
                 if (d.min_score == null) return colorScale(logScoreMax);
                 return colorScale(Math.log10(d.min_score));
             })
-            .attr('stroke', d => {
-                // Use zone color for border if zone information is available
-                if (d.zone !== undefined && d.zone !== null) {
-                    return zoneColors[d.zone] || '#ccc';
+            .attr('stroke', d => this.isRegionSelected(d) ? '#ff6600' : '#ccc')
+            .attr('stroke-width', d => this.isRegionSelected(d) ? 3 : 0.5)
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                // Stop event propagation to prevent clearing selection
+                event.stopPropagation();
+
+                // Toggle selection
+                if (this.isRegionSelected(d)) {
+                    this.selectedRegion = null;
+                    this.hideRegionPanel();
+                } else {
+                    this.selectedRegion = d;
+
+                    // Find organisms in this region
+                    const organismsInRegion = (state.organisms || []).filter(o => isOrgInRegion(o, d));
+
+                    // Show and update the region panel
+                    this.showRegionPanel();
+                    this.updateRegionPanel(d, organismsInRegion);
                 }
-                return '#ccc';
-            })
-            .attr('stroke-width', d => {
-                // Make zone borders more prominent
-                return (d.zone !== undefined && d.zone !== null) ? 2 : 0.5;
-            })
-            .on('mouseover', (event, d) => {
-                const orgCount = (state.organisms || []).filter(o => isOrgInRegion(o, d)).length;
-                console.log('[UI] Region hover', { region: d, carrying_capacity: d.carrying_capacity, min_score: d.min_score, orgCount });
-                const tooltip = d3.select('#tooltip');
-                tooltip.transition().duration(200).style('opacity', 0.9);
-                tooltip.html(
-                    `Region Bounds:<br/>  x: [${d.bounds.x[0].toFixed(2)}, ${d.bounds.x[1].toFixed(2)}]` +
-                    `<br/>  y: [${d.bounds.y[0].toFixed(2)}, ${d.bounds.y[1].toFixed(2)}]` +
-                    `<br/>Min Score: ${d.min_score != null ? fmtDec(d.min_score) : 'N/A'}` +
-                    `<br/>Zone: ${d.zone !== undefined && d.zone !== null ? d.zone : 'N/A'}` +
-                    `<br/>Carrying Capacity: ${d.carrying_capacity}` +
-                    `<br/>Organisms: ${orgCount}`
-                )
-                    .style('left', (event.pageX + 5) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
-            })
-            .on('mouseout', () => {
-                d3.select('#tooltip').transition().duration(500).style('opacity', 0);
+
+                // Update visualization to show selection state
+                this.updateVisualization(this.currentState);
             });
 
         regionsSel.exit().remove();
@@ -626,10 +1146,10 @@ class OptimizationUI {
 
         // Corner coordinate labels (show current view bounds)
         const corners = [
-            { key: 'tl', x: 0, y: 0, label: `(${xMin.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'start', vy: '1em' },
-            { key: 'tr', x: width, y: 0, label: `(${xMax.toFixed(2)}, ${yMax.toFixed(2)})`, anchor: 'end', vy: '1em' },
-            { key: 'bl', x: 0, y: height, label: `(${xMin.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'start', vy: '-0.3em' },
-            { key: 'br', x: width, y: height, label: `(${xMax.toFixed(2)}, ${yMin.toFixed(2)})`, anchor: 'end', vy: '-0.3em' },
+            { key: 'tl', x: 0, y: 0, label: `(${NumberFormatter.format(xMin)}, ${NumberFormatter.format(yMax)})`, anchor: 'start', vy: '1em' },
+            { key: 'tr', x: width, y: 0, label: `(${NumberFormatter.format(xMax)}, ${NumberFormatter.format(yMax)})`, anchor: 'end', vy: '1em' },
+            { key: 'bl', x: 0, y: height, label: `(${NumberFormatter.format(xMin)}, ${NumberFormatter.format(yMin)})`, anchor: 'start', vy: '-0.3em' },
+            { key: 'br', x: width, y: height, label: `(${NumberFormatter.format(xMax)}, ${NumberFormatter.format(yMin)})`, anchor: 'end', vy: '-0.3em' },
         ];
 
         const cornerSel = this.gCorners.selectAll('.corner-label').data(corners, d => d.key);
@@ -661,68 +1181,20 @@ class OptimizationUI {
             .attr('stroke-width', 0.75)
             .attr('cx', d => this.xScale(d.params.x))
             .attr('cy', d => this.yScale(d.params.y))
-            .on('mouseover', (event, d) => {
-                console.log('[UI] Organism hover', d);
-                const tooltip = d3.select('#tooltip');
-                tooltip.transition().duration(200).style('opacity', 0.9);
-                tooltip.html(
-                    `Organism ID: ${d.id}<br/>  x: ${d.params.x.toFixed(2)}<br/>  y: ${d.params.y.toFixed(2)}<br/>Age: ${d.age}<br/>Max Age: ${d.max_age} (raw: ${d.raw_max_age.toFixed(3)})<br/>Score: ${d.score !== null && d.score !== undefined ? d.score.toFixed(6) : 'N/A'}`
-                )
-                    .style('left', (event.pageX + 5) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
+            .on('click', (event, d) => {
+                // Stop event propagation to prevent background clearing
+                event.stopPropagation();
+
+                // Show organism detail modal
+                this.showOrganismModal();
+                this.updateOrganismModal(d);
             })
-            .on('mouseout', () => {
-                d3.select('#tooltip').transition().duration(500).style('opacity', 0);
-            });
+            .style('cursor', 'pointer');
 
         orgSel.exit().remove();
     }
 
-    // Generate distinct colors for each zone
-    generateZoneColors(regions) {
-        // Find all unique zone IDs
-        const zoneIds = [...new Set(regions.map(r => r.zone).filter(zone => zone !== undefined && zone !== null))];
 
-        // Create a color palette with distinct, visually appealing colors
-        const colorPalette = [
-            '#e41a1c', // red
-            '#377eb8', // blue  
-            '#4daf4a', // green
-            '#984ea3', // purple
-            '#ff7f00', // orange
-            '#ffff33', // yellow
-            '#a65628', // brown
-            '#f781bf', // pink
-            '#999999', // gray
-            '#1f78b4', // dark blue
-            '#33a02c', // dark green
-            '#fb9a99', // light red
-            '#a6cee3', // light blue
-            '#b2df8a', // light green
-            '#fdbf6f', // light orange
-            '#cab2d6', // light purple
-            '#ffff99', // light yellow
-            '#b15928', // dark brown
-            '#6a3d9a', // dark purple
-            '#ff1493'  // deep pink
-        ];
-
-        const zoneColors = {};
-        zoneIds.forEach((zoneId, index) => {
-            // Use palette colors first, then generate HSL colors for additional zones
-            if (index < colorPalette.length) {
-                zoneColors[zoneId] = colorPalette[index];
-            } else {
-                // Generate additional colors using HSL with varying hue
-                const hue = (index * 137.508) % 360; // Golden angle for good distribution
-                const saturation = 60 + (index % 3) * 15; // Vary saturation slightly
-                const lightness = 45 + (index % 4) * 10; // Vary lightness slightly
-                zoneColors[zoneId] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            }
-        });
-
-        return zoneColors;
-    }
 }
 
 // Initialize the application

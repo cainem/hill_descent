@@ -1,3 +1,4 @@
+use crate::locus::locus_adjustment::DirectionOfTravel;
 use serde::Serialize;
 use serde_json;
 
@@ -25,7 +26,6 @@ pub struct RegionState {
     pub carrying_capacity: usize,
     bounds: RegionBoundsState,
     min_score: Option<f64>,
-    zone: Option<usize>,
 }
 
 #[derive(Serialize, Debug)]
@@ -34,14 +34,59 @@ struct OrganismParamsState {
     y: f64,
 }
 
+// Full detail structures for complete organism information
+#[derive(Serialize, Debug)]
+struct LocusAdjustmentState {
+    adjustment_value: f64,
+    direction_of_travel: String, // "Add" or "Subtract"
+    doubling_or_halving_flag: bool,
+    checksum: u64,
+}
+
+#[derive(Serialize, Debug)]
+struct LocusState {
+    value: f64,
+    adjustment: LocusAdjustmentState,
+    apply_adjustment_flag: bool,
+}
+
+#[derive(Serialize, Debug)]
+struct GameteState {
+    loci: Vec<LocusState>,
+}
+
+#[derive(Serialize, Debug)]
+struct SystemParametersState {
+    m1: f64,
+    m2: f64,
+    m3: f64,
+    m4: f64,
+    m5: f64,
+    max_age: f64,
+    crossover_points: f64,
+}
+
+#[derive(Serialize, Debug)]
+struct PhenotypeState {
+    gamete1: GameteState,
+    gamete2: GameteState,
+    expressed_values: Vec<f64>,
+    system_parameters: SystemParametersState,
+    expressed_hash: u64,
+}
+
 #[derive(Serialize, Debug)]
 struct OrganismState {
     id: usize,
     params: OrganismParamsState,
     age: usize,
     max_age: usize,
-    raw_max_age: f64,
     score: Option<f64>,
+    region_key: Option<Vec<usize>>,
+    is_dead: bool,
+    parent_id_1: Option<usize>,
+    parent_id_2: Option<usize>,
+    phenotype: PhenotypeState,
 }
 
 #[derive(Serialize, Debug)]
@@ -50,6 +95,69 @@ struct WorldState {
     score_range: ScoreRangeState,
     regions: Vec<RegionState>,
     organisms: Vec<OrganismState>,
+}
+
+// Helper functions for converting internal structures to state structures
+impl LocusAdjustmentState {
+    fn from_locus_adjustment(adj: &crate::locus::locus_adjustment::LocusAdjustment) -> Self {
+        Self {
+            adjustment_value: adj.adjustment_value().get(),
+            direction_of_travel: match adj.direction_of_travel() {
+                DirectionOfTravel::Add => "Add".to_string(),
+                DirectionOfTravel::Subtract => "Subtract".to_string(),
+            },
+            doubling_or_halving_flag: adj.doubling_or_halving_flag(),
+            checksum: adj.checksum(),
+        }
+    }
+}
+
+impl LocusState {
+    fn from_locus(locus: &crate::locus::Locus) -> Self {
+        Self {
+            value: locus.value().get(),
+            adjustment: LocusAdjustmentState::from_locus_adjustment(locus.adjustment()),
+            apply_adjustment_flag: locus.apply_adjustment_flag(),
+        }
+    }
+}
+
+impl GameteState {
+    fn from_gamete(gamete: &crate::gamete::Gamete) -> Self {
+        Self {
+            loci: gamete.loci().iter().map(LocusState::from_locus).collect(),
+        }
+    }
+}
+
+impl SystemParametersState {
+    fn from_system_parameters(
+        sys_params: &crate::parameters::system_parameters::SystemParameters,
+    ) -> Self {
+        Self {
+            m1: sys_params.m1(),
+            m2: sys_params.m2(),
+            m3: sys_params.m3(),
+            m4: sys_params.m4(),
+            m5: sys_params.m5(),
+            max_age: sys_params.max_age(),
+            crossover_points: sys_params.crossover_points(),
+        }
+    }
+}
+
+impl PhenotypeState {
+    fn from_phenotype(phenotype: &crate::phenotype::Phenotype) -> Self {
+        Self {
+            gamete1: GameteState::from_gamete(phenotype.gamete1()),
+            gamete2: GameteState::from_gamete(phenotype.gamete2()),
+            expressed_values: phenotype.expressed_values().to_vec(),
+            system_parameters: SystemParametersState::from_system_parameters(
+                phenotype.system_parameters(),
+            ),
+            expressed_hash: phenotype.expressed_hash(),
+        }
+    }
 }
 
 impl super::World {
@@ -82,13 +190,18 @@ impl super::World {
                 let raw_max_age = o.phenotype().system_parameters().max_age();
                 let rounded_max_age = raw_max_age.round() as usize;
 
+                let (parent_id_1, parent_id_2) = o.parent_ids();
                 Some(OrganismState {
                     id: o.id(),
                     params,
                     age: o.age(),
                     max_age: rounded_max_age,
-                    raw_max_age,
                     score: o.score(),
+                    region_key: o.region_key(),
+                    is_dead: o.is_dead(),
+                    parent_id_1,
+                    parent_id_2,
+                    phenotype: PhenotypeState::from_phenotype(o.phenotype()),
                 })
             })
             .collect();
@@ -98,9 +211,6 @@ impl super::World {
 
         // Also capture the region keys so we can validate organism membership precisely.
         let mut region_keys: Vec<Vec<usize>> = Vec::new();
-
-        // Get zone mapping for including zone numbers in the response
-        let zone_mapping = self.regions.get_zone_mapping();
 
         let regions: Vec<RegionState> = self
             .regions
@@ -129,9 +239,6 @@ impl super::World {
                 // Keep the key for later membership validation
                 region_keys.push(key.clone());
 
-                // Get zone number from zone mapping if available
-                let zone = zone_mapping.and_then(|mapping| mapping.get(key).copied());
-
                 RegionState {
                     bounds: RegionBoundsState {
                         x: bounds_x,
@@ -139,7 +246,6 @@ impl super::World {
                     },
                     min_score: region.min_score(),
                     carrying_capacity: region.carrying_capacity().unwrap_or(0),
-                    zone,
                 }
             })
             .collect();
