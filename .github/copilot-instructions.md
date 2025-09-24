@@ -7,6 +7,7 @@ Rust genetic algorithm optimization system with workspace structure:
 - `hill_descent_lib/` - Core n-dimensional optimization engine (genetic algorithm)
 - `hill_descent_server/` - Web server with Actix for visualization and API endpoints
 - Shared dependencies via workspace `Cargo.toml` (xxhash-rust, rand, serde)
+- developed on a windows platform
 
 ## Essential Initialization Pattern
 ```rust
@@ -47,6 +48,7 @@ cargo test --workspace                    # Run all tests
 
 ## Testing Requirements  
 - Full branch/condition coverage per function (not transitive)
+- Test boundary conditions, this is especially important if floating point numbers are used with the function
 - Minimal mocking (only PRNG via `StdRng::from_seed`)
 - Use `test_utils` module patterns for shared setup
 - Integration tests in `tests/` directory for complete workflows
