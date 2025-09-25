@@ -27,11 +27,16 @@ impl Regions {
         let mut finite_fitness_data = Vec::new(); // (key, region_ref, inverse_fitness)
 
         for (key, region) in self.iter_regions() {
-            if let Some(min_score) = region.min_score()
-                && min_score > 0.0
-            {
+            if let Some(min_score) = region.min_score() {
+                // Fitness values should already be validated upstream, but double-check defensively
+                debug_assert!(
+                    min_score >= 0.0 && min_score.is_finite(),
+                    "Invalid fitness score {min_score} - should be caught in organism.run()"
+                );
+
                 let inverse_fitness = 1.0 / min_score;
                 if inverse_fitness.is_infinite() {
+                    // Zero min_score results in infinite fitness (perfect solution)
                     infinite_fitness_regions.push(key.clone());
                 } else {
                     finite_fitness_data.push((key.clone(), inverse_fitness));
@@ -79,8 +84,8 @@ impl Regions {
                         // Last region gets remaining capacity to ensure exact total
                         total_population_size - allocated_so_far
                     } else {
-                        let capacity_float =
-                            total_population_size as f64 * (*inverse_fitness / sum_inverse_fitness);
+                        let proportion = *inverse_fitness / sum_inverse_fitness;
+                        let capacity_float = (total_population_size as f64) * proportion;
                         let capacity = capacity_float.floor() as usize;
                         allocated_so_far += capacity;
                         capacity
@@ -167,7 +172,7 @@ mod test_update_carrying_capacities {
     }
 
     #[test]
-    fn given_sum_inverse_fitness_zero_when_update_capacities_then_all_capacities_zero() {
+    fn given_zero_min_score_when_update_capacities_then_gets_all_capacity() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
         let key1 = vec![1];
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
@@ -177,18 +182,7 @@ mod test_update_carrying_capacities {
                 .get_region(&key1)
                 .unwrap()
                 .carrying_capacity(),
-            Some(0)
-        );
-
-        // Test with negative score as well
-        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(-5.0)));
-        regions_struct.update_carrying_capacities();
-        assert_eq!(
-            regions_struct
-                .get_region(&key1)
-                .unwrap()
-                .carrying_capacity(),
-            Some(0)
+            Some(10) // Zero score gets infinite fitness, so gets all capacity
         );
     }
 
@@ -400,16 +394,13 @@ mod test_update_carrying_capacities {
     }
 
     #[test]
-    fn given_mix_of_zero_and_positive_min_scores_when_update_capacities_then_only_positive_get_capacity()
-     {
+    #[should_panic(expected = "Invalid fitness score -5 - should be caught in organism.run()")]
+    fn given_negative_min_score_when_update_capacities_then_panics() {
         let population_size = 100;
-        let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key_zero = vec![1];
-        let key_negative = vec![2];
-        let key_positive = vec![3];
-        let key_none = vec![4];
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
+        let key_negative = vec![1];
+        let key_positive = vec![2];
 
-        regions_struct.insert_region(key_zero.clone(), setup_region_with_min_score(Some(0.0)));
         regions_struct.insert_region(
             key_negative.clone(),
             setup_region_with_min_score(Some(-5.0)),
@@ -418,29 +409,58 @@ mod test_update_carrying_capacities {
             key_positive.clone(),
             setup_region_with_min_score(Some(10.0)),
         );
+
+        // This should panic due to negative score (debug assertion)
+        regions_struct.update_carrying_capacities();
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid fitness score NaN - should be caught in organism.run()")]
+    fn given_non_finite_min_score_when_update_capacities_then_panics() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
+        let key_nan = vec![1];
+        let key_positive = vec![2];
+
+        regions_struct.insert_region(key_nan.clone(), setup_region_with_min_score(Some(f64::NAN)));
+        regions_struct.insert_region(
+            key_positive.clone(),
+            setup_region_with_min_score(Some(10.0)),
+        );
+
+        // This should panic due to NaN score (debug assertion)
+        regions_struct.update_carrying_capacities();
+    }
+
+    #[test]
+    fn given_zero_and_positive_min_scores_when_update_capacities_then_zero_gets_all_capacity() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
+        let key_zero = vec![1];
+        let key_positive = vec![2];
+        let key_none = vec![3];
+
+        regions_struct.insert_region(key_zero.clone(), setup_region_with_min_score(Some(0.0)));
+        regions_struct.insert_region(
+            key_positive.clone(),
+            setup_region_with_min_score(Some(10.0)),
+        );
         regions_struct.insert_region(key_none.clone(), setup_region_with_min_score(None));
 
         regions_struct.update_carrying_capacities();
 
-        // Only the positive score region gets capacity
-        assert_eq!(
-            regions_struct
-                .get_region(&key_positive)
-                .unwrap()
-                .carrying_capacity(),
-            Some(population_size)
-        );
-        // All others get zero
+        // Zero score region gets infinite fitness (all capacity)
         assert_eq!(
             regions_struct
                 .get_region(&key_zero)
                 .unwrap()
                 .carrying_capacity(),
-            Some(0)
+            Some(population_size)
         );
+        // All others get zero capacity due to zero having infinite fitness
         assert_eq!(
             regions_struct
-                .get_region(&key_negative)
+                .get_region(&key_positive)
                 .unwrap()
                 .carrying_capacity(),
             Some(0)
@@ -452,5 +472,46 @@ mod test_update_carrying_capacities {
                 .carrying_capacity(),
             Some(0)
         );
+    }
+
+    #[test]
+    fn given_only_positive_min_scores_when_update_capacities_then_proportional_allocation() {
+        // Test normal case with only valid positive scores
+        let population_size = 30;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
+
+        let key1 = vec![1];
+        let key2 = vec![2];
+        let key3 = vec![3];
+
+        // Set up regions with different positive scores
+        // inverse fitness: 1.0, 0.5, 0.2; sum = 1.7
+        // proportions: 1.0/1.7 ≈ 0.588, 0.5/1.7 ≈ 0.294, 0.2/1.7 ≈ 0.118
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(1.0)));
+        regions_struct.insert_region(key2.clone(), setup_region_with_min_score(Some(2.0)));
+        regions_struct.insert_region(key3.clone(), setup_region_with_min_score(Some(5.0)));
+
+        regions_struct.update_carrying_capacities();
+
+        let cap1 = regions_struct
+            .get_region(&key1)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap2 = regions_struct
+            .get_region(&key2)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap3 = regions_struct
+            .get_region(&key3)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+
+        // Verify proportional allocation (allowing for rounding)
+        assert!(cap1 >= cap2); // Better score gets more capacity
+        assert!(cap2 >= cap3); // Better score gets more capacity
+        assert_eq!(cap1 + cap2 + cap3, population_size); // All capacity allocated
     }
 }

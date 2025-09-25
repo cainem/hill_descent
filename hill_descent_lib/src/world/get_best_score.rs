@@ -37,7 +37,7 @@ mod tests {
         let mut world = World::new(&bounds, gc, Box::new(TestFn));
 
         // Run training to score organisms
-        world.training_run(&[0.5], &[1.0]);
+        world.training_run(&[0.5], Some(&[1.0]));
 
         let best_score = world.get_best_score();
         assert!(best_score < f64::MAX, "Should have a valid score");

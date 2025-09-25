@@ -5,8 +5,8 @@ use std::ops::RangeInclusive;
 
 // Styblinski–Tang function is a multimodal test function with many local minima.
 // Original formula: f(x,y) = (x⁴ - 16x² + 5x)/2 + (y⁴ - 16y² + 5y)/2
-// The original global minimum is approximately -39.16617 at (-2.903534, -2.903534).
-// We shift the function so that the global minimum becomes 0.
+// The original 1D global minimum is approximately -39.16616570377142 at x ≈ -2.903534.
+// For 2D the global minimum is twice that. We shift exactly so the minimum is 0.0.
 #[derive(Debug)]
 struct StyblinskiTang;
 
@@ -18,16 +18,24 @@ impl SingleValuedFunction for StyblinskiTang {
         let x = phenotype_expressed_values[0];
         let y = phenotype_expressed_values[1];
 
-        // Original Styblinski–Tang function
+        const ST_1D_MIN: f64 = -39.166_165_703_771_42;
         let term_x = (x.powi(4) - 16.0 * x.powi(2) + 5.0 * x) / 2.0;
         let term_y = (y.powi(4) - 16.0 * y.powi(2) + 5.0 * y) / 2.0;
         let original_value = term_x + term_y;
-
-        // Shift the function so that the global minimum becomes 0
-        // The original global minimum value for 2D is approximately -78.33233
-        // Add the absolute value of the minimum to shift everything up
-        original_value + 78.33233
+        let shifted = original_value - 2.0 * ST_1D_MIN; // exact shift
+        debug_assert!(
+            shifted >= -1e-9,
+            "Shifted Styblinski-Tang value unexpectedly negative: {shifted}"
+        );
+        if shifted < 0.0 { 0.0 } else { shifted }
     }
+}
+
+#[test]
+fn given_styblinski_tang_when_evaluated_at_global_min_then_returns_zero() {
+    let st = StyblinskiTang;
+    let v = st.single_run(&[-2.903534, -2.903534]);
+    assert!(v.abs() < 1e-6, "Expected ~0 at global minimum, got {v}");
 }
 
 #[test]
@@ -50,7 +58,7 @@ pub fn execute() {
     // Run for a number of epochs to allow the system to find the minimum.
     for i in 0..3000 {
         // Objective-function mode: no known outputs
-        let at_resolution_limit = world.training_run(&[], &[]);
+        let at_resolution_limit = world.training_run(&[], None);
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();

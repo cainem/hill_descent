@@ -45,7 +45,7 @@ pub fn execute() {
     for i in 0..1200 {
         dbg!(i);
         // Objective-function mode: no known outputs
-        dbg!(world.training_run(&[], &[]));
+        dbg!(world.training_run(&[], None));
         println!("{}\n\n", world.get_state());
     }
 

@@ -19,12 +19,12 @@ Where:
 **2.2. Fitness Function:** The fitness function measures the "goodness" of a set of parameters $(x_1, ..., x_n)$ by comparing the produced outputs $(R_1, ..., R_p)$ to a set of known target outputs $(A_1, ..., A_p)$ for the given `inputs`. The goal is to minimize this fitness value.  
 
 The fitness function is defined as:  
-$fitness(inputs, x_1, x_2, ..., x_n) = \sum_{i=1}^{p} (A_i - R_i)^2 + e_0$  
+$fitness(inputs, x_1, x_2, ..., x_n) = \sum_{i=1}^{p} (A_i - R_i)^2$  
 
 Where:  
 * $(A_1, ..., A_p)$: The known target outputs for the given `inputs`.  
 * $(R_1, ..., R_p)$: The outputs produced by the `NeuralNetwork` (or equivalent function) with the current parameters.  
-* $e_0$: The smallest representable positive floating-point number. This addition prevents the fitness from being exactly zero, thus avoiding potential division-by-zero errors in subsequent calculations (e.g., carrying capacity).
+* Zero fitness scores represent perfect matches and are handled as infinite fitness in carrying capacity calculations.
 
 ## 3. System Overview
 
@@ -124,9 +124,10 @@ An organism is defined by its DNA, which determines its position in the n-dimens
 **Carrying Capacity Formula:**
 * Each region's capacity is allocated proportionally to its inverse fitness: $P_i = P \cdot \frac{1/F_i}{\sum_{j=1}^{R} (1/F_j)}$
     * $P$: Total population capacity
-    * $F_i$: Minimum fitness in region `i` (recall fitness includes $+ e_0$, so $F_i > 0$)
+    * $F_i$: Minimum fitness in region `i` (fitness can be zero, negative, or positive)
     * $R$: Total number of populated regions
     * This formula rewards regions with better performance (lower fitness scores) with higher carrying capacity
+    * **Special handling**: Regions with zero fitness (perfect scores) get infinite inverse fitness and receive priority allocation of all available capacity
 
 **Recalculation Triggers:**
 * Required if previously empty regions become populated, previously populated regions become empty, or if the overall bounding box changes.
@@ -276,7 +277,6 @@ The system proceeds in discrete rounds. Each round involves:
 * System parameters typically evolve more slowly than problem-specific parameters, which is often desirable for meta-evolutionary stability.
 
 **6.3. Derived Values:** * `n`: Total number of dimensions to be optimized.  
-* $e_0$: Smallest representable positive floating-point number.  
 * $\hat{P}$: Number of distinct points in space occupied by organisms (distinctness by bit-wise equality).
 
 ## 7. Underlying Mechanisms and Assumptions

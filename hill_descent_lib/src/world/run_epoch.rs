@@ -24,7 +24,7 @@ impl super::World {
         validate_training_sets(training_data, known_outputs);
 
         for (input, output) in training_data.iter().zip(known_outputs) {
-            self.training_run(input, output);
+            self.training_run(input, Some(output));
         }
     }
 }
