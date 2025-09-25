@@ -54,7 +54,7 @@ impl Organism {
         } else if let Some(dim_idx) = dimension_changed {
             // Optimized path: only one dimension has changed.
             crate::trace!("update_region_key: optimized path taken for dimension {dim_idx}");
-            let mut current_key = self.region_key().clone().unwrap();
+            let mut current_key = self.region_key().unwrap();
             let dimension = dimensions_container.get_dimension(dim_idx);
             let value = self.phenotype().expression_problem_values()[dim_idx];
 

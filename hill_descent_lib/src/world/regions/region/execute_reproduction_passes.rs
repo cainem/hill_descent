@@ -36,26 +36,30 @@ impl Region {
             }
 
             let offspring_this_pass = remaining_to_reproduce.min(max_offspring_per_pass);
-            let mut selected: Vec<Rc<Organism>> = original_organisms[..parents_required].to_vec();
+            let selected_slice = &original_organisms[..parents_required];
 
             // ------------- 3 & 4. Produce offspring -----------------------------
             let mut offspring: Vec<Organism> = Vec::new();
 
+            // Track whether we've used the first parent for asexual reproduction
+            let mut asexual_reproduction_done = false;
+
             // If odd, #0 reproduces asexually first.
-            if selected.len() % 2 == 1 && offspring.len() < offspring_this_pass {
-                let parent = &selected[0];
+            if selected_slice.len() % 2 == 1 && offspring.len() < offspring_this_pass {
+                let parent = &selected_slice[0];
                 let child_pheno = parent.phenotype().asexual_reproduction(rng);
                 offspring.push(Organism::new(
                     Rc::new(child_pheno),
                     0,
                     (Some(parent.id()), None), // Asexual: one parent
                 ));
-                // Remove the first so that the remainder is even
-                selected.remove(0);
+                asexual_reproduction_done = true;
             }
 
             // Pair sequentially for sexual reproduction.
-            for chunk in selected.chunks(2) {
+            // Skip the first organism if it was used for asexual reproduction
+            let sexual_start = if asexual_reproduction_done { 1 } else { 0 };
+            for chunk in selected_slice[sexual_start..].chunks(2) {
                 if offspring.len() >= offspring_this_pass {
                     break;
                 }
