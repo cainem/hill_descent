@@ -238,11 +238,22 @@ impl SingleValuedFunction for StyblinskiTang {
         assert_eq!(2, phenotype_expressed_values.len());
         let x = phenotype_expressed_values[0];
         let y = phenotype_expressed_values[1];
+        // Original 1D minimum ≈ -39.16616570377142 at x≈-2.903534
+        const ST_1D_MIN: f64 = -39.166_165_703_771_42; // full precision constant
         let term_x = (x.powi(4) - 16.0 * x.powi(2) + 5.0 * x) / 2.0;
         let term_y = (y.powi(4) - 16.0 * y.powi(2) + 5.0 * y) / 2.0;
         let original_value = term_x + term_y;
-        // Shift so global min is 0 (original min for 2D is about -78.33233)
-        original_value + 78.33233
+        // Exact shift to make global 2D minimum 0.0
+        let shifted = original_value - 2.0 * ST_1D_MIN;
+        debug_assert!(
+            shifted >= -1e-9,
+            "Shifted Styblinski-Tang value unexpectedly negative: {shifted}"
+        );
+        if shifted < 0.0 {
+            0.0
+        } else {
+            shifted
+        }
     }
 }
 

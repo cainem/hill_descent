@@ -11,6 +11,9 @@ impl Organism {
     ///    is taken directly as the fitness. This lets callers minimise an arbitrary n-dimensional
     ///    function without knowing its true minimum.
     ///
+    /// **Important**: Fitness functions must return non-negative values. In objective-function mode,
+    /// ensure your fitness function is properly normalized (e.g., shift so global minimum ≥ 0).
+    ///
     /// # Panics
     ///
     /// This function will panic if:
@@ -18,16 +21,13 @@ impl Organism {
     /// - In supervised mode (`Some(&[f64])`), the known_outputs slice is empty
     /// - In supervised mode (`Some(&[f64])`), any known_outputs contain non-finite numbers (NaN or Infinity)
     /// - In objective-function mode (`None`), the world function returns no outputs
+    /// - The computed fitness score is negative (fitness functions must be normalized to return ≥ 0)
+    /// - The computed fitness score is non-finite (NaN or Infinity)
     pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: Option<&[f64]>) {
         // Run the world function with the input for each phenotype
         let phenotype = self.phenotype();
         let phenotype_expressed_values = phenotype.expression_problem_values();
         let outputs = function.run(phenotype_expressed_values, inputs);
-
-        debug_assert!(
-            outputs.iter().all(|&x| x.is_finite()),
-            "output must only contain finite numbers"
-        );
 
         // Determine the fitness score depending on the scoring mode.
         let score = match known_outputs {
@@ -66,6 +66,16 @@ impl Organism {
                     .sum::<f64>()
             }
         };
+
+        // Validate that the score is finite and non-negative
+        assert!(
+            score.is_finite(),
+            "Fitness score must be finite, got: {score}. This indicates a bug in the fitness function implementation."
+        );
+        assert!(
+            score >= 0.0,
+            "Fitness score must be non-negative, got: {score}. This indicates the fitness function is not properly normalized for minimization."
+        );
 
         self.set_score(Some(score));
     }
@@ -214,5 +224,60 @@ mod tests {
             output_values: vec![1.0, 2.0],
         };
         organism.run(&test_fn, &inputs, Some(&nan_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be non-negative")]
+    fn given_negative_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![-2.5], // Negative fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be finite")]
+    fn given_infinite_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![f64::INFINITY], // Infinite fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be finite")]
+    fn given_nan_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![f64::NAN], // NaN fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    fn given_zero_fitness_when_objective_mode_then_succeeds() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![0.0], // Zero fitness should be allowed
+        };
+        organism.run(&test_fn, &inputs, None);
+        assert_eq!(organism.score(), Some(0.0));
+    }
+
+    #[test]
+    fn given_positive_fitness_when_objective_mode_then_succeeds() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![42.0], // Positive fitness should work
+        };
+        organism.run(&test_fn, &inputs, None);
+        assert_eq!(organism.score(), Some(42.0));
     }
 }

@@ -20,13 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // List of algorithms to benchmark
     let algorithms: Vec<Box<dyn BenchmarkAlgorithm>> = vec![
+        Box::new(StyblinskiTangAlgorithm),
         Box::new(AckleyAlgorithm),
         Box::new(HimmelblauAlgorithm),
         Box::new(BukinN6Algorithm),
         Box::new(LeviN13Algorithm),
         Box::new(RastriginAlgorithm),
         Box::new(SchafferN2Algorithm),
-        Box::new(StyblinskiTangAlgorithm),
     ];
 
     // Run benchmarks for each algorithm
