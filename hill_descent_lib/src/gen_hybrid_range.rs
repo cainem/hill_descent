@@ -19,7 +19,7 @@ const RATIO_THRESHOLD: f64 = 1000.0;
 /// - For ranges that cross zero or span many orders of magnitude, it uses
 ///   a log-uniform distribution to ensure values are generated across the
 ///   entire scale of the range.
-pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
+pub fn gen_hybrid_range(rng: &mut impl Rng, range: &RangeInclusive<f64>) -> f64 {
     let (low, high) = (*range.start(), *range.end());
 
     // --- Input Validation ---
@@ -99,7 +99,7 @@ pub fn gen_hybrid_range(rng: &mut impl Rng, range: RangeInclusive<f64>) -> f64 {
 
     // --- Default Case ---
     // If none of the log-uniform conditions were met, use the standard linear distribution.
-    rng.random_range(range)
+    rng.random_range(range.clone())
 }
 
 #[cfg(test)]
@@ -115,7 +115,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let mut samples = Vec::with_capacity(1000);
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v));
             samples.push(v);
         }
@@ -132,14 +132,14 @@ mod tests {
     #[test]
     fn given_equal_bounds_when_gen_hybrid_range_then_returns_single_bound_value() {
         let mut rng = StdRng::seed_from_u64(42);
-        let val = gen_hybrid_range(&mut rng, 5.0..=5.0);
+        let val = gen_hybrid_range(&mut rng, &(5.0..=5.0));
         assert_eq!(val, 5.0);
     }
 
     #[test]
     fn given_low_greater_than_high_when_gen_hybrid_range_then_returns_nan() {
         let mut rng = StdRng::seed_from_u64(42);
-        let val = gen_hybrid_range(&mut rng, 10.0..=5.0);
+        let val = gen_hybrid_range(&mut rng, &(10.0..=5.0));
         assert!(val.is_nan());
     }
 
@@ -148,7 +148,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(7);
         let range: RangeInclusive<f64> = 1.0..=10.0;
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v), "{v} not within {range:?}");
         }
     }
@@ -160,7 +160,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(99);
         let range: RangeInclusive<f64> = -1e6..=1e6;
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v));
         }
     }
@@ -170,7 +170,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(123);
         let range: RangeInclusive<f64> = -10.0..=20.0; // crosses zero but not wide
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v));
         }
     }
@@ -180,7 +180,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(456);
         let range: RangeInclusive<f64> = 0.001..=1_000_000.0; // positive and wide
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v));
             assert!(v >= 0.0);
         }
@@ -191,7 +191,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(789);
         let range: RangeInclusive<f64> = -1_000_000.0..=-0.001; // negative and wide
         for _ in 0..100 {
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             assert!(range.contains(&v));
             assert!(v <= 0.0);
         }
@@ -204,7 +204,7 @@ mod tests {
         let mut found = None;
         for seed in 0u64..1000 {
             let mut rng = StdRng::seed_from_u64(seed);
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             if v >= 0.0 {
                 found = Some(v);
                 break;
@@ -222,7 +222,7 @@ mod tests {
         let mut found = None;
         for seed in 0u64..1000 {
             let mut rng = StdRng::seed_from_u64(seed);
-            let v = gen_hybrid_range(&mut rng, range.clone());
+            let v = gen_hybrid_range(&mut rng, &range);
             if v <= 0.0 {
                 found = Some(v);
                 break;

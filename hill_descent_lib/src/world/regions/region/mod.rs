@@ -35,7 +35,7 @@ impl Region {
     /// that is lower than the current min_score.
     pub fn add_organism(&mut self, organism: Rc<Organism>) {
         // Add organism to the region
-        self.organisms.push(organism.clone());
+        self.organisms.push(Rc::clone(&organism));
 
         // Update min_score if this organism has a positive score
         if let Some(score) = organism.score()
