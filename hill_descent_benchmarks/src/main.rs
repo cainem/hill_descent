@@ -46,12 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Results for {}:", algorithm.name());
         for config in &results.configurations {
             println!(
-                "  Pop: {}, Regions: {}, Avg Rounds: {:.1}, Resolution Hits: {}/{}, Best Score: {:.6}, Avg Time: {:.3}s",
+                "  Pop: {}, Regions: {}, Total Rounds: {:.0}, Total Resolution Hits: {}, Best Score: {:.6}, Avg Time: {:.3}s",
                 config.population,
                 config.regions,
                 config.average_rounds(),
                 config.resolution_limit_hits(),
-                runner::RUNS_PER_CONFIG,
                 config.best_score(),
                 config.average_time_secs()
             );

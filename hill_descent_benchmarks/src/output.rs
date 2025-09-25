@@ -54,18 +54,17 @@ pub fn write_results_to_file(
     // Write results table
     writeln!(file, "## Results")?;
     writeln!(file)?;
-    writeln!(file, "| Runs | Population | Regions | Max Rounds | Avg Rounds | Hit Resolution Limit | Best Score | Avg Time (s) |")?;
-    writeln!(file, "|------|------------|---------|------------|------------|---------------------|------------|--------------|")?;
+    writeln!(file, "| Runs | Population | Regions | Total Rounds | Total Resolution Hits | Best Score | Avg Time (s) |")?;
+    writeln!(file, "|------|------------|---------|--------------|----------------------|------------|--------------|")?;
 
     for config in &results.configurations {
         writeln!(
             file,
-            "| {} | {} | {} | {} | {:.1} | {} | {:.6e} | {:.3} |",
+            "| {} | {} | {} | {} | {} | {:.6e} | {:.3} |",
             crate::runner::RUNS_PER_CONFIG,
             config.population,
             config.regions,
             crate::runner::MAX_ROUNDS,
-            config.average_rounds(),
             config.resolution_limit_hits(),
             config.best_score(),
             config.average_time_secs()
@@ -89,11 +88,11 @@ pub fn write_results_to_file(
         writeln!(file)?;
         writeln!(
             file,
-            "| Run | Seed | Rounds | Hit Limit | Score | Time (s) |"
+            "| Run | Seed | Rounds | Resolution Hits | Score | Time (s) |"
         )?;
         writeln!(
             file,
-            "|-----|------|--------|-----------|-------|----------|"
+            "|-----|------|--------|-----------------|-------|----------|"
         )?;
 
         for (run_idx, run) in config.runs.iter().enumerate() {
@@ -104,11 +103,7 @@ pub fn write_results_to_file(
                 run_idx + 1,
                 seed,
                 run.rounds_taken,
-                if run.hit_resolution_limit {
-                    "✓"
-                } else {
-                    "✗"
-                },
+                run.resolution_limit_count,
                 run.best_score,
                 run.duration_secs
             )?;
