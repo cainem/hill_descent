@@ -42,14 +42,14 @@ fn test_organism_ids_persist_across_epochs() {
     println!("Initial organism IDs: {:?}", initial_ids);
 
     // Act: Run one training epoch
-    world.training_run(&inputs, &known_outputs);
+    world.training_run(&inputs, Some(&known_outputs));
 
     // Capture IDs after first epoch
     let after_epoch_ids = get_organism_ids_from_world(&world);
     println!("After epoch 1 IDs: {:?}", after_epoch_ids);
 
     // Run second epoch
-    world.training_run(&inputs, &known_outputs);
+    world.training_run(&inputs, Some(&known_outputs));
 
     // Capture IDs after second epoch
     let after_epoch2_ids = get_organism_ids_from_world(&world);

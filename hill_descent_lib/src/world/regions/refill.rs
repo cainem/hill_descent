@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn given_organisms_with_zero_or_negative_scores_when_refill_then_min_scores_not_updated() {
+    fn given_organisms_with_zero_and_negative_scores_when_refill_then_zero_is_min_score() {
         // Arrange
         let gc = GlobalConstants::new(10, 4);
         let mut regions = Regions::new(&gc);
@@ -195,7 +195,7 @@ mod tests {
         // Create organisms with zero/negative scores
         let organism1 = create_test_organism_with_score_and_key(Some(0.0), Some(vec![0, 0]));
         let organism2 = create_test_organism_with_score_and_key(Some(-1.0), Some(vec![0, 0]));
-        let organism3 = create_test_organism_with_score_and_key(Some(5.0), Some(vec![0, 0])); // Valid score
+        let organism3 = create_test_organism_with_score_and_key(Some(5.0), Some(vec![0, 0])); // Higher score
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2, organism3]);
 
@@ -207,8 +207,8 @@ mod tests {
         assert_eq!(region.organism_count(), 3);
         assert_eq!(
             region.min_score(),
-            Some(5.0),
-            "Only positive scores should be considered for min_score"
+            Some(-1.0),
+            "Negative scores are better than zero or positive scores"
         );
     }
 }

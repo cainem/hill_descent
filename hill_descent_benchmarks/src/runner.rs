@@ -24,7 +24,7 @@ pub const RUNS_PER_CONFIG: usize = 20;
 #[derive(Debug)]
 pub struct SingleRunResult {
     pub rounds_taken: u32,
-    pub hit_resolution_limit: bool,
+    pub resolution_limit_count: u32,
     pub best_score: f64,
     pub duration_secs: f64,
 }
@@ -52,9 +52,9 @@ impl ConfigurationResults {
         total as f64 / self.runs.len() as f64
     }
 
-    /// Calculate how many runs hit the resolution limit
-    pub fn resolution_limit_hits(&self) -> usize {
-        self.runs.iter().filter(|r| r.hit_resolution_limit).count()
+    /// Calculate total resolution limit hits across all runs
+    pub fn resolution_limit_hits(&self) -> u32 {
+        self.runs.iter().map(|r| r.resolution_limit_count).sum()
     }
 
     /// Calculate average time taken across all runs
@@ -116,23 +116,20 @@ fn run_single_benchmark(
     let mut world = setup_world(&param_ranges, global_constants, function);
     let start_time = Instant::now();
 
-    let mut rounds_taken = 0u32;
-    let mut hit_resolution_limit = false;
+    let rounds_taken = MAX_ROUNDS;
+    let mut resolution_limit_count = 0u32;
 
-    // Run the optimization for up to MAX_ROUNDS
+    // Run the optimization for all MAX_ROUNDS
     for _round in 0..MAX_ROUNDS {
-        rounds_taken += 1;
-
         if _round == 564 {
             // put breakpoint here to stop at round problem exists.
-            rounds_taken += 1;
-            rounds_taken -= 1;
+            resolution_limit_count += 1;
+            resolution_limit_count -= 1;
         }
 
-        // Run training and check if resolution limit reached
-        if world.training_run(&[], &[]) {
-            hit_resolution_limit = true;
-            break;
+        // Run training and count resolution limit hits
+        if world.training_run(&[], None) {
+            resolution_limit_count += 1;
         }
     }
 
@@ -141,7 +138,7 @@ fn run_single_benchmark(
 
     SingleRunResult {
         rounds_taken,
-        hit_resolution_limit,
+        resolution_limit_count,
         best_score,
         duration_secs: duration.as_secs_f64(),
     }

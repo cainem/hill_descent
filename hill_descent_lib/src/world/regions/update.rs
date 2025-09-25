@@ -21,9 +21,8 @@ impl super::Regions {
     ///      changed.  When it returns `None`, the space is considered stable and
     ///      we exit the loop.
     /// 3. Finally we recompute per-region statistics:
-    ///    * `update_all_region_min_scores` – lowest fitness observed in each region.
     ///    * `update_carrying_capacities`   – ecological capacity derived from
-    ///      these scores and global constants.
+    ///      region min_scores and global constants.
     ///
     /// Updates the regions based on the current organisms and dimensions.
     ///

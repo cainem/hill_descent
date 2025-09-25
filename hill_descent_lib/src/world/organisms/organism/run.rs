@@ -1,58 +1,81 @@
-use crate::E0;
 use crate::world::{organisms::Organism, world_function::WorldFunction};
 
 impl Organism {
     /// Runs the organism's phenotype with the provided function and inputs.
     ///
     /// Behaviour depends on `known_outputs`:
-    /// 1. **Supervised mode** – when `known_outputs` is **non-empty** the score is the
-    ///    sum-of-squared-errors between the world-function outputs and the `known_outputs`, plus `E0`.
-    /// 2. **Objective-function mode** – when `known_outputs` is **empty** the world function is assumed
+    /// 1. **Supervised mode** – when `known_outputs` is `Some(&[f64])` the score is the
+    ///    sum-of-squared-errors between the world-function outputs and the `known_outputs`.
+    /// 2. **Objective-function mode** – when `known_outputs` is `None` the world function is assumed
     ///    to return a single scalar that is to be *minimised*. The first element of the output vector
-    ///    is taken directly as the fitness (again with `E0` added). This lets callers minimise an
-    ///    arbitrary n-dimensional function without knowing its true minimum.
+    ///    is taken directly as the fitness. This lets callers minimise an arbitrary n-dimensional
+    ///    function without knowing its true minimum.
+    ///
+    /// **Important**: Fitness functions must return non-negative values. In objective-function mode,
+    /// ensure your fitness function is properly normalized (e.g., shift so global minimum ≥ 0).
     ///
     /// # Panics
     ///
-    /// This function will panic if the number of outputs from the world function does not match
-    /// the number of known outputs provided.
-    pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
+    /// This function will panic if:
+    /// - The number of outputs from the world function does not match the number of known outputs provided
+    /// - In supervised mode (`Some(&[f64])`), the known_outputs slice is empty
+    /// - In supervised mode (`Some(&[f64])`), any known_outputs contain non-finite numbers (NaN or Infinity)
+    /// - In objective-function mode (`None`), the world function returns no outputs
+    /// - The computed fitness score is negative (fitness functions must be normalized to return ≥ 0)
+    /// - The computed fitness score is non-finite (NaN or Infinity)
+    pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: Option<&[f64]>) {
         // Run the world function with the input for each phenotype
         let phenotype = self.phenotype();
         let phenotype_expressed_values = phenotype.expression_problem_values();
         let outputs = function.run(phenotype_expressed_values, inputs);
 
-        debug_assert!(
-            outputs.iter().all(|&x| x.is_finite()),
-            "output must only contain finite numbers"
-        );
-
         // Determine the fitness score depending on the scoring mode.
-        let score = if known_outputs.is_empty() {
-            // Objective-function mode.
-            if outputs.is_empty() {
-                panic!(
-                    "World function returned no outputs, cannot evaluate objective-function mode."
-                );
+        let score = match known_outputs {
+            None => {
+                // Objective-function mode.
+                if outputs.is_empty() {
+                    panic!(
+                        "World function returned no outputs, cannot evaluate objective-function mode."
+                    );
+                }
+                outputs[0]
             }
-            outputs[0] + E0
-        } else {
-            // Supervised mode – minimise squared error to known outputs.
-            if outputs.len() != known_outputs.len() {
-                panic!(
-                    "The number of outputs ({}) must match the number of known outputs ({}).",
-                    outputs.len(),
-                    known_outputs.len()
+            Some(expected_outputs) => {
+                // Supervised mode – minimise squared error to known outputs.
+                debug_assert!(
+                    !expected_outputs.is_empty(),
+                    "known_outputs must not be empty in supervised mode"
                 );
-            }
+                debug_assert!(
+                    expected_outputs.iter().all(|&x| x.is_finite()),
+                    "known_outputs must only contain finite numbers"
+                );
 
-            outputs
-                .iter()
-                .zip(known_outputs.iter())
-                .map(|(a, b)| (a - b).powi(2))
-                .sum::<f64>()
-                + E0
+                if outputs.len() != expected_outputs.len() {
+                    panic!(
+                        "The number of outputs ({}) must match the number of known outputs ({}).",
+                        outputs.len(),
+                        expected_outputs.len()
+                    );
+                }
+
+                outputs
+                    .iter()
+                    .zip(expected_outputs.iter())
+                    .map(|(a, b)| (a - b).powi(2))
+                    .sum::<f64>()
+            }
         };
+
+        // Validate that the score is finite and non-negative
+        assert!(
+            score.is_finite(),
+            "Fitness score must be finite, got: {score}. This indicates a bug in the fitness function implementation."
+        );
+        assert!(
+            score >= 0.0,
+            "Fitness score must be non-negative, got: {score}. This indicates the fitness function is not properly normalized for minimization."
+        );
 
         self.set_score(Some(score));
     }
@@ -62,7 +85,7 @@ impl Organism {
 mod tests {
     use super::*;
     use crate::{
-        E0, parameters::parameter_enhancement::enhance_parameters, phenotype::Phenotype,
+        parameters::parameter_enhancement::enhance_parameters, phenotype::Phenotype,
         world::world_function::WorldFunction,
     };
     use std::{ops::RangeInclusive, rc::Rc};
@@ -97,10 +120,10 @@ mod tests {
             output_values: vec![1.0, 0.0], // These will produce a known error
         };
         // Sum of squared errors = (1.0 - 0.5)^2 + (0.0 - 0.5)^2 = 0.25 + 0.25 = 0.5
-        let expected_score = 0.5 + E0;
+        let expected_score = 0.5;
 
         // Act
-        organism.run(&test_fn, &inputs, &known_outputs);
+        organism.run(&test_fn, &inputs, Some(&known_outputs));
 
         // Assert
         assert_eq!(organism.score(), Some(expected_score));
@@ -116,10 +139,10 @@ mod tests {
             output_values: vec![1.0], // Perfect match
         };
         // Sum of squared errors = 0.0
-        let expected_score = E0;
+        let expected_score = 0.0;
 
         // Act
-        organism.run(&test_fn, &inputs, &known_outputs);
+        organism.run(&test_fn, &inputs, Some(&known_outputs));
 
         // Assert
         assert_eq!(organism.score(), Some(expected_score));
@@ -139,18 +162,18 @@ mod tests {
         };
 
         // Act & Assert
-        organism.run(&test_fn, &inputs, &known_outputs);
+        organism.run(&test_fn, &inputs, Some(&known_outputs));
     }
 
     #[test]
-    fn given_empty_known_outputs_when_run_then_score_is_first_output_plus_e0() {
+    fn given_empty_known_outputs_when_run_then_score_is_first_output() {
         let organism = create_test_organism();
         let inputs = vec![1.0, 2.0];
         let test_fn = TestFn {
             output_values: vec![2.5],
         };
-        let expected = 2.5 + E0;
-        organism.run(&test_fn, &inputs, &[]);
+        let expected = 2.5;
+        organism.run(&test_fn, &inputs, None);
         assert_eq!(organism.score(), Some(expected));
     }
 
@@ -164,6 +187,97 @@ mod tests {
         let test_fn = TestFn {
             output_values: vec![],
         };
-        organism.run(&test_fn, &inputs, &[]);
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must not be empty in supervised mode")]
+    fn given_empty_known_outputs_slice_when_supervised_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let empty_outputs: &[f64] = &[];
+        let test_fn = TestFn {
+            output_values: vec![1.0],
+        };
+        organism.run(&test_fn, &inputs, Some(empty_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must only contain finite numbers")]
+    fn given_infinite_known_outputs_when_supervised_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let infinite_outputs = vec![1.0, f64::INFINITY, 2.0];
+        let test_fn = TestFn {
+            output_values: vec![1.0, 2.0, 3.0],
+        };
+        organism.run(&test_fn, &inputs, Some(&infinite_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "known_outputs must only contain finite numbers")]
+    fn given_nan_known_outputs_when_supervised_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let nan_outputs = vec![1.0, f64::NAN];
+        let test_fn = TestFn {
+            output_values: vec![1.0, 2.0],
+        };
+        organism.run(&test_fn, &inputs, Some(&nan_outputs));
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be non-negative")]
+    fn given_negative_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![-2.5], // Negative fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be finite")]
+    fn given_infinite_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![f64::INFINITY], // Infinite fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Fitness score must be finite")]
+    fn given_nan_fitness_when_objective_mode_then_panics() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![f64::NAN], // NaN fitness score
+        };
+        organism.run(&test_fn, &inputs, None);
+    }
+
+    #[test]
+    fn given_zero_fitness_when_objective_mode_then_succeeds() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![0.0], // Zero fitness should be allowed
+        };
+        organism.run(&test_fn, &inputs, None);
+        assert_eq!(organism.score(), Some(0.0));
+    }
+
+    #[test]
+    fn given_positive_fitness_when_objective_mode_then_succeeds() {
+        let organism = create_test_organism();
+        let inputs = vec![1.0];
+        let test_fn = TestFn {
+            output_values: vec![42.0], // Positive fitness should work
+        };
+        organism.run(&test_fn, &inputs, None);
+        assert_eq!(organism.score(), Some(42.0));
     }
 }

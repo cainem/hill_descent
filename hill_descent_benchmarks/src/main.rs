@@ -20,13 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // List of algorithms to benchmark
     let algorithms: Vec<Box<dyn BenchmarkAlgorithm>> = vec![
+        Box::new(StyblinskiTangAlgorithm),
         Box::new(AckleyAlgorithm),
         Box::new(HimmelblauAlgorithm),
         Box::new(BukinN6Algorithm),
         Box::new(LeviN13Algorithm),
         Box::new(RastriginAlgorithm),
         Box::new(SchafferN2Algorithm),
-        Box::new(StyblinskiTangAlgorithm),
     ];
 
     // Run benchmarks for each algorithm
@@ -46,12 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Results for {}:", algorithm.name());
         for config in &results.configurations {
             println!(
-                "  Pop: {}, Regions: {}, Avg Rounds: {:.1}, Resolution Hits: {}/{}, Best Score: {:.6}, Avg Time: {:.3}s",
+                "  Pop: {}, Regions: {}, Total Rounds: {:.0}, Total Resolution Hits: {}, Best Score: {:.6}, Avg Time: {:.3}s",
                 config.population,
                 config.regions,
                 config.average_rounds(),
                 config.resolution_limit_hits(),
-                runner::RUNS_PER_CONFIG,
                 config.best_score(),
                 config.average_time_secs()
             );

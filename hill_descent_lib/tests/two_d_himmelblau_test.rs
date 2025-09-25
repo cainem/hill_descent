@@ -53,7 +53,7 @@ pub fn execute() {
         // }
 
         // Objective-function mode: no known outputs
-        let at_resolution_limit = world.training_run(&[], &[]);
+        let at_resolution_limit = world.training_run(&[], None);
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();
