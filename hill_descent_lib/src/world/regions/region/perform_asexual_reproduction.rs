@@ -27,7 +27,7 @@ impl Region {
 mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
-    use rand::{rngs::SmallRng, SeedableRng};
+    use rand::{SeedableRng, rngs::SmallRng};
     use std::rc::Rc;
 
     /// Helper: create an Organism with given score and age.

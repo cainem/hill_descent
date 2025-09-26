@@ -1,7 +1,6 @@
 mod execute_reproduction_passes;
 mod execute_single_reproduction_pass;
 mod pair_organisms_for_reproduction;
-mod perform_asexual_reproduction;
 mod perform_sexual_reproduction;
 mod reproduce;
 

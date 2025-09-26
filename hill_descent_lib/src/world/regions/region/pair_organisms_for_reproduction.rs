@@ -3,40 +3,47 @@ use std::rc::Rc;
 use crate::world::{organisms::organism::Organism, regions::region::Region};
 
 type OrganismPairs = Vec<(Rc<Organism>, Rc<Organism>)>;
-type PairingResult = (OrganismPairs, Option<Rc<Organism>>);
 
 impl Region {
-    /// Pairs organisms for reproduction based on their count.
+    /// Pairs organisms for reproduction using extreme pairing strategy.
     ///
-    /// If the number of organisms is odd, the first organism is set aside for asexual reproduction.
-    /// The remaining organisms are paired sequentially for sexual reproduction.
+    /// For even counts: Pairs first with last, second with second-to-last, etc.
+    /// For odd counts: Duplicates the top performer, then applies extreme pairing.
+    /// This eliminates asexual reproduction - even single organisms pair with themselves.
     ///
     /// * `selected_organisms` - The slice of organisms to pair for reproduction
     ///
-    /// Returns a tuple containing:
-    /// * A vector of organism pairs for sexual reproduction
-    /// * An optional single organism for asexual reproduction
+    /// Returns a vector of organism pairs for sexual reproduction
     pub(super) fn pair_organisms_for_reproduction(
         selected_organisms: &[Rc<Organism>],
-    ) -> PairingResult {
+    ) -> OrganismPairs {
         let mut pairs = Vec::new();
-        let single_organism = if selected_organisms.len() % 2 == 1 {
-            Some(Rc::clone(&selected_organisms[0]))
-        } else {
-            None
-        };
 
-        // Determine starting index for pairing (skip first if it's used for asexual reproduction)
-        let sexual_start = if single_organism.is_some() { 1 } else { 0 };
-
-        // Pair organisms sequentially for sexual reproduction
-        for chunk in selected_organisms[sexual_start..].chunks(2) {
-            if let [p1, p2] = chunk {
-                pairs.push((Rc::clone(p1), Rc::clone(p2)));
-            }
+        if selected_organisms.is_empty() {
+            return pairs;
         }
 
-        (pairs, single_organism)
+        // Create working list, duplicating top performer if odd count
+        let working_list: Vec<Rc<Organism>> = if selected_organisms.len() % 2 == 1 {
+            // Odd count: duplicate the top performer (first organism)
+            let mut list = Vec::with_capacity(selected_organisms.len() + 1);
+            list.push(Rc::clone(&selected_organisms[0])); // First copy of top performer
+            list.extend(selected_organisms.iter().cloned()); // Original list including top performer again
+            list
+        } else {
+            // Even count: use as-is
+            selected_organisms.to_vec()
+        };
+
+        // Pair using extreme strategy: first with last, second with second-to-last, etc.
+        let len = working_list.len();
+        for i in 0..(len / 2) {
+            let first = Rc::clone(&working_list[i]);
+            let last = Rc::clone(&working_list[len - 1 - i]);
+            pairs.push((first, last));
+        }
+
+        pairs
     }
 }
 
@@ -57,81 +64,138 @@ mod tests {
     }
 
     #[test]
-    fn given_empty_organisms_when_pair_organisms_then_returns_empty_pairs_and_no_single() {
+    fn given_empty_organisms_when_pair_organisms_then_returns_empty_pairs() {
         let organisms: Vec<Rc<Organism>> = vec![];
 
-        let (pairs, single) = Region::pair_organisms_for_reproduction(&organisms);
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
         assert!(pairs.is_empty());
-        assert!(single.is_none());
     }
 
     #[test]
-    fn given_single_organism_when_pair_organisms_then_returns_empty_pairs_and_single() {
+    fn given_single_organism_when_pair_organisms_then_pairs_with_itself() {
         let organisms = vec![make_org(1.0, 5, 0)];
         let organism_id = organisms[0].id();
 
-        let (pairs, single) = Region::pair_organisms_for_reproduction(&organisms);
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
-        assert!(pairs.is_empty());
-        assert!(single.is_some());
-        assert_eq!(single.unwrap().id(), organism_id);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs[0].0.id(), organism_id);
+        assert_eq!(pairs[0].1.id(), organism_id); // Same organism paired with itself
     }
 
     #[test]
-    fn given_two_organisms_when_pair_organisms_then_returns_one_pair_and_no_single() {
+    fn given_two_organisms_when_pair_organisms_then_pairs_first_with_last() {
         let organisms = vec![make_org(1.0, 5, 0), make_org(2.0, 3, 1)];
-        let id1 = organisms[0].id();
-        let id2 = organisms[1].id();
+        let id1 = organisms[0].id(); // Best performer (lowest score)
+        let id2 = organisms[1].id(); // Worst performer
 
-        let (pairs, single) = Region::pair_organisms_for_reproduction(&organisms);
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
         assert_eq!(pairs.len(), 1);
-        assert_eq!(pairs[0].0.id(), id1);
-        assert_eq!(pairs[0].1.id(), id2);
-        assert!(single.is_none());
+        assert_eq!(pairs[0].0.id(), id1); // First (best)
+        assert_eq!(pairs[0].1.id(), id2); // Last (worst)
     }
 
     #[test]
-    fn given_three_organisms_when_pair_organisms_then_returns_one_pair_and_first_single() {
+    fn given_three_organisms_when_pair_organisms_then_duplicates_top_performer() {
         let organisms = vec![
-            make_org(1.0, 5, 0),
-            make_org(2.0, 3, 1),
-            make_org(3.0, 2, 2),
+            make_org(1.0, 5, 0), // Best performer
+            make_org(2.0, 3, 1), // Middle
+            make_org(3.0, 2, 2), // Worst performer
         ];
-        let id1 = organisms[0].id();
-        let id2 = organisms[1].id();
-        let id3 = organisms[2].id();
+        let id1 = organisms[0].id(); // Best performer
+        let id2 = organisms[1].id(); // Middle
+        let id3 = organisms[2].id(); // Worst performer
 
-        let (pairs, single) = Region::pair_organisms_for_reproduction(&organisms);
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
-        assert_eq!(pairs.len(), 1);
-        assert_eq!(pairs[0].0.id(), id2); // Second organism becomes first in pair
-        assert_eq!(pairs[0].1.id(), id3); // Third organism becomes second in pair
-        assert!(single.is_some());
-        assert_eq!(single.unwrap().id(), id1); // First organism is single
+        // With 3 organisms, top performer gets duplicated creating 4 total:
+        // [best, best, middle, worst] -> pairs: (best, worst), (best, middle)
+        assert_eq!(pairs.len(), 2);
+        assert_eq!(pairs[0].0.id(), id1); // First copy of best performer
+        assert_eq!(pairs[0].1.id(), id3); // Worst performer
+        assert_eq!(pairs[1].0.id(), id1); // Second copy of best performer  
+        assert_eq!(pairs[1].1.id(), id2); // Middle performer
     }
 
     #[test]
-    fn given_four_organisms_when_pair_organisms_then_returns_two_pairs_and_no_single() {
+    fn given_four_organisms_when_pair_organisms_then_pairs_extremes() {
         let organisms = vec![
-            make_org(1.0, 5, 0),
-            make_org(2.0, 3, 1),
-            make_org(3.0, 2, 2),
-            make_org(4.0, 1, 3),
+            make_org(1.0, 5, 0), // Best performer
+            make_org(2.0, 3, 1), // Second best
+            make_org(3.0, 2, 2), // Second worst
+            make_org(4.0, 1, 3), // Worst performer
+        ];
+        let id1 = organisms[0].id(); // Best
+        let id2 = organisms[1].id(); // Second best
+        let id3 = organisms[2].id(); // Second worst
+        let id4 = organisms[3].id(); // Worst
+
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
+
+        // Even count: extreme pairing (first with last, second with second-to-last)
+        assert_eq!(pairs.len(), 2);
+        assert_eq!(pairs[0].0.id(), id1); // Best performer
+        assert_eq!(pairs[0].1.id(), id4); // Worst performer
+        assert_eq!(pairs[1].0.id(), id2); // Second best
+        assert_eq!(pairs[1].1.id(), id3); // Second worst
+    }
+
+    #[test]
+    fn given_five_organisms_when_pair_organisms_then_duplicates_top_and_pairs_extremes() {
+        let organisms = vec![
+            make_org(1.0, 5, 0), // Best
+            make_org(2.0, 4, 1), // 2nd best
+            make_org(3.0, 3, 2), // Middle
+            make_org(4.0, 2, 3), // 2nd worst
+            make_org(5.0, 1, 4), // Worst
+        ];
+        let id1 = organisms[0].id(); // Best
+        let id2 = organisms[1].id(); // 2nd best
+        let id3 = organisms[2].id(); // Middle
+        let id4 = organisms[3].id(); // 2nd worst
+        let id5 = organisms[4].id(); // Worst
+
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
+
+        // With 5 organisms, duplicated list becomes: [best, best, 2nd, middle, 2nd_worst, worst]
+        // Extreme pairing: (best, worst), (best, 2nd_worst), (2nd, middle)
+        assert_eq!(pairs.len(), 3);
+        assert_eq!(pairs[0].0.id(), id1); // First copy of best
+        assert_eq!(pairs[0].1.id(), id5); // Worst
+        assert_eq!(pairs[1].0.id(), id1); // Second copy of best
+        assert_eq!(pairs[1].1.id(), id4); // 2nd worst
+        assert_eq!(pairs[2].0.id(), id2); // 2nd best
+        assert_eq!(pairs[2].1.id(), id3); // Middle
+    }
+
+    #[test]
+    fn given_six_organisms_when_pair_organisms_then_pairs_all_extremes() {
+        let organisms = vec![
+            make_org(1.0, 6, 0), // Best
+            make_org(2.0, 5, 1), // 2nd best
+            make_org(3.0, 4, 2), // 3rd best
+            make_org(4.0, 3, 3), // 3rd worst
+            make_org(5.0, 2, 4), // 2nd worst
+            make_org(6.0, 1, 5), // Worst
         ];
         let id1 = organisms[0].id();
         let id2 = organisms[1].id();
         let id3 = organisms[2].id();
         let id4 = organisms[3].id();
+        let id5 = organisms[4].id();
+        let id6 = organisms[5].id();
 
-        let (pairs, single) = Region::pair_organisms_for_reproduction(&organisms);
+        let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
-        assert_eq!(pairs.len(), 2);
-        assert_eq!(pairs[0].0.id(), id1);
-        assert_eq!(pairs[0].1.id(), id2);
-        assert_eq!(pairs[1].0.id(), id3);
-        assert_eq!(pairs[1].1.id(), id4);
-        assert!(single.is_none());
+        // Even count: (best, worst), (2nd_best, 2nd_worst), (3rd_best, 3rd_worst)
+        assert_eq!(pairs.len(), 3);
+        assert_eq!(pairs[0].0.id(), id1); // Best
+        assert_eq!(pairs[0].1.id(), id6); // Worst
+        assert_eq!(pairs[1].0.id(), id2); // 2nd best
+        assert_eq!(pairs[1].1.id(), id5); // 2nd worst
+        assert_eq!(pairs[2].0.id(), id3); // 3rd best
+        assert_eq!(pairs[2].1.id(), id4); // 3rd worst
     }
 }

@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn given_single_organism_when_execute_then_offspring_has_correct_asexual_parent_id() {
+    fn given_single_organism_when_execute_then_offspring_has_correct_sexual_self_fertilization() {
         let parent = make_org(1.0, 5, 0);
         let parent_id = parent.id();
         let organisms = vec![parent];
@@ -216,16 +216,17 @@ mod tests {
 
         let offspring = Region::execute_reproduction_passes(
             &organisms, 1, // parents_required
-            1, // max_offspring_per_pass
+            2, // max_offspring_per_pass (single organism now produces 2 via self-fertilization)
             1, // number_to_reproduce
             1, // max_passes
             &mut rng,
         );
 
+        // Single organism pairs with itself and produces 2 offspring, but limited to 1 by number_to_reproduce
         assert_eq!(offspring.len(), 1);
         let child = &offspring[0];
-        assert_eq!(child.parent_count(), 1);
-        assert_eq!(child.parent_ids(), (Some(parent_id), None));
+        assert_eq!(child.parent_count(), 2);
+        assert_eq!(child.parent_ids(), (Some(parent_id), Some(parent_id))); // Self-fertilization
         assert!(!child.is_root());
     }
 
@@ -257,35 +258,43 @@ mod tests {
     }
 
     #[test]
-    fn given_three_organisms_when_execute_then_mixed_reproduction_has_correct_parent_ids() {
-        let parent1 = make_org(1.0, 5, 0);
-        let parent2 = make_org(2.0, 3, 1);
-        let parent3 = make_org(3.0, 2, 2);
-        let parent1_id = parent1.id();
-        let parent2_id = parent2.id();
-        let parent3_id = parent3.id();
+    fn given_three_organisms_when_execute_then_sexual_reproduction_with_top_performer_duplication()
+    {
+        let parent1 = make_org(1.0, 5, 0); // Best performer
+        let parent2 = make_org(2.0, 3, 1); // Middle
+        let parent3 = make_org(3.0, 2, 2); // Worst performer 
+        let parent1_id = parent1.id(); // Best
+        let parent2_id = parent2.id(); // Middle
+        let parent3_id = parent3.id(); // Worst
         let organisms = vec![parent1, parent2, parent3];
         let mut rng = SmallRng::seed_from_u64(0);
 
         let offspring = Region::execute_reproduction_passes(
             &organisms, 3, // parents_required
-            3, // max_offspring_per_pass (3 organisms: 1 asexual + 2 sexual = 3)
-            3, // number_to_reproduce
+            4, // max_offspring_per_pass (3 organisms become 4 with duplication: 2 pairs = 4 offspring)
+            3, // number_to_reproduce (limit to 3)
             1, // max_passes
             &mut rng,
         );
 
+        // With 3 organisms, top performer duplicated: [best, best, middle, worst]
+        // Pairs: (best, worst), (best, middle) = 4 offspring, limited to 3
         assert_eq!(offspring.len(), 3);
 
-        // First offspring should be from asexual reproduction (parent1)
-        let asexual_child = &offspring[0];
-        assert_eq!(asexual_child.parent_count(), 1);
-        assert_eq!(asexual_child.parent_ids(), (Some(parent1_id), None));
-
-        // Remaining offspring should be from sexual reproduction (parent2 & parent3)
-        for child in &offspring[1..] {
+        // All offspring should be sexual reproduction (2 parents each)
+        for child in &offspring {
             assert_eq!(child.parent_count(), 2);
-            assert_eq!(child.parent_ids(), (Some(parent2_id), Some(parent3_id)));
+
+            // Each offspring should have best performer as one parent
+            let (p1, p2) = child.parent_ids();
+            assert!(p1 == Some(parent1_id) || p2 == Some(parent1_id)); // Best performer is always a parent
+
+            // The other parent should be either middle or worst performer
+            assert!(
+                (p1 == Some(parent1_id) && (p2 == Some(parent2_id) || p2 == Some(parent3_id)))
+                    || (p2 == Some(parent1_id)
+                        && (p1 == Some(parent2_id) || p1 == Some(parent3_id)))
+            );
         }
     }
 }
