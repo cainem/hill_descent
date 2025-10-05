@@ -8,8 +8,8 @@ use crate::world::{organisms::organism::Organism, regions::region::Region};
 impl Region {
     /// Executes multiple reproduction passes to generate offspring.
     ///
-    /// This helper function handles the core reproduction logic, including asexual and sexual
-    /// reproduction across multiple passes when needed for population growth.
+    /// This helper function handles the core reproduction logic using extreme pairing strategy
+    /// across multiple passes when needed for population growth.
     ///
     /// * `original_organisms` - The ranked parent organisms to use for reproduction
     /// * `parents_required` - Number of parents available for reproduction
@@ -135,7 +135,7 @@ mod tests {
     }
 
     #[test]
-    fn given_three_organisms_odd_number_when_execute_then_handles_asexual_correctly() {
+    fn given_three_organisms_odd_number_when_execute_then_handles_extreme_pairing_correctly() {
         let organisms = vec![
             make_org(1.0, 5, 0),
             make_org(2.0, 3, 1),
@@ -145,12 +145,13 @@ mod tests {
 
         let offspring = Region::execute_reproduction_passes(
             &organisms, 3, // parents_required
-            3, // max_offspring_per_pass (3 organisms: 1 asexual + 2 sexual = 3)
+            4, // max_offspring_per_pass (3 organisms with duplication: 2 pairs = 4 offspring)
             9, // number_to_reproduce
             3, // max_passes
             &mut rng,
         );
 
+        // With extreme pairing and duplication: 4 offspring per pass * 3 passes = 12, limited to 9
         assert_eq!(offspring.len(), 9);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
@@ -178,14 +179,14 @@ mod tests {
 
         let offspring = Region::execute_reproduction_passes(
             &organisms, 1,  // parents_required
-            1,  // max_offspring_per_pass
+            2,  // max_offspring_per_pass (single organism produces 2 via self-fertilization)
             10, // number_to_reproduce (way more than passes allow)
             3,  // max_passes
             &mut rng,
         );
 
-        // Should only get 3 offspring due to max_passes limit
-        assert_eq!(offspring.len(), 3);
+        // Should only get 6 offspring due to max_passes limit (3 passes * 2 offspring each)
+        assert_eq!(offspring.len(), 6);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 

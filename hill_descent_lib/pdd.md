@@ -178,9 +178,11 @@ The system proceeds in discrete rounds. Each round involves:
 * Select the top `r` organisms from the region's ranked list.  
 * If the number of organisms in the region (eligible for count) is less than `r`, all organisms in that region are selected.  
 
-**Pairing and Reproduction Type:** 
-* If `r` is even: All `r` selected organisms participate in sexual reproduction. They are paired sequentially from the ranked list (1st with 2nd, 3rd with 4th, etc.). Each pair produces two offspring.  
-* If `r` is odd: The top-ranked organism reproduces asexually (producing one offspring). The remaining `r-1` organisms are paired sequentially for sexual reproduction.  
+**Pairing and Reproduction Type (Extreme Pairing Strategy):** 
+All reproduction is sexual. Organisms are paired using an "extreme pairing" strategy that pairs the best performers with the worst performers:
+* If `r` is even: Organisms are paired as follows: 1st with rth, 2nd with (r-1)th, 3rd with (r-2)th, etc. Each pair produces two offspring.
+* If `r` is odd: The top-ranked organism is duplicated in the pairing list. The resulting even-sized list (r+1 organisms) is then paired using extreme pairing. This means the top performer participates in two pairings.
+* Special case: A single organism (r=1) pairs with itself (self-fertilization), producing two offspring.  
 
 * **5.2.3.1. Locus Expression (Determining $x_j$ from a Locus Pair):** 
     * For each of the `n` dimensions, an expressed value $x_j$ is determined from the organism's corresponding locus pair (Locus A, Locus B).  
@@ -197,8 +199,7 @@ The system proceeds in discrete rounds. Each round involves:
     * Shuffling uses "crossover": a predetermined constant number of random swap points are chosen, and segments are exchanged.  
 
 * **5.2.3.3. Offspring DNA Formation:** 
-    * For sexual reproduction: Two offspring are formed. One of the crossed-over gametes is taken from each parent and recombined to produce a new organism; this is done twice to produce two offspring.  
-    * For asexual reproduction: The single parent's two shuffled gametes are recombined with each other to form one offspring.  
+    * Two offspring are formed from each pair. One of the crossed-over gametes is taken from each parent and recombined to produce a new organism; this is done twice to produce two offspring.
     * The offspring's loci are copies of the chosen parental loci. Mutations (Section 5.2.4) are applied to these copies.
 
 **5.2.4. Mutation (Applied to Offspring's Loci during copying):** Parental loci are immutable. Mutations affect the offspring's loci. The mutation probabilities $m_1...m_5$ may themselves be evolvable dimensions.
