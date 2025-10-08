@@ -4,6 +4,7 @@
 This is a Rust-based hill descent optimization algorithm project for Windows.
 The main library is in `hill_descent_lib/` 
 There is a simple visual web project that utilizes the hill_descent_lib with a server component in `hill_descent_server/`. This exists to help visualise the behaviour and verify it seems correct.
+The benchmarking tool is in `hill_descent_benchmarks/`. This performs multiple runs of various algorithms with different configurations, calculates performance statistics, and records results in markdown files in `run_stats/`.
 Product definition is documented in `hill_descent_lib/pdd.md`.
 
 ## Development Standards
@@ -60,5 +61,7 @@ Product definition is documented in `hill_descent_lib/pdd.md`.
 ## Key Directories
 - `hill_descent_lib/src/` - Core algorithm implementation
 - `hill_descent_server/src/` - Web server component  
+- `hill_descent_benchmarks/src/` - Benchmarking tool for algorithm performance testing
 - `hill_descent_lib/tests/` - Integration tests
 - `benches/` - Performance benchmarks
+- `run_stats/` - Benchmark results organized by year-month
