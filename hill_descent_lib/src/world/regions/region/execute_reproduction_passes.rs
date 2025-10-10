@@ -3,7 +3,8 @@ use std::rc::Rc;
 
 use crate::world::{organisms::organism::Organism, regions::region::Region};
 
-// Helper modules are imported in mod.rs to make their functions available on Region
+// The function `execute_single_reproduction_pass` from helper modules is imported in mod.rs
+// to make it available on Region. This file depends on that function for reproduction logic.
 
 impl Region {
     /// Executes multiple reproduction passes to generate offspring.
