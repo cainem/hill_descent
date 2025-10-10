@@ -23,24 +23,27 @@ impl Region {
             return pairs;
         }
 
-        // Create working list, duplicating top performer if odd count
-        let working_list: Vec<Rc<Organism>> = if selected_organisms.len() % 2 == 1 {
-            // Odd count: duplicate the top performer (first organism)
-            let mut list = Vec::with_capacity(selected_organisms.len() + 1);
-            list.push(Rc::clone(&selected_organisms[0])); // First copy of top performer
-            list.extend(selected_organisms.iter().cloned()); // Original list including top performer again
-            list
-        } else {
-            // Even count: use as-is
-            selected_organisms.to_vec()
-        };
+        if selected_organisms.len() % 2 == 1 {
+            // Odd count: duplicate the top performer and then use extreme pairing
+            let mut working_list = Vec::with_capacity(selected_organisms.len() + 1);
+            working_list.push(Rc::clone(&selected_organisms[0])); // First copy of top performer
+            working_list.extend(selected_organisms.iter().cloned()); // Original list including top performer again
 
-        // Pair using extreme strategy: first with last, second with second-to-last, etc.
-        let len = working_list.len();
-        for i in 0..(len / 2) {
-            let first = Rc::clone(&working_list[i]);
-            let last = Rc::clone(&working_list[len - 1 - i]);
-            pairs.push((first, last));
+            // Pair using extreme strategy: first with last, second with second-to-last, etc.
+            let len = working_list.len();
+            for i in 0..(len / 2) {
+                let first = Rc::clone(&working_list[i]);
+                let last = Rc::clone(&working_list[len - 1 - i]);
+                pairs.push((first, last));
+            }
+        } else {
+            // Even count: directly pair from the slice without creating a vector
+            let len = selected_organisms.len();
+            for i in 0..(len / 2) {
+                let first = Rc::clone(&selected_organisms[i]);
+                let last = Rc::clone(&selected_organisms[len - 1 - i]);
+                pairs.push((first, last));
+            }
         }
 
         pairs
