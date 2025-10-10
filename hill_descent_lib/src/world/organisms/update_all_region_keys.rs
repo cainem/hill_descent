@@ -140,8 +140,10 @@ mod tests {
     {
         // Create organisms with specific values that will map to known intervals
         // Need 7 system parameters + 2 problem parameters = 9 total
-        let p1 = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 2.5, 7.5]); // problem values: [2.5, 7.5]
-        let p2 = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0, 9.0]); // problem values: [1.0, 9.0]
+        let p1 =
+            Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 2.5, 7.5]); // problem values: [2.5, 7.5]
+        let p2 =
+            Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0, 9.0]); // problem values: [1.0, 9.0]
         let mut organisms = Organisms::new_from_phenotypes(vec![p1, p2]);
 
         // Create dimensions that match the problem values count (2)
@@ -172,7 +174,8 @@ mod tests {
      {
         // Create organism with specific values
         // Need 7 system parameters + 2 problem parameters = 9 total
-        let p1 = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 5.0, 5.0]); // problem values: [5.0, 5.0]
+        let p1 =
+            Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 5.0, 5.0]); // problem values: [5.0, 5.0]
         let mut organisms = Organisms::new_from_phenotypes(vec![p1]);
 
         // Create dimensions that match the problem values count (2)
@@ -185,7 +188,8 @@ mod tests {
 
         // Now create a new organism with out-of-bounds value and manually set a cached key
         // to simulate the fast-path scenario where the cached key exists but new value is invalid
-        let p_oob = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 15.0, 5.0]); // problem values: [15.0, 5.0] - 15.0 > 10.0 bound
+        let p_oob =
+            Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 15.0, 5.0]); // problem values: [15.0, 5.0] - 15.0 > 10.0 bound
         let organism_oob =
             crate::world::organisms::organism::Organism::new(Rc::new(p_oob), 0, (None, None));
         organism_oob.set_region_key(Some(vec![1, 1])); // Set a cached key to trigger fast path
