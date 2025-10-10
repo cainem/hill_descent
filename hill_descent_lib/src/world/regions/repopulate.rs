@@ -51,7 +51,7 @@ mod tests {
     fn create_region_with_two(capacity: usize) -> Region {
         let mut region = Region::new();
         region.set_carrying_capacity(Some(capacity));
-        let phen = Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5]);
+        let phen = Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0, 0.5]);
         for _ in 0..2 {
             let org = Organism::new(Rc::new(phen.clone()), 0, (None, None));
             region.add_organism(Rc::new(org));

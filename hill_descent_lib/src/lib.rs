@@ -49,7 +49,8 @@ macro_rules! error {
     ($($arg:tt)*) => {{}};
 }
 
-pub const NUM_SYSTEM_PARAMETERS: usize = 7;
+/// Number of system-wide evolvable parameters (m1, m2, m3, m4, m5, m6, m6_sigma, max_age, crossover_points)
+pub const NUM_SYSTEM_PARAMETERS: usize = 9;
 pub const E0: f64 = f64::MIN_POSITIVE;
 
 use std::ops::RangeInclusive;

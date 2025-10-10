@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 fn create_test_phenotype() -> Phenotype {
     // Create a minimal phenotype with 7 system parameters
-    Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0])
+    Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0])
 }
 
 #[test]

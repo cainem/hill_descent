@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 
 /// Enhances a slice of parameter bounds by prepending system-specific parameter bounds.
 ///
-/// The system parameter bounds include those for mutation probabilities (m1-m5), maximum organism age,
+/// The system parameter bounds include those for mutation probabilities (m1-m6, m6_sigma), maximum organism age,
 /// and the number of crossover points. These are added to the beginning of the
 /// supplied slice of bounds.
 ///
@@ -23,6 +23,8 @@ pub fn enhance_parameters(
         Parameter::with_bounds(0.001, 0.0, 1.0), // m3_prob_adj_double_halve_flag
         Parameter::with_bounds(0.001, 0.0, 1.0), // m4_prob_adj_direction_flag
         Parameter::with_bounds(0.001, 0.0, 1.0), // m5_prob_locus_value_mutation
+        Parameter::with_bounds(0.01, 0.0, 1.0), // m6_prob_gaussian_noise
+        Parameter::with_bounds(0.1, 0.001, 1.0), // m6_sigma (noise scale proportion)
         Parameter::with_bounds(5.0, 2.0, 10.0), // max_age
         Parameter::with_bounds(2.0, 1.0, 10.0), // crossover_points
     ];
@@ -46,7 +48,7 @@ mod tests {
     {
         let bounds: [RangeInclusive<f64>; 0] = [];
         let enhanced_bounds = enhance_parameters(&bounds);
-        assert_eq!(enhanced_bounds.len(), 7);
+        assert_eq!(enhanced_bounds.len(), 9);
 
         // Check m1 bounds
         assert_eq!(enhanced_bounds[0], 0.0..=1.0);
@@ -58,10 +60,14 @@ mod tests {
         assert_eq!(enhanced_bounds[3], 0.0..=1.0);
         // Check m5 bounds
         assert_eq!(enhanced_bounds[4], 0.0..=1.0);
+        // Check m6 bounds
+        assert_eq!(enhanced_bounds[5], 0.0..=1.0);
+        // Check m6_sigma bounds
+        assert_eq!(enhanced_bounds[6], 0.001..=1.0);
         // Check max_age bounds
-        assert_eq!(enhanced_bounds[5], 2.0..=10.0);
+        assert_eq!(enhanced_bounds[7], 2.0..=10.0);
         // Check crossover_points bounds
-        assert_eq!(enhanced_bounds[6], 1.0..=10.0);
+        assert_eq!(enhanced_bounds[8], 1.0..=10.0);
     }
 
     #[test]
@@ -73,15 +79,15 @@ mod tests {
         ];
 
         let enhanced_bounds = enhance_parameters(&initial_bounds);
-        assert_eq!(enhanced_bounds.len(), 7 + 2);
+        assert_eq!(enhanced_bounds.len(), 9 + 2);
 
         // Check system parameter bounds are at the beginning
         assert_eq!(enhanced_bounds[0], 0.0..=1.0); // m1_prob_false_to_true
-        assert_eq!(enhanced_bounds[6], 1.0..=10.0); // crossover_points
+        assert_eq!(enhanced_bounds[8], 1.0..=10.0); // crossover_points
 
         // Check original parameter bounds are at the end and unchanged
-        assert_eq!(enhanced_bounds[7], 0.0..=100.0);
-        assert_eq!(enhanced_bounds[8], -50.0..=50.0);
+        assert_eq!(enhanced_bounds[9], 0.0..=100.0);
+        assert_eq!(enhanced_bounds[10], -50.0..=50.0);
     }
 
     #[test]
@@ -109,12 +115,20 @@ mod tests {
         assert_eq!(enhanced_bounds[4].start(), &0.0);
         assert_eq!(enhanced_bounds[4].end(), &1.0);
 
+        // m6
+        assert_eq!(enhanced_bounds[5].start(), &0.0);
+        assert_eq!(enhanced_bounds[5].end(), &1.0);
+
+        // m6_sigma
+        assert_eq!(enhanced_bounds[6].start(), &0.001);
+        assert_eq!(enhanced_bounds[6].end(), &1.0);
+
         // max_age
-        assert_eq!(enhanced_bounds[5].start(), &2.0);
-        assert_eq!(enhanced_bounds[5].end(), &10.0);
+        assert_eq!(enhanced_bounds[7].start(), &2.0);
+        assert_eq!(enhanced_bounds[7].end(), &10.0);
 
         // crossover_points
-        assert_eq!(enhanced_bounds[6].start(), &1.0);
-        assert_eq!(enhanced_bounds[6].end(), &10.0);
+        assert_eq!(enhanced_bounds[8].start(), &1.0);
+        assert_eq!(enhanced_bounds[8].end(), &10.0);
     }
 }

@@ -151,7 +151,7 @@ mod tests {
         let g2 = Gamete::new(loci2);
 
         let mut rng = SmallRng::seed_from_u64(0);
-        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0]); // No mutations
         let (offspring1, _) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
 
         // System parameters (0-6) should be clamped to 2.0
@@ -207,7 +207,7 @@ mod tests {
         let g2 = Gamete::new(loci2);
 
         let mut rng = SmallRng::seed_from_u64(0);
-        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
+        let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0]); // No mutations
         let (offspring1, _) = Gamete::reproduce(&g1, &g2, 0, &mut rng, &sys);
 
         // System parameters should remain unchanged (apply_flag = false)
