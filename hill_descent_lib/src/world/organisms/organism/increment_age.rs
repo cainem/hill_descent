@@ -33,7 +33,7 @@ mod tests {
 
     fn phenotype_with_max_age(max_age: f64) -> Rc<Phenotype> {
         let mut expressed = vec![1.0; NUM_SYSTEM_PARAMETERS];
-        expressed[5] = max_age;
+        expressed[7] = max_age; // system parameter index for max_age (m1,m2,m3,m4,m5,m6,m6_sigma,max_age,crossover)
         Rc::new(Phenotype::new_for_test(expressed))
     }
 

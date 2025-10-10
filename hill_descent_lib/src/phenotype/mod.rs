@@ -165,11 +165,11 @@ mod tests {
 
     #[test]
     fn given_two_gametes_when_new_then_fields_are_set() {
-        // Provide at least 7 values for loci to ensure SystemParameters can be derived.
-        // The actual values for the first 7 can be arbitrary for this test's purpose,
+        // Provide at least 9 values for loci to ensure SystemParameters can be derived.
+        // The actual values for the first 9 can be arbitrary for this test's purpose,
         // as it only checks gamete storage.
-        let g1_loci_values = &[1.0, 2.0, 0.1, 0.5, 0.001, 100.0, 2.0, 8.0, 9.0]; // 9 loci
-        let g2_loci_values = &[3.0, 4.0, 0.1, 0.5, 0.001, 100.0, 2.0, 10.0, 11.0]; // 9 loci
+        let g1_loci_values = &[1.0, 2.0, 0.1, 0.5, 0.001, 0.01, 0.1, 100.0, 2.0, 8.0, 9.0]; // 11 loci
+        let g2_loci_values = &[3.0, 4.0, 0.1, 0.5, 0.001, 0.01, 0.1, 100.0, 2.0, 10.0, 11.0]; // 11 loci
         let g1 = create_test_gamete(g1_loci_values);
         let g2 = create_test_gamete(g2_loci_values);
         let mut rng = SmallRng::seed_from_u64(0);

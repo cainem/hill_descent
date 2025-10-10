@@ -41,9 +41,9 @@ mod tests {
     use std::rc::Rc;
 
     // Helper to create a Phenotype for testing
-    // Phenotype::new_for_test requires at least NUM_SYSTEM_PARAMETERS (7) expressed values.
+    // Phenotype::new_for_test requires at least NUM_SYSTEM_PARAMETERS (9) expressed values.
     fn mock_phenotype() -> Phenotype {
-        let expressed_values: Vec<f64> = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // 7 values
+        let expressed_values: Vec<f64> = vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0]; // 9 values
         Phenotype::new_for_test(expressed_values)
     }
 

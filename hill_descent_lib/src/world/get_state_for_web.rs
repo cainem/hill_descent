@@ -62,6 +62,8 @@ struct SystemParametersState {
     m3: f64,
     m4: f64,
     m5: f64,
+    m6: f64,
+    m6_sigma: f64,
     max_age: f64,
     crossover_points: f64,
 }
@@ -140,6 +142,8 @@ impl SystemParametersState {
             m3: sys_params.m3(),
             m4: sys_params.m4(),
             m5: sys_params.m5(),
+            m6: sys_params.m6(),
+            m6_sigma: sys_params.m6_sigma(),
             max_age: sys_params.max_age(),
             crossover_points: sys_params.crossover_points(),
         }

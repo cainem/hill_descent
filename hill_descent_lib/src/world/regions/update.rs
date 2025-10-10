@@ -85,7 +85,7 @@ mod tests {
 
     // --- helper fns ---------------------------------------------------------
     fn default_system_parameters() -> Vec<f64> {
-        vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
+        vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0]
     }
 
     fn phen(problem_values: &[f64]) -> Phenotype {

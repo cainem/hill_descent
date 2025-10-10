@@ -12,15 +12,15 @@ impl Phenotype {
     ///
     /// # Panics
     ///
-    /// This function will panic if `parameter_bounds.len()` is less than 7,
-    /// because a `Phenotype` requires at least 7 loci to derive its `SystemParameters`.
+    /// This function will panic if `parameter_bounds.len()` is less than 9,
+    /// because a `Phenotype` requires at least 9 loci to derive its `SystemParameters`.
     ///
     /// # Arguments
     ///
     /// * `rng`: A mutable reference to a random number generator.
     /// * `parameter_bounds`: A slice of `RangeInclusive<f64>` specifying the value
     ///   bounds for each Locus to be created in the gametes. The length of this
-    ///   slice must be at least 7.
+    ///   slice must be at least 9.
     ///
     /// # Returns
     ///
@@ -29,12 +29,12 @@ impl Phenotype {
         rng: &mut impl Rng,
         parameter_bounds: &[RangeInclusive<f64>],
     ) -> Self {
-        if parameter_bounds.len() < 7 {
+        if parameter_bounds.len() < 9 {
             // This check is technically redundant if Gamete::new_random_gamete is called
             // and then Phenotype::new panics, but it provides a clearer error earlier.
-            // Phenotype::new itself will panic if expressed.len() < 7.
+            // Phenotype::new itself will panic if expressed.len() < 9.
             panic!(
-                "Cannot create Phenotype: parameter_bounds length {} is less than required 7 for SystemParameters.",
+                "Cannot create Phenotype: parameter_bounds length {} is less than required 9 for SystemParameters.",
                 parameter_bounds.len()
             );
         }
@@ -62,39 +62,39 @@ mod tests {
     #[test]
     fn given_sufficient_bounds_when_new_random_phenotype_then_phenotype_is_created() {
         let mut rng = get_mock_rng();
-        let parameter_bounds = create_default_bounds(7); // Minimum required
+        let parameter_bounds = create_default_bounds(9); // Minimum required
         let phenotype = Phenotype::new_random_phenotype(&mut rng, &parameter_bounds);
-        assert_eq!(phenotype.gamete1().len(), 7);
-        assert_eq!(phenotype.gamete2().len(), 7);
+        assert_eq!(phenotype.gamete1().len(), 9);
+        assert_eq!(phenotype.gamete2().len(), 9);
         assert_eq!(
             phenotype.expression_problem_values().len() + crate::NUM_SYSTEM_PARAMETERS,
-            7
+            9
         );
         assert!(phenotype.system_parameters().m1() >= 0.0); // Basic check
 
-        let parameter_bounds_more = create_default_bounds(10);
+        let parameter_bounds_more = create_default_bounds(12);
         let phenotype_more = Phenotype::new_random_phenotype(&mut rng, &parameter_bounds_more);
-        assert_eq!(phenotype_more.gamete1().len(), 10);
-        assert_eq!(phenotype_more.gamete2().len(), 10);
+        assert_eq!(phenotype_more.gamete1().len(), 12);
+        assert_eq!(phenotype_more.gamete2().len(), 12);
         assert_eq!(
             phenotype_more.expression_problem_values().len() + crate::NUM_SYSTEM_PARAMETERS,
-            10
+            12
         );
     }
 
     #[test]
     #[should_panic(
-        expected = "Cannot create Phenotype: parameter_bounds length 6 is less than required 7 for SystemParameters."
+        expected = "Cannot create Phenotype: parameter_bounds length 8 is less than required 9 for SystemParameters."
     )]
     fn given_insufficient_bounds_when_new_random_phenotype_then_panics() {
         let mut rng = get_mock_rng();
-        let parameter_bounds = create_default_bounds(6); // Less than minimum
+        let parameter_bounds = create_default_bounds(8); // Less than minimum
         Phenotype::new_random_phenotype(&mut rng, &parameter_bounds);
     }
 
     #[test]
     #[should_panic(
-        expected = "Cannot create Phenotype: parameter_bounds length 0 is less than required 7 for SystemParameters."
+        expected = "Cannot create Phenotype: parameter_bounds length 0 is less than required 9 for SystemParameters."
     )]
     fn given_zero_bounds_when_new_random_phenotype_then_panics() {
         // This test ensures that even if the direct check in new_random_phenotype was bypassed (e.g. if it was removed),

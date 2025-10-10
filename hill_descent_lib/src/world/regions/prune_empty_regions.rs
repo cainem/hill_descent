@@ -26,6 +26,8 @@ mod tests {
             0.001, // m3_prob_adj_double_halve_flag
             0.001, // m4_prob_adj_direction_flag
             0.001, // m5_prob_locus_value_mutation
+            0.0,   // m6_prob_gaussian_noise
+            0.1,   // m6_sigma
             100.0, // max_age
             2.0,   // crossover_points
         ];

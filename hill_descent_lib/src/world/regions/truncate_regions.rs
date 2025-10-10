@@ -116,9 +116,9 @@ mod tests {
     use std::rc::Rc;
 
     fn test_phenotype() -> Rc<Phenotype> {
-        // 7 system parameters + 1 problem parameter (values arbitrary for tests)
+        // 9 system parameters + 1 problem parameter (values arbitrary for tests)
         Rc::new(Phenotype::new_for_test(vec![
-            0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5,
+            0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0, 0.5,
         ]))
     }
 
