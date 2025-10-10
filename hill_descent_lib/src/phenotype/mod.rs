@@ -5,7 +5,6 @@ use rand::Rng; // Retain Rng for Phenotype::new, though not used in new_for_test
 
 // Note: Locus, LocusAdjustment, DirectionOfTravel, Parameter imports moved into new_for_test
 
-pub mod asexual_reproduction;
 pub mod calculate_crossovers;
 pub mod compute_expressed;
 pub mod compute_expressed_hash;

@@ -745,9 +745,15 @@ class OptimizationUI {
         const hasParent2 = organism.parent_id_2 !== null && organism.parent_id_2 !== undefined;
 
         if (hasParent1 && hasParent2) {
-            organismType = 'Sexual Offspring';
+            // Check if both parents are the same (self-fertilization)
+            if (organism.parent_id_1 === organism.parent_id_2) {
+                organismType = 'Sexual Offspring (Self-Fertilization)';
+            } else {
+                organismType = 'Sexual Offspring';
+            }
         } else if (hasParent1) {
-            organismType = 'Asexual Offspring';
+            // This should no longer occur with the new reproduction system
+            organismType = 'Single Parent (Legacy)';
         }
 
         const treeData = {

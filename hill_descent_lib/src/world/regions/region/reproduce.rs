@@ -17,9 +17,9 @@ impl Region {
     ///
     /// The algorithm follows the PDD exactly:
     /// 1. Select the top `number_to_reproduce` parents from the pre-sorted list (or all organisms if fewer).
-    /// 2. If the selected count is odd, the top-ranked organism reproduces asexually to yield one
-    ///    offspring, then the remainder (now even) are paired sequentially for sexual reproduction.
-    /// 3. Each pair produces two offspring.
+    /// 2. Organisms are paired using extreme pairing strategy (best with worst, etc.).
+    ///    For odd counts, the top performer is duplicated to create an even list.
+    /// 3. Each pair produces two offspring via sexual reproduction.
     /// 4. If carrying capacity allows and population is still low, repeat reproduction passes
     ///    up to REPRODUCTION_FACTOR times using only the original organisms.
     ///
@@ -41,12 +41,14 @@ impl Region {
         let parents_required = number_to_reproduce.min(slice.len());
 
         // Calculate maximum offspring per pass based on available parents
+        // With extreme pairing:
+        // - Odd count: top performer duplicated, creating (parents_required+1) organisms,
+        //   which form (parents_required+1)/2 pairs producing 2*(parents_required+1)/2 = parents_required+1 offspring
+        // - Even count: parents_required/2 pairs producing 2*(parents_required/2) = parents_required offspring
         let max_offspring_per_pass = if parents_required % 2 == 1 {
-            // Odd number: 1 asexual + (remaining/2)*2 sexual = 1 + (parents_required-1)
-            parents_required
+            parents_required + 1 // Odd: top performer duplicated creates one extra offspring
         } else {
-            // Even number: (parents_required/2)*2 sexual = parents_required
-            parents_required
+            parents_required // Even: each organism pairs once
         };
 
         // Check if multiple passes are warranted based on carrying capacity
@@ -137,11 +139,12 @@ mod tests {
     }
 
     #[test]
-    fn given_one_parent_when_reproduce_then_one_offspring_asexual() {
+    fn given_one_parent_when_reproduce_then_two_offspring_sexual_self_fertilization() {
         let mut region = Region::new();
         region.add_organism(make_org(2.0, 5, 0));
         let mut rng = SmallRng::seed_from_u64(0);
         let offspring = region.reproduce(1, &mut rng);
+        // Single organism produces 2 offspring via self-fertilization, limited to 1 by request
         assert_eq!(offspring.len(), 1);
     }
 
@@ -178,7 +181,8 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(0);
         // Request more offspring than can be produced in single pass
         let offspring = region.reproduce(3, &mut rng);
-        // Single organism can only reproduce asexually, so we get 3 offspring over multiple passes
+        // Single organism pairs with itself (self-fertilization), producing 2 offspring per pass
+        // 3 requested / 2 per pass = 2 passes = 3 offspring (last pass truncated)
         assert_eq!(offspring.len(), 3);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
@@ -205,8 +209,9 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(0);
         // Request way more offspring than REPRODUCTION_FACTOR allows
         let offspring = region.reproduce(20, &mut rng);
-        // Single organism can produce 1 offspring per pass, limited by REPRODUCTION_FACTOR = 10
-        assert_eq!(offspring.len(), 10);
+        // Single organism produces 2 offspring per pass via self-fertilization, limited by REPRODUCTION_FACTOR = 10
+        // 10 passes * 2 offspring = 20
+        assert_eq!(offspring.len(), 20);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 
@@ -225,7 +230,8 @@ mod tests {
     }
 
     #[test]
-    fn given_odd_number_organisms_when_reproduce_multiple_passes_then_handles_asexual_correctly() {
+    fn given_odd_number_organisms_when_reproduce_multiple_passes_then_handles_extreme_pairing_correctly()
+     {
         let mut region = Region::new();
         region.set_carrying_capacity(Some(100)); // Set high carrying capacity to enable multiple passes
         // Add 3 organisms (odd number)
@@ -235,8 +241,8 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(0);
         // Request more than single pass can produce
         let offspring = region.reproduce(9, &mut rng);
-        // 3 organisms: first reproduces asexually (1), then 2 reproduce sexually (2) = 3 per pass
-        // Over 3 passes = 9 offspring
+        // 3 organisms with extreme pairing: top performer duplicated creates 4 organisms
+        // 2 pairs produce 4 offspring per pass. 9 requested / 4 per pass = 3 passes (rounded up) = 9 offspring
         assert_eq!(offspring.len(), 9);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
@@ -249,8 +255,8 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(0);
         // Request more offspring than single pass can produce
         let offspring = region.reproduce(5, &mut rng);
-        // Without carrying capacity, should only get 1 offspring (single pass)
-        assert_eq!(offspring.len(), 1);
+        // Without carrying capacity, should only get 2 offspring (single pass, self-fertilization)
+        assert_eq!(offspring.len(), 2);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 
@@ -266,7 +272,8 @@ mod tests {
         // Request offspring that would exceed carrying capacity (3 + 5 = 8 > 5)
         let offspring = region.reproduce(5, &mut rng);
         // Should only do single pass since total would exceed capacity
-        assert_eq!(offspring.len(), 3); // 3 organisms can produce 3 offspring in single pass
+        // 3 organisms with extreme pairing: top performer duplicated = 2 pairs = 4 offspring per pass
+        assert_eq!(offspring.len(), 4);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 }
