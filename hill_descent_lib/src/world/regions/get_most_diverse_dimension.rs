@@ -66,7 +66,7 @@ mod tests {
     // The first 7 values are system parameters and are ignored by the diversity function.
     // The subsequent values are the problem-specific dimensions we want to test.
     fn create_test_phenotype(problem_values: Vec<f64>) -> Phenotype {
-        let mut expressed_values = vec![0.0; 7]; // Dummy system parameters
+        let mut expressed_values = vec![0.0; 9]; // Dummy system parameters (9 now)
         expressed_values.extend(problem_values);
         Phenotype::new_for_test(expressed_values)
     }

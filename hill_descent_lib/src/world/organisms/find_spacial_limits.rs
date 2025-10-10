@@ -79,12 +79,12 @@ mod tests {
     }
 
     // Helper to create a Phenotype using Phenotype::new
-    // Phenotype::new requires at least 7 loci for system parameters.
+    // Phenotype::new requires at least 9 loci for system parameters.
     fn create_test_phenotype(vals: &[f64], rng: &mut impl rand::Rng) -> Phenotype {
-        if vals.len() < 7 {
-            // Create a default set of 7 values if not enough are provided, to satisfy Phenotype::new
+        if vals.len() < 9 {
+            // Create a default set of 9 values if not enough are provided, to satisfy Phenotype::new
             let mut complete_vals = vals.to_vec();
-            while complete_vals.len() < 7 {
+            while complete_vals.len() < 9 {
                 complete_vals.push(0.0); // Default padding value
             }
             let gamete1 = create_test_gamete(&complete_vals);
@@ -106,8 +106,8 @@ mod tests {
     #[test]
     fn given_one_organism_when_find_spacial_limits_then_returns_ranges_from_that_organism() {
         let mut rng = SmallRng::seed_from_u64(0); // Deterministic RNG
-        // Values: 7 system params + 1 problem param
-        let phenotype_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 8.0];
+        // Values: 9 system params + 1 problem param
+        let phenotype_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 8.0];
         let phenotype = create_test_phenotype(phenotype_vals, &mut rng);
 
         // We expect limits only for the problem-specific parameters.
@@ -134,16 +134,16 @@ mod tests {
     fn given_multiple_organisms_when_find_spacial_limits_then_returns_correct_min_max_ranges() {
         let mut rng = SmallRng::seed_from_u64(0); // Deterministic RNG
 
-        // Phenotype 1: 7 system params + 2 problem params
-        let phenotype1_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 10.0, 200.0];
+        // Phenotype 1: 9 system params + 2 problem params
+        let phenotype1_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 10.0, 200.0];
         let phenotype1 = create_test_phenotype(phenotype1_vals, &mut rng);
 
-        // Phenotype 2: 7 system params + 2 problem params
-        let phenotype2_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 5.0, 250.0];
+        // Phenotype 2: 9 system params + 2 problem params
+        let phenotype2_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 5.0, 250.0];
         let phenotype2 = create_test_phenotype(phenotype2_vals, &mut rng);
 
-        // Phenotype 3: 7 system params + 2 problem params
-        let phenotype3_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 15.0, 150.0];
+        // Phenotype 3: 9 system params + 2 problem params
+        let phenotype3_vals = &[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 15.0, 150.0];
         let phenotype3 = create_test_phenotype(phenotype3_vals, &mut rng);
 
         let organisms_collection =

@@ -60,7 +60,7 @@ mod tests {
     /// Helper: create an Organism with given score and age.
     fn make_org(score: f64, age: usize, idx: usize) -> Rc<Organism> {
         // Expressed values: default 7 system parameters + one dummy problem param
-        let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
+        let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0, idx as f64];
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
         let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));

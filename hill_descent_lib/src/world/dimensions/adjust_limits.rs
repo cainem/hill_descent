@@ -130,10 +130,10 @@ mod tests {
     use std::rc::Rc;
 
     fn create_test_organism(expressed_values: Vec<f64>) -> Rc<Organism> {
-        // Ensure we have at least 7 values for NUM_SYSTEM_PARAMETERS + some spatial dimensions
-        // We need at least 8 values to test dimension index 0 (7 system + 1 spatial)
+        // Ensure we have at least 9 values for NUM_SYSTEM_PARAMETERS + some spatial dimensions
+        // We need at least 10 values to test dimension index 0 (9 system + 1 spatial)
         let mut full_values = expressed_values;
-        while full_values.len() < 8 {
+        while full_values.len() < 10 {
             full_values.push(0.0); // Pad with zeros
         }
         let phenotype = Phenotype::new_for_test(full_values);
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn given_invalid_dimension_index_when_adjusting_limits_then_returns_false() {
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(0.0..=10.0, 1)]);
-        let organism = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
+        let organism = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
         let organisms = Organisms::new_from_organisms(vec![(*organism).clone()]);
 
         let result = dimensions.adjust_limits(1, &organisms); // Index 1 doesn't exist
@@ -168,8 +168,8 @@ mod tests {
     #[test]
     fn given_single_organism_when_adjusting_limits_then_range_expanded_and_returns_false() {
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(0.0..=10.0, 1)]);
-        // Create organism with spatial dimension value at index 7 (after 7 system parameters)
-        let organism = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
+        // Create organism with spatial dimension value at index 9 (after 9 system parameters)
+        let organism = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
         let organisms = Organisms::new_from_organisms(vec![(*organism).clone()]);
 
         let result = dimensions.adjust_limits(0, &organisms);
@@ -191,9 +191,9 @@ mod tests {
      {
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(0.0..=10.0, 1)]);
 
-        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]);
-        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.0]);
-        let organism3 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
+        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]);
+        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.0]);
+        let organism3 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
 
         let organisms = Organisms::new_from_organisms(vec![
             (*organism1).clone(),
@@ -220,8 +220,8 @@ mod tests {
         // Start with a very wide range
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(-100.0..=100.0, 1)]);
 
-        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0]);
-        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.0]);
+        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0]);
+        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.0]);
 
         let organisms =
             Organisms::new_from_organisms(vec![(*organism1).clone(), (*organism2).clone()]);
@@ -243,8 +243,8 @@ mod tests {
     fn given_negative_values_when_adjusting_limits_then_handles_correctly() {
         let mut dimensions = Dimensions::new_for_test(vec![Dimension::new(-10.0..=10.0, 1)]);
 
-        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -5.0]);
-        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0]);
+        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -5.0]);
+        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.0]);
 
         let organisms =
             Organisms::new_from_organisms(vec![(*organism1).clone(), (*organism2).clone()]);
@@ -268,8 +268,8 @@ mod tests {
         let mut dimensions =
             Dimensions::new_for_test(vec![Dimension::new(f64::NEG_INFINITY..=f64::INFINITY, 1)]);
 
-        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
-        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0]);
+        let organism1 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0]);
+        let organism2 = create_test_organism(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0]);
 
         let organisms =
             Organisms::new_from_organisms(vec![(*organism1).clone(), (*organism2).clone()]);

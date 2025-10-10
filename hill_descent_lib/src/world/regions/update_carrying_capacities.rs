@@ -110,7 +110,7 @@ mod test_update_carrying_capacities {
     // These are general helpers that might be used by various tests related to regions.
 
     fn default_system_parameters() -> Vec<f64> {
-        vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]
+        vec![0.1, 0.5, 0.001, 0.001, 0.001, 0.0, 0.1, 100.0, 2.0]
     }
 
     #[allow(dead_code)] // This helper might not be used by all test files that copy it

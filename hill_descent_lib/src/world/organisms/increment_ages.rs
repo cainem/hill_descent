@@ -21,7 +21,7 @@ mod tests {
 
     fn create_test_organisms(count: usize, max_age: f64) -> Organisms {
         let mut expressed = vec![0.1; NUM_SYSTEM_PARAMETERS];
-        expressed[5] = max_age; // system parameter index for max_age
+        expressed[7] = max_age; // system parameter index for max_age (m1,m2,m3,m4,m5,m6,m6_sigma,max_age,crossover)
         let phenotype = Rc::new(Phenotype::new_for_test(expressed));
         let organisms: Vec<Organism> = (0..count)
             .map(|_| Organism::new(Rc::clone(&phenotype), 0, (None, None)))
