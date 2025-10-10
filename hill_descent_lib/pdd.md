@@ -202,7 +202,7 @@ All reproduction is sexual. Organisms are paired using an "extreme pairing" stra
     * Two offspring are formed from each pair. One of the crossed-over gametes is taken from each parent and recombined to produce a new organism; this is done twice to produce two offspring.
     * The offspring's loci are copies of the chosen parental loci. Mutations (Section 5.2.4) are applied to these copies.
 
-**5.2.4. Mutation (Applied to Offspring's Loci during copying):** Parental loci are immutable. Mutations affect the offspring's loci. The mutation probabilities $m_1...m_5$ may themselves be evolvable dimensions.
+**5.2.4. Mutation (Applied to Offspring's Loci during copying):** Parental loci are immutable. Mutations affect the offspring's loci. The mutation probabilities $m_1...m_6$ and noise scale $m_{6\sigma}$ may themselves be evolvable dimensions.
 
 * **5.2.4.1. Adjustment `DoublingOrHalvingFlag` Mutation:** 
     * Probability: $m_3$ (e.g., 0.1%).  
@@ -225,6 +225,16 @@ All reproduction is sexual. Organisms are paired using an "extreme pairing" stra
 * **5.2.4.5. Application of Adjustment to LocusValue:** 
     * If an offspring's locus has its `ApplyAdjustmentFlag` set to `true` (either inherited as true or mutated to true), its `LocusAdjustment` is applied to its `LocusValue` at the point the locus is copied.  
     * Application: `LocusValue = LocusValue + (DirectionOfTravel_sign * AdjustmentValue)`.
+
+* **5.2.4.6. Adjustment `AdjustmentValue` Gaussian Noise Mutation:** 
+    * Probability: $m_6$ (e.g., 1%).  
+    * Action: Adds Gaussian-distributed random noise proportional to current `AdjustmentValue`.
+    * Noise Scale: Controlled by $m_{6\sigma}$ parameter (e.g., 0.1 = 10% of current value).
+    * Noise is drawn from $N(0, \sigma^2)$ where $\sigma = \text{AdjustmentValue} \times m_{6\sigma}$.
+    * Implementation: Uses Box-Muller transform to generate standard normal distribution: $noise = standard\_normal \times AdjustmentValue \times m_{6\sigma}$
+    * If the resulting value is negative or non-finite, the mutation is rejected and the original value retained.
+    * This mutation provides fine-grained local search capability, complementing the coarse exponential changes from m5.
+    * Both $m_6$ and $m_{6\sigma}$ are evolvable parameters with their own bounds.
 
 **5.2.5. Offspring Placement and Region Management:** 
     * New offspring are placed into the n-dimensional space based on their (expressed) coordinates and assigned to appropriate regions.  
