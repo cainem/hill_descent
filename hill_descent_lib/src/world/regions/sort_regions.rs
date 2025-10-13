@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use super::Regions;
 
 impl Regions {
@@ -15,7 +17,7 @@ impl Regions {
         tracing::instrument(level = "debug", skip(self))
     )]
     pub fn sort_regions(&mut self) {
-        for region in self.regions.values_mut() {
+        self.regions.par_iter_mut().for_each(|(_, region)| {
             // Sort organisms in-place by score (asc) then age (desc)
             region.organisms_mut().sort_by(|a, b| {
                 let score_cmp = a
@@ -25,7 +27,7 @@ impl Regions {
                     .unwrap_or(std::cmp::Ordering::Equal);
                 score_cmp.then_with(|| b.age().cmp(&a.age()))
             });
-        }
+        });
     }
 }
 

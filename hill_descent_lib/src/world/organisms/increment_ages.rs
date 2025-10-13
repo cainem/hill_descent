@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use super::Organisms;
 
 impl Organisms {
@@ -6,9 +8,9 @@ impl Organisms {
         tracing::instrument(level = "debug", skip(self))
     )]
     pub fn increment_ages(&self) {
-        for organism in self.organisms.iter() {
+        self.organisms.par_iter().for_each(|organism| {
             organism.increment_age();
-        }
+        });
     }
 }
 

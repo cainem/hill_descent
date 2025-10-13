@@ -29,7 +29,8 @@ impl Regions {
                 let deficit = capacity - region.organism_count();
                 let offspring = region.reproduce(deficit, rng);
                 // wrap offspring in Rc before extending
-                let offspring_rc: Vec<Arc<Organism>> = offspring.into_iter().map(Arc::new).collect();
+                let offspring_rc: Vec<Arc<Organism>> =
+                    offspring.into_iter().map(Arc::new).collect();
                 organisms.extend(offspring_rc);
             }
         }
