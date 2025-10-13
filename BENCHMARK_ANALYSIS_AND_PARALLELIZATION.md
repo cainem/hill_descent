@@ -27,24 +27,24 @@ Based on analysis of 7 test algorithms across 16 different configurations (10 to
 
 Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6, Levi N13, Rastrigin, Schaffer N2):
 
-| Population | Regions | Avg Score Quality | Avg Time (s) | Consistency | Score |
-|------------|---------|-------------------|--------------|-------------|-------|
-| 10 | 2 | ⭐⭐ Poor | 0.010 | ❌ High variance | 2/10 |
-| 15 | 3 | ⭐⭐⭐ Moderate | 0.017 | ⚠️ Moderate variance | 4/10 |
-| 25 | 5 | ⭐⭐⭐⭐ Good | 0.030 | ✅ Good | 6/10 |
-| 40 | 2 | ⭐⭐⭐ Moderate | 0.034 | ⚠️ Moderate variance | 5/10 |
-| 50 | 5 | ⭐⭐⭐⭐ Good | 0.049 | ✅ Good | 7/10 |
-| 50 | 10 | ⭐⭐⭐⭐ Very Good | 0.057 | ✅ Very good | 8/10 |
-| **100** | **2** | **⭐⭐⭐** Good | **0.084** | **✅ Good** | **6/10** |
-| **100** | **3** | **⭐⭐⭐⭐** Very Good | **0.086** | **✅ Very good** | **7/10** |
-| **100** | **10** | **⭐⭐⭐⭐⭐** Excellent | **0.105** | **✅ Excellent** | **9/10** |
-| 100 | 15 | ⭐⭐⭐⭐ Very Good | 0.113 | ✅ Very good | 8/10 |
-| 100 | 20 | ⭐⭐⭐⭐⭐ Excellent | 0.121 | ✅ Excellent | 9/10 |
-| 250 | 10 | ⭐⭐⭐⭐⭐ Excellent | 0.226 | ✅ Excellent | 9/10 |
-| **500** | **20** | **⭐⭐⭐⭐⭐** Excellent | **0.457** | **✅ Excellent** | **10/10** ⭐ |
-| **750** | **50** | **⭐⭐⭐⭐⭐** Excellent | **0.721** | **✅ Excellent** | **10/10** ⭐ |
-| **1000** | **100** | **⭐⭐⭐⭐⭐** Excellent | **1.018** | **✅ Excellent** | **10/10** ⭐ |
-| 10000 | 100 | ⭐⭐⭐⭐⭐ Excellent | 11.965 | ✅ Excellent | 9/10 |
+| Population | Regions | Avg Score Quality   | Avg Time (s) | Consistency         | Score       |
+| ---------- | ------- | ------------------- | ------------ | ------------------- | ----------- |
+| 10         | 2       | ⭐⭐ Poor             | 0.010        | ❌ High variance     | 2/10        |
+| 15         | 3       | ⭐⭐⭐ Moderate        | 0.017        | ⚠️ Moderate variance | 4/10        |
+| 25         | 5       | ⭐⭐⭐⭐ Good           | 0.030        | ✅ Good              | 6/10        |
+| 40         | 2       | ⭐⭐⭐ Moderate        | 0.034        | ⚠️ Moderate variance | 5/10        |
+| 50         | 5       | ⭐⭐⭐⭐ Good           | 0.049        | ✅ Good              | 7/10        |
+| 50         | 10      | ⭐⭐⭐⭐ Very Good      | 0.057        | ✅ Very good         | 8/10        |
+| **100**    | **2**   | **⭐⭐⭐** Good        | **0.084**    | **✅ Good**          | **6/10**    |
+| **100**    | **3**   | **⭐⭐⭐⭐** Very Good  | **0.086**    | **✅ Very good**     | **7/10**    |
+| **100**    | **10**  | **⭐⭐⭐⭐⭐** Excellent | **0.105**    | **✅ Excellent**     | **9/10**    |
+| 100        | 15      | ⭐⭐⭐⭐ Very Good      | 0.113        | ✅ Very good         | 8/10        |
+| 100        | 20      | ⭐⭐⭐⭐⭐ Excellent     | 0.121        | ✅ Excellent         | 9/10        |
+| 250        | 10      | ⭐⭐⭐⭐⭐ Excellent     | 0.226        | ✅ Excellent         | 9/10        |
+| **500**    | **20**  | **⭐⭐⭐⭐⭐** Excellent | **0.457**    | **✅ Excellent**     | **10/10** ⭐ |
+| **750**    | **50**  | **⭐⭐⭐⭐⭐** Excellent | **0.721**    | **✅ Excellent**     | **10/10** ⭐ |
+| **1000**   | **100** | **⭐⭐⭐⭐⭐** Excellent | **1.018**    | **✅ Excellent**     | **10/10** ⭐ |
+| 10000      | 100     | ⭐⭐⭐⭐⭐ Excellent     | 11.965       | ✅ Excellent         | 9/10        |
 
 ---
 
@@ -54,13 +54,13 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 10 | 2 | 1.42e-14 | 3.93e5 | 1.71e6 | 0.010 | ❌ Extreme variance |
-| 100 | 10 | 0.00 | 2.47e-5 | 6.58e-5 | 0.103 | ✅ Consistent |
-| **500** | **20** | **0.00** | **8.53e-15** | **2.17e-14** | **0.419** | ⭐ **Best** |
-| **1000** | **100** | **0.00** | **1.42e-15** | **4.26e-15** | **0.933** | ⭐ **Best** |
-| 10000 | 100 | 0.00 | 0.00 | 0.00 | 10.919 | ✅ Perfect but slow |
+| Pop      | Regions | Best Score | Avg Score    | Std Dev      | Time (s)  | Notes              |
+| -------- | ------- | ---------- | ------------ | ------------ | --------- | ------------------ |
+| 10       | 2       | 1.42e-14   | 3.93e5       | 1.71e6       | 0.010     | ❌ Extreme variance |
+| 100      | 10      | 0.00       | 2.47e-5      | 6.58e-5      | 0.103     | ✅ Consistent       |
+| **500**  | **20**  | **0.00**   | **8.53e-15** | **2.17e-14** | **0.419** | ⭐ **Best**         |
+| **1000** | **100** | **0.00**   | **1.42e-15** | **4.26e-15** | **0.933** | ⭐ **Best**         |
+| 10000    | 100     | 0.00       | 0.00         | 0.00         | 10.919    | ✅ Perfect but slow |
 
 **Insight**: Achieves near-perfect scores (≈0) at Pop≥500. Excellent test for optimization quality.
 
@@ -70,13 +70,13 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 10 | 2 | 6.69e-8 | 8.99e306 | inf | 0.010 | ❌ Catastrophic failures |
-| 100 | 10 | 0.00 | 7.56e-6 | 3.27e-5 | 0.107 | ✅ Very good |
-| **500** | **20** | **0.00** | **2.82e-5** | **1.19e-4** | **0.481** | ⭐ **Excellent** |
-| **1000** | **100** | **0.00** | **1.40e-13** | **5.93e-13** | **1.066** | ⭐ **Best** |
-| 10000 | 100 | 0.00 | 0.00 | 0.00 | 16.431 | ✅ Perfect but slow |
+| Pop      | Regions | Best Score | Avg Score    | Std Dev      | Time (s)  | Notes                   |
+| -------- | ------- | ---------- | ------------ | ------------ | --------- | ----------------------- |
+| 10       | 2       | 6.69e-8    | 8.99e306     | inf          | 0.010     | ❌ Catastrophic failures |
+| 100      | 10      | 0.00       | 7.56e-6      | 3.27e-5      | 0.107     | ✅ Very good             |
+| **500**  | **20**  | **0.00**   | **2.82e-5**  | **1.19e-4**  | **0.481** | ⭐ **Excellent**         |
+| **1000** | **100** | **0.00**   | **1.40e-13** | **5.93e-13** | **1.066** | ⭐ **Best**              |
+| 10000    | 100     | 0.00       | 0.00         | 0.00         | 16.431    | ✅ Perfect but slow      |
 
 **Insight**: Small populations prone to catastrophic failures (inf scores). Needs Pop≥100 for stability.
 
@@ -86,13 +86,13 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 25 | 5 | 0.00 | 6.37e-5 | 2.70e-4 | 0.031 | ✅ Good early performance |
-| 100 | 15 | 0.00 | 2.40e-9 | 1.04e-8 | 0.113 | ✅ Excellent |
-| **500** | **20** | **0.00** | **2.21e-15** | **9.65e-15** | **0.480** | ⭐ **Best** |
-| **1000** | **100** | **0.00** | **1.58e-31** | **3.16e-31** | **1.043** | ⭐ **Near machine precision** |
-| 10000 | 100 | 0.00 | 2.37e-31 | 3.62e-31 | 11.877 | ✅ Best but slow |
+| Pop      | Regions | Best Score | Avg Score    | Std Dev      | Time (s)  | Notes                        |
+| -------- | ------- | ---------- | ------------ | ------------ | --------- | ---------------------------- |
+| 25       | 5       | 0.00       | 6.37e-5      | 2.70e-4      | 0.031     | ✅ Good early performance     |
+| 100      | 15      | 0.00       | 2.40e-9      | 1.04e-8      | 0.113     | ✅ Excellent                  |
+| **500**  | **20**  | **0.00**   | **2.21e-15** | **9.65e-15** | **0.480** | ⭐ **Best**                   |
+| **1000** | **100** | **0.00**   | **1.58e-31** | **3.16e-31** | **1.043** | ⭐ **Near machine precision** |
+| 10000    | 100     | 0.00       | 2.37e-31     | 3.62e-31     | 11.877    | ✅ Best but slow              |
 
 **Insight**: Very effective algorithm - achieves excellent scores even at moderate populations.
 
@@ -102,14 +102,14 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 10 | 2 | 6.03e-3 | 8.99e306 | inf | 0.010 | ❌ Catastrophic failures |
-| 100 | 3 | 2.23e-5 | 3.52e-2 | 4.71e-2 | 0.082 | ⚠️ Moderate |
-| **250** | **10** | **6.01e-4** | **2.86e-2** | **2.18e-2** | **0.213** | ⭐ **Good balance** |
-| **500** | **20** | **4.51e-4** | **2.76e-2** | **2.36e-2** | **0.452** | ⭐ **Best** |
-| **1000** | **100** | **2.41e-4** | **1.16e-2** | **1.06e-2** | **0.959** | ⭐ **Best** |
-| 10000 | 100 | 5.30e-4 | 8.97e-3 | 6.88e-3 | 11.910 | ✅ Good but slow |
+| Pop      | Regions | Best Score  | Avg Score   | Std Dev     | Time (s)  | Notes                   |
+| -------- | ------- | ----------- | ----------- | ----------- | --------- | ----------------------- |
+| 10       | 2       | 6.03e-3     | 8.99e306    | inf         | 0.010     | ❌ Catastrophic failures |
+| 100      | 3       | 2.23e-5     | 3.52e-2     | 4.71e-2     | 0.082     | ⚠️ Moderate              |
+| **250**  | **10**  | **6.01e-4** | **2.86e-2** | **2.18e-2** | **0.213** | ⭐ **Good balance**      |
+| **500**  | **20**  | **4.51e-4** | **2.76e-2** | **2.36e-2** | **0.452** | ⭐ **Best**              |
+| **1000** | **100** | **2.41e-4** | **1.16e-2** | **1.06e-2** | **0.959** | ⭐ **Best**              |
+| 10000    | 100     | 5.30e-4     | 8.97e-3     | 6.88e-3     | 11.910    | ✅ Good but slow         |
 
 **Insight**: Challenging function - requires large populations. Never reaches true zero but shows improvement with scale.
 
@@ -119,13 +119,13 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 15 | 3 | 5.71e-29 | 1.10e-1 | 2.51e-1 | 0.018 | ⚠️ High variance |
-| 100 | 20 | 1.35e-31 | 3.16e-12 | 9.80e-12 | 0.124 | ✅ Excellent |
-| **500** | **20** | **1.35e-31** | **1.14e-18** | **4.98e-18** | **0.487** | ⭐ **Best** |
-| **1000** | **100** | **1.35e-31** | **2.26e-14** | **9.84e-14** | **1.082** | ⭐ **Excellent** |
-| **10000** | **100** | **1.35e-31** | **1.35e-31** | **0.00** | **12.587** | ⭐ **Perfect (all runs!)** |
+| Pop       | Regions | Best Score   | Avg Score    | Std Dev      | Time (s)   | Notes                     |
+| --------- | ------- | ------------ | ------------ | ------------ | ---------- | ------------------------- |
+| 15        | 3       | 5.71e-29     | 1.10e-1      | 2.51e-1      | 0.018      | ⚠️ High variance           |
+| 100       | 20      | 1.35e-31     | 3.16e-12     | 9.80e-12     | 0.124      | ✅ Excellent               |
+| **500**   | **20**  | **1.35e-31** | **1.14e-18** | **4.98e-18** | **0.487**  | ⭐ **Best**                |
+| **1000**  | **100** | **1.35e-31** | **2.26e-14** | **9.84e-14** | **1.082**  | ⭐ **Excellent**           |
+| **10000** | **100** | **1.35e-31** | **1.35e-31** | **0.00**     | **12.587** | ⭐ **Perfect (all runs!)** |
 
 **Insight**: Achieves machine-precision minimum (1.35e-31). At 10K population, every run hits perfect score!
 
@@ -135,14 +135,14 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 10 | 2 | 0.00 | 5.00e2 | 2.16e3 | 0.010 | ❌ Extreme variance |
-| 100 | 20 | 0.00 | 8.25e-6 | 3.60e-5 | 0.120 | ✅ Very good |
-| **250** | **10** | **0.00** | **5.28e-8** | **2.30e-7** | **0.215** | ⭐ **Excellent** |
-| **500** | **20** | **0.00** | **5.49e-10** | **2.39e-9** | **0.431** | ⭐ **Best** |
-| **1000** | **100** | **0.00** | **0.00** | **0.00** | **1.036** | ⭐ **Perfect** |
-| **10000** | **100** | **0.00** | **0.00** | **0.00** | **11.190** | ⭐ **Perfect (all runs!)** |
+| Pop       | Regions | Best Score | Avg Score    | Std Dev     | Time (s)   | Notes                     |
+| --------- | ------- | ---------- | ------------ | ----------- | ---------- | ------------------------- |
+| 10        | 2       | 0.00       | 5.00e2       | 2.16e3      | 0.010      | ❌ Extreme variance        |
+| 100       | 20      | 0.00       | 8.25e-6      | 3.60e-5     | 0.120      | ✅ Very good               |
+| **250**   | **10**  | **0.00**   | **5.28e-8**  | **2.30e-7** | **0.215**  | ⭐ **Excellent**           |
+| **500**   | **20**  | **0.00**   | **5.49e-10** | **2.39e-9** | **0.431**  | ⭐ **Best**                |
+| **1000**  | **100** | **0.00**   | **0.00**     | **0.00**    | **1.036**  | ⭐ **Perfect**             |
+| **10000** | **100** | **0.00**   | **0.00**     | **0.00**    | **11.190** | ⭐ **Perfect (all runs!)** |
 
 **Insight**: Classic hard test - small populations fail badly. 1000+ population achieves perfection.
 
@@ -152,14 +152,14 @@ Analyzed across all 7 algorithms (Styblinski-Tang, Ackley, Himmelblau, Bukin N6,
 
 **Best Scores by Configuration:**
 
-| Pop | Regions | Best Score | Avg Score | Std Dev | Time (s) | Notes |
-|-----|---------|------------|-----------|---------|----------|-------|
-| 25 | 5 | 0.00 | 1.88e-1 | 2.47e-1 | 0.029 | ⚠️ High variance |
-| 100 | 3 | 0.00 | 9.11e-3 | 2.15e-2 | 0.081 | ✅ Good |
-| **250** | **10** | **0.00** | **2.58e-4** | **8.88e-4** | **0.245** | ⭐ **Excellent** |
-| **500** | **20** | **0.00** | **2.49e-6** | **1.08e-5** | **0.445** | ⭐ **Best** |
-| **1000** | **100** | **0.00** | **0.00** | **0.00** | **0.961** | ⭐ **Perfect (all runs!)** |
-| 10000 | 100 | 0.00 | 0.00 | 0.00 | 11.128 | ✅ Perfect but slow |
+| Pop      | Regions | Best Score | Avg Score   | Std Dev     | Time (s)  | Notes                     |
+| -------- | ------- | ---------- | ----------- | ----------- | --------- | ------------------------- |
+| 25       | 5       | 0.00       | 1.88e-1     | 2.47e-1     | 0.029     | ⚠️ High variance           |
+| 100      | 3       | 0.00       | 9.11e-3     | 2.15e-2     | 0.081     | ✅ Good                    |
+| **250**  | **10**  | **0.00**   | **2.58e-4** | **8.88e-4** | **0.245** | ⭐ **Excellent**           |
+| **500**  | **20**  | **0.00**   | **2.49e-6** | **1.08e-5** | **0.445** | ⭐ **Best**                |
+| **1000** | **100** | **0.00**   | **0.00**    | **0.00**    | **0.961** | ⭐ **Perfect (all runs!)** |
+| 10000    | 100     | 0.00       | 0.00        | 0.00        | 11.128    | ✅ Perfect but slow        |
 
 **Insight**: Relatively easy - good scores at modest populations. Perfect at 1000+.
 
@@ -274,14 +274,14 @@ World Seed + Region 2 Key → Region 2 RNG → Region 2 offspring
 
 **With Parallelization on Different Core Counts:**
 
-| Cores | Fitness (parallel) | Reproduction (parallel) | Serial Portion | **Total** | **Speedup** |
-|-------|-------------------|------------------------|----------------|-----------|-------------|
-| 1 (baseline) | 0.274s | 0.091s | 0.092s | 0.457s | 1.0x |
-| 4 | 0.069s (4x) | 0.023s (4x) | 0.092s | **0.184s** | **2.5x** |
-| 8 | 0.034s (8x) | 0.011s (8x) | 0.092s | **0.137s** | **3.3x** |
-| 16 | 0.017s (16x) | 0.006s (16x) | 0.092s | **0.115s** | **4.0x** |
-| 32 | 0.009s (30x)* | 0.003s (20x)* | 0.092s | **0.104s** | **4.4x** |
-| 64 | 0.004s (45x)* | 0.002s (20x)* | 0.092s | **0.098s** | **4.7x** |
+| Cores        | Fitness (parallel) | Reproduction (parallel) | Serial Portion | **Total**  | **Speedup** |
+| ------------ | ------------------ | ----------------------- | -------------- | ---------- | ----------- |
+| 1 (baseline) | 0.274s             | 0.091s                  | 0.092s         | 0.457s     | 1.0x        |
+| 4            | 0.069s (4x)        | 0.023s (4x)             | 0.092s         | **0.184s** | **2.5x**    |
+| 8            | 0.034s (8x)        | 0.011s (8x)             | 0.092s         | **0.137s** | **3.3x**    |
+| 16           | 0.017s (16x)       | 0.006s (16x)            | 0.092s         | **0.115s** | **4.0x**    |
+| 32           | 0.009s (30x)*      | 0.003s (20x)*           | 0.092s         | **0.104s** | **4.4x**    |
+| 64           | 0.004s (45x)*      | 0.002s (20x)*           | 0.092s         | **0.098s** | **4.7x**    |
 
 *Reduced scaling due to overhead and Amdahl's law
 
@@ -462,13 +462,13 @@ World Seed + Region 2 Key → Region 2 RNG → Region 2 offspring
 
 ### For Different Scenarios:
 
-| Scenario | Population | Regions | Expected Time (1000 rounds) | Score Quality | Use Case |
-|----------|-----------|---------|----------------------------|---------------|----------|
-| **Quick Testing** | 100 | 10 | ~0.10s | ⭐⭐⭐⭐ Very Good | Unit tests, rapid iteration |
-| **Development** | 250 | 10 | ~0.23s | ⭐⭐⭐⭐⭐ Excellent | Feature development, debugging |
-| **Production** | 500 | 20 | ~0.46s → 0.12s (parallel) | ⭐⭐⭐⭐⭐ Excellent | Deployed applications |
-| **Research** | 1000 | 100 | ~1.02s → 0.20s (parallel) | ⭐⭐⭐⭐⭐ Near-perfect | Academic papers, benchmarking |
-| **Competition** | 10000 | 100 | ~12s → 2s (parallel) | ⭐⭐⭐⭐⭐ Perfect | Absolute best scores |
+| Scenario          | Population | Regions | Expected Time (1000 rounds) | Score Quality      | Use Case                       |
+| ----------------- | ---------- | ------- | --------------------------- | ------------------ | ------------------------------ |
+| **Quick Testing** | 100        | 10      | ~0.10s                      | ⭐⭐⭐⭐ Very Good     | Unit tests, rapid iteration    |
+| **Development**   | 250        | 10      | ~0.23s                      | ⭐⭐⭐⭐⭐ Excellent    | Feature development, debugging |
+| **Production**    | 500        | 20      | ~0.46s → 0.12s (parallel)   | ⭐⭐⭐⭐⭐ Excellent    | Deployed applications          |
+| **Research**      | 1000       | 100     | ~1.02s → 0.20s (parallel)   | ⭐⭐⭐⭐⭐ Near-perfect | Academic papers, benchmarking  |
+| **Competition**   | 10000      | 100     | ~12s → 2s (parallel)        | ⭐⭐⭐⭐⭐ Perfect      | Absolute best scores           |
 
 ### Key Insights:
 
