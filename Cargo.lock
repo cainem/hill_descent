@@ -897,6 +897,7 @@ dependencies = [
  "indexmap",
  "log",
  "rand",
+ "rayon",
  "rustc-hash",
  "serde",
  "serde_json",

@@ -60,7 +60,7 @@ mod tests {
     use crate::world::organisms::organism::Organism;
     use crate::world::regions::Regions;
     use crate::world::regions::region::Region;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Helper to create a valid phenotype for testing.
     // The first 7 values are system parameters and are ignored by the diversity function.
@@ -71,8 +71,8 @@ mod tests {
         Phenotype::new_for_test(expressed_values)
     }
 
-    fn create_test_organism(phenotype: Phenotype) -> Rc<Organism> {
-        Rc::new(Organism::new(Rc::new(phenotype), 0, (None, None)))
+    fn create_test_organism(phenotype: Phenotype) -> Arc<Organism> {
+        Arc::new(Organism::new(Arc::new(phenotype), 0, (None, None)))
     }
 
     #[test]

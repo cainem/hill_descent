@@ -8,13 +8,13 @@ use std::fmt::Debug;
 ///
 /// Here the expressed values are fed into the function and a value is returned and the
 /// algorithm will vary the expressed values to minimize the return value
-pub trait SingleValuedFunction: Debug {
+pub trait SingleValuedFunction: Debug + Sync {
     fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64;
 }
 
 impl<T> WorldFunction for T
 where
-    T: SingleValuedFunction + Debug,
+    T: SingleValuedFunction + Debug + Sync,
 {
     /// Adapts the `single_run` interface to the `WorldFunction` interface by wrapping the
     /// single scalar result in a `Vec`.

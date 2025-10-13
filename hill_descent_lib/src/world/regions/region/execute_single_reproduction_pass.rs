@@ -1,5 +1,5 @@
 use rand::Rng;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::world::{organisms::organism::Organism, regions::region::Region};
 
@@ -16,7 +16,7 @@ impl Region {
     ///
     /// Returns a vector of offspring produced in this reproduction pass
     pub(super) fn execute_single_reproduction_pass<R: Rng>(
-        selected_organisms: &[Rc<Organism>],
+        selected_organisms: &[Arc<Organism>],
         max_offspring_this_pass: usize,
         rng: &mut R,
     ) -> Vec<Organism> {
@@ -40,16 +40,16 @@ mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
     use rand::{SeedableRng, rngs::SmallRng};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     /// Helper: create an Organism with given score and age.
-    fn make_org(score: f64, age: usize, idx: usize) -> Rc<Organism> {
+    fn make_org(score: f64, age: usize, idx: usize) -> Arc<Organism> {
         // Expressed values: default 7 system parameters + one dummy problem param
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed));
+        let org = Organism::new(Arc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));
-        Rc::new(org)
+        Arc::new(org)
     }
 
     #[test]

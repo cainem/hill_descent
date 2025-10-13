@@ -1,5 +1,5 @@
 use rand::Rng;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::world::{
     organisms::{Organisms, organism::Organism},
@@ -29,7 +29,7 @@ impl Regions {
                 let deficit = capacity - region.organism_count();
                 let offspring = region.reproduce(deficit, rng);
                 // wrap offspring in Rc before extending
-                let offspring_rc: Vec<Rc<Organism>> = offspring.into_iter().map(Rc::new).collect();
+                let offspring_rc: Vec<Arc<Organism>> = offspring.into_iter().map(Arc::new).collect();
                 organisms.extend(offspring_rc);
             }
         }
@@ -46,15 +46,15 @@ mod tests {
     };
     use rand::SeedableRng;
     use rand::rngs::SmallRng;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     fn create_region_with_two(capacity: usize) -> Region {
         let mut region = Region::new();
         region.set_carrying_capacity(Some(capacity));
         let phen = Phenotype::new_for_test(vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5]);
         for _ in 0..2 {
-            let org = Organism::new(Rc::new(phen.clone()), 0, (None, None));
-            region.add_organism(Rc::new(org));
+            let org = Organism::new(Arc::new(phen.clone()), 0, (None, None));
+            region.add_organism(Arc::new(org));
         }
         region
     }

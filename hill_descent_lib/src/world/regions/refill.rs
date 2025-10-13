@@ -50,7 +50,7 @@ mod tests {
         phenotype::Phenotype,
         world::{organisms::organism::Organism, regions::Regions},
     };
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Helper to create a test organism with a given score and region key
     fn create_test_organism_with_score_and_key(
@@ -58,7 +58,7 @@ mod tests {
         region_key: Option<Vec<usize>>,
     ) -> Organism {
         let expressed_values = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // System params
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed_values));
         let organism = Organism::new(phenotype, 0, (None, None));
         organism.set_score(score);
         organism.set_region_key(region_key);

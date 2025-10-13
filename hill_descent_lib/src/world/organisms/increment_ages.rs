@@ -17,14 +17,14 @@ mod tests {
     use super::super::{Organism, Organisms};
     use crate::NUM_SYSTEM_PARAMETERS;
     use crate::phenotype::Phenotype;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     fn create_test_organisms(count: usize, max_age: f64) -> Organisms {
         let mut expressed = vec![0.1; NUM_SYSTEM_PARAMETERS];
         expressed[5] = max_age; // system parameter index for max_age
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed));
         let organisms: Vec<Organism> = (0..count)
-            .map(|_| Organism::new(Rc::clone(&phenotype), 0, (None, None)))
+            .map(|_| Organism::new(Arc::clone(&phenotype), 0, (None, None)))
             .collect();
         Organisms::new_from_organisms(organisms)
     }

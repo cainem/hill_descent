@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::phenotype::Phenotype;
 use std::sync::Mutex;
@@ -25,7 +25,7 @@ pub struct Organism {
     /// - Root/initial organisms: (None, None)
     parent_ids: (Option<usize>, Option<usize>),
     region_key: Mutex<Option<Vec<usize>>>,
-    phenotype: Rc<Phenotype>,
+    phenotype: Arc<Phenotype>,
     score: Mutex<Option<f64>>,
     /// The age of the organism, in ticks (atomic for thread-safe increments).
     age: AtomicUsize,
@@ -44,7 +44,7 @@ impl Clone for Organism {
             id: NEXT_ORGANISM_ID.fetch_add(1, Ordering::Relaxed),
             parent_ids: self.parent_ids,
             region_key: Mutex::new(self.region_key.lock().unwrap().clone()),
-            phenotype: Rc::clone(&self.phenotype),
+            phenotype: Arc::clone(&self.phenotype),
             score: Mutex::new(*self.score.lock().unwrap()),
             age: AtomicUsize::new(self.age.load(Ordering::Relaxed)),
             is_dead: AtomicBool::new(self.is_dead.load(Ordering::Relaxed)),
@@ -64,7 +64,7 @@ impl Organism {
     ///   - Sexual reproduction: `(Some(parent1_id), Some(parent2_id))`
     ///   - Root/initial organisms: `(None, None)`
     pub fn new(
-        phenotype: Rc<Phenotype>,
+        phenotype: Arc<Phenotype>,
         age: usize,
         parent_ids: (Option<usize>, Option<usize>),
     ) -> Self {
@@ -90,8 +90,8 @@ impl Organism {
     }
 
     /// Returns a clone of the organism's phenotype Rc.
-    pub fn get_phenotype_rc(&self) -> Rc<Phenotype> {
-        Rc::clone(&self.phenotype)
+    pub fn get_phenotype_rc(&self) -> Arc<Phenotype> {
+        Arc::clone(&self.phenotype)
     }
 
     /// Returns the region key of the organism, if set.
@@ -165,7 +165,7 @@ impl Organism {
 mod tests {
     use super::*;
     use crate::{NUM_SYSTEM_PARAMETERS, phenotype::Phenotype};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     fn create_test_phenotype() -> Phenotype {
         let expressed_values = vec![1.0; NUM_SYSTEM_PARAMETERS];
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn given_new_organism_with_age_when_age_is_checked_then_it_is_correct() {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 5, (None, None));
         assert_eq!(organism.age(), 5);
         assert!(!organism.is_dead());
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn given_organism_when_mark_dead_then_is_dead_returns_true() {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 0, (None, None));
         organism.mark_dead();
         assert!(organism.is_dead());
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn given_organism_created_with_new_when_parent_methods_called_then_returns_root_values() {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 0, (None, None));
 
         assert!(organism.is_root());
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn given_organism_created_with_new_asexual_when_parent_methods_called_then_returns_correct_values()
      {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let parent_id = 123;
         let organism = Organism::new(phenotype, 5, (Some(parent_id), None));
 
@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn given_organism_created_with_new_sexual_when_parent_methods_called_then_returns_correct_values()
      {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let parent1_id = 123;
         let parent2_id = 456;
         let organism = Organism::new(phenotype, 10, (Some(parent1_id), Some(parent2_id)));
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn given_organism_created_with_new_root_when_parent_methods_called_then_returns_root_values() {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let organism = Organism::new(phenotype, 7, (None, None));
 
         assert!(organism.is_root());
@@ -239,7 +239,7 @@ mod tests {
     #[test]
     #[cfg(test)] // Only test Clone in test builds since it's test-only
     fn given_organism_when_cloned_then_parent_ids_are_copied() {
-        let phenotype = Rc::new(create_test_phenotype());
+        let phenotype = Arc::new(create_test_phenotype());
         let parent1_id = 789;
         let parent2_id = 101112;
         let original = Organism::new(phenotype, 3, (Some(parent1_id), Some(parent2_id)));

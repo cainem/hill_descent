@@ -84,7 +84,7 @@ mod tests {
     use crate::world::dimensions::Dimensions;
     use crate::world::dimensions::dimension::Dimension;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // ---------- helpers ----------
     fn create_organism_for_test(problem_values: Vec<f64>) -> Organism {
@@ -92,7 +92,7 @@ mod tests {
         let mut expressed: Vec<f64> = vec![0.0; NUM_SYSTEM_PARAMETERS];
         expressed.extend(problem_values);
         let phenotype = Phenotype::new_for_test(expressed);
-        let organism = Organism::new(Rc::new(phenotype), 0, (None, None));
+        let organism = Organism::new(Arc::new(phenotype), 0, (None, None));
         organism.set_region_key(None);
         organism
     }

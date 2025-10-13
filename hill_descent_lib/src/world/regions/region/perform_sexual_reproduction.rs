@@ -1,12 +1,12 @@
 use rand::Rng;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::{
     phenotype::Phenotype,
     world::{organisms::organism::Organism, regions::region::Region},
 };
 
-type OrganismPairs = Vec<(Rc<Organism>, Rc<Organism>)>;
+type OrganismPairs = Vec<(Arc<Organism>, Arc<Organism>)>;
 
 impl Region {
     /// Performs sexual reproduction for all provided organism pairs.
@@ -26,12 +26,12 @@ impl Region {
         for (p1, p2) in organism_pairs {
             let (c1, c2) = Phenotype::sexual_reproduction(p1.phenotype(), p2.phenotype(), rng);
             offspring.push(Organism::new(
-                Rc::new(c1),
+                Arc::new(c1),
                 0,
                 (Some(p1.id()), Some(p2.id())), // Sexual: two parents
             ));
             offspring.push(Organism::new(
-                Rc::new(c2),
+                Arc::new(c2),
                 0,
                 (Some(p1.id()), Some(p2.id())), // Sexual: two parents
             ));
@@ -46,16 +46,16 @@ mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
     use rand::{SeedableRng, rngs::SmallRng};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     /// Helper: create an Organism with given score and age.
-    fn make_org(score: f64, age: usize, idx: usize) -> Rc<Organism> {
+    fn make_org(score: f64, age: usize, idx: usize) -> Arc<Organism> {
         // Expressed values: default 7 system parameters + one dummy problem param
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed));
+        let org = Organism::new(Arc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));
-        Rc::new(org)
+        Arc::new(org)
     }
 
     #[test]
