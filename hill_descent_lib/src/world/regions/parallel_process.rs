@@ -1,5 +1,5 @@
 use super::Regions;
-use crate::world::organisms::{organism::Organism, Organisms};
+use crate::world::organisms::{Organisms, organism::Organism};
 use crate::world::regions::derive_region_seed;
 use crate::world::world_function::WorldFunction;
 use rayon::prelude::*;
@@ -57,7 +57,9 @@ mod tests {
     #[derive(Debug)]
     struct MockFunction;
     impl WorldFunction for MockFunction {
-        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> { vec![1.0] }
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+            vec![1.0]
+        }
     }
 
     fn create_test_organism() -> Arc<Organism> {
@@ -68,24 +70,33 @@ mod tests {
 
     #[test]
     fn given_multiple_regions_when_parallel_process_then_all_processed() {
-        let mut regions = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(100, 10));
+        let mut regions = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(
+            100, 10,
+        ));
         for i in 0..3 {
             let mut region = Region::new();
             region.set_carrying_capacity(Some(10));
-            for _ in 0..5 { region.add_organism(create_test_organism()); }
+            for _ in 0..5 {
+                region.add_organism(create_test_organism());
+            }
             regions.insert_region(vec![i], region);
         }
 
-        let all_organisms = regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms =
+            regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
         // 3 regions * (5 survivors + 5 offspring) = 30 total
         assert_eq!(all_organisms.len(), 30);
     }
 
     #[test]
     fn given_same_seed_when_parallel_process_then_deterministic_results() {
-        let mut regions1 = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(100, 10));
-        let mut regions2 = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(100, 10));
-        
+        let mut regions1 = Regions::new(
+            &crate::parameters::global_constants::GlobalConstants::new(100, 10),
+        );
+        let mut regions2 = Regions::new(
+            &crate::parameters::global_constants::GlobalConstants::new(100, 10),
+        );
+
         for i in 0..5 {
             let mut r1 = Region::new();
             let mut r2 = Region::new();
@@ -99,8 +110,10 @@ mod tests {
             regions2.insert_region(vec![i], r2);
         }
 
-        let all_organisms1 = regions1.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
-        let all_organisms2 = regions2.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms1 =
+            regions1.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms2 =
+            regions2.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
         assert_eq!(all_organisms1.len(), all_organisms2.len());
     }
 }

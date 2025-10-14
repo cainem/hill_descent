@@ -1,9 +1,8 @@
 use super::Region;
 use crate::world::organisms::organism::Organism;
 use crate::world::world_function::WorldFunction;
-use rand::rngs::StdRng;
 use rand::SeedableRng;
-use std::sync::Arc;
+use rand::rngs::StdRng;
 
 impl Region {
     /// Processes region's complete lifecycle independently (designed for parallel execution).
@@ -22,15 +21,18 @@ impl Region {
 
         // 2. Sort by fitness (best first) then age (older first)
         self.organisms.sort_by(|a, b| {
-            let score_cmp = a.score().unwrap_or(f64::INFINITY)
+            let score_cmp = a
+                .score()
+                .unwrap_or(f64::INFINITY)
                 .partial_cmp(&b.score().unwrap_or(f64::INFINITY))
                 .unwrap_or(std::cmp::Ordering::Equal);
             score_cmp.then_with(|| b.age().cmp(&a.age()))
         });
 
         // 3. Truncate to capacity
+        // Skip truncation if capacity is None or 0 (first iteration or no min_score)
         if let Some(capacity) = self.carrying_capacity {
-            if self.organism_count() > capacity {
+            if capacity > 0 && self.organism_count() > capacity {
                 for organism in self.organisms.iter().skip(capacity) {
                     organism.mark_dead();
                 }
@@ -69,11 +71,14 @@ impl Region {
 mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
+    use std::sync::Arc;
 
     #[derive(Debug)]
     struct MockFunction;
     impl WorldFunction for MockFunction {
-        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> { vec![1.0] }
+        fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
+            vec![1.0]
+        }
     }
 
     fn create_test_organism(age: usize) -> Arc<Organism> {
@@ -116,7 +121,7 @@ mod tests {
         let mut region2 = Region::new();
         region1.set_carrying_capacity(Some(10));
         region2.set_carrying_capacity(Some(10));
-        
+
         for i in 0..5 {
             region1.add_organism(create_test_organism(i));
             region2.add_organism(create_test_organism(i));

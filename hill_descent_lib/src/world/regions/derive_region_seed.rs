@@ -16,17 +16,26 @@ mod tests {
 
     #[test]
     fn given_same_world_seed_and_key_when_derive_then_same_result() {
-        assert_eq!(derive_region_seed(12345, &[0, 1, 2]), derive_region_seed(12345, &[0, 1, 2]));
+        assert_eq!(
+            derive_region_seed(12345, &[0, 1, 2]),
+            derive_region_seed(12345, &[0, 1, 2])
+        );
     }
 
     #[test]
     fn given_different_world_seeds_when_derive_then_different_results() {
-        assert_ne!(derive_region_seed(12345, &[0, 1, 2]), derive_region_seed(67890, &[0, 1, 2]));
+        assert_ne!(
+            derive_region_seed(12345, &[0, 1, 2]),
+            derive_region_seed(67890, &[0, 1, 2])
+        );
     }
 
     #[test]
     fn given_different_region_keys_when_derive_then_different_results() {
-        assert_ne!(derive_region_seed(12345, &[0, 1, 2]), derive_region_seed(12345, &[0, 1, 3]));
+        assert_ne!(
+            derive_region_seed(12345, &[0, 1, 2]),
+            derive_region_seed(12345, &[0, 1, 3])
+        );
     }
 
     #[test]
