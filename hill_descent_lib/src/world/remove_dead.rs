@@ -35,7 +35,7 @@ mod tests {
     use crate::world::organisms::organism::Organism;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Mock WorldFunction that returns 0.0 to create zero-score scenarios.
     #[derive(Debug)]
@@ -106,10 +106,10 @@ mod tests {
 
     #[test]
     fn given_dead_organism_when_organisms_retain_live_then_removed() {
-        let phenotype = Rc::new(Phenotype::new_for_test(default_sys_params()));
+        let phenotype = Arc::new(Phenotype::new_for_test(default_sys_params()));
         let mut organisms = Organisms::new_from_organisms(vec![
-            Organism::new(Rc::clone(&phenotype), 0, (None, None)),
-            Organism::new(Rc::clone(&phenotype), 0, (None, None)),
+            Organism::new(Arc::clone(&phenotype), 0, (None, None)),
+            Organism::new(Arc::clone(&phenotype), 0, (None, None)),
         ]);
         organisms.iter().next().unwrap().mark_dead();
         organisms.retain_live();
@@ -120,15 +120,15 @@ mod tests {
     #[test]
     fn given_dead_organism_in_region_when_region_retain_live_then_removed() {
         use crate::world::regions::region::Region;
-        let phenotype = Rc::new(Phenotype::new_for_test(default_sys_params()));
-        let live = Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)));
-        let dead = Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)));
+        let phenotype = Arc::new(Phenotype::new_for_test(default_sys_params()));
+        let live = Arc::new(Organism::new(Arc::clone(&phenotype), 0, (None, None)));
+        let dead = Arc::new(Organism::new(Arc::clone(&phenotype), 0, (None, None)));
         dead.mark_dead();
         let mut region = Region::new();
-        region.add_organism(Rc::clone(&live));
-        region.add_organism(Rc::clone(&dead));
+        region.add_organism(Arc::clone(&live));
+        region.add_organism(Arc::clone(&dead));
         region.retain_live();
         assert_eq!(region.organism_count(), 1);
-        assert!(Rc::ptr_eq(&region.organisms()[0], &live));
+        assert!(Arc::ptr_eq(&region.organisms()[0], &live));
     }
 }

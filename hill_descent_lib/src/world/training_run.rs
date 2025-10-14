@@ -30,73 +30,20 @@ impl World {
             );
         }
 
-        let _initial_population = self.organisms.len();
-        crate::info!(
-            "=== TRAINING RUN START: Population = {} ===",
-            _initial_population
+        // PARALLEL PHASE: Process all regions independently
+        let world_seed = self.global_constants.world_seed();
+        self.organisms = self.regions.parallel_process_regions(
+            self.world_function.as_ref(),
+            inputs,
+            known_outputs,
+            world_seed,
         );
 
-        crate::info!("Training run initial state: {}", self.get_state());
-        // 1. Evaluate fitness for every organism
-        self.organisms
-            .run_all(self.world_function.as_ref(), inputs, known_outputs);
-        crate::info!(
-            "After fitness evaluation: Population = {}",
-            self.organisms.len()
-        );
-
-        // 2. Sort organisms within each region by fitness (best to worst) then age (older first)
-        self.regions.sort_regions();
-        crate::info!("After sorting regions by fitness and age");
-
-        // 3. Truncate regions that exceed their carrying capacity
-        self.regions.truncate_regions();
-        crate::info!("After truncating regions to carrying capacity");
-
-        // 4. Remove organisms marked dead by population truncation
-        let _pre_truncation_cull_population = self.organisms.len();
-        self.remove_dead();
-        let _post_truncation_cull_population = self.organisms.len();
-        crate::info!(
-            "After truncation culling: Population = {} (removed {} excess)",
-            _post_truncation_cull_population,
-            _pre_truncation_cull_population - _post_truncation_cull_population
-        );
-
-        // 5. Generate offspring to fill regional deficits
-        let mut offspring = crate::world::organisms::Organisms::new_empty();
-        self.regions.repopulate(&mut self.rng, &mut offspring);
-        let _offspring_count = offspring.len();
-        self.organisms.extend(offspring.into_inner());
-        crate::info!(
-            "After reproduction: Population = {} (added {} offspring)",
-            self.organisms.len(),
-            _offspring_count
-        );
-
-        // 6. Age organisms and cull those exceeding their max age
-        self.organisms.increment_ages();
-        let _pre_age_cull_population = self.organisms.len();
-        self.remove_dead();
-        let _post_age_cull_population = self.organisms.len();
-        crate::info!(
-            "After aging/culling: Population = {} (removed {} aged out)",
-            _post_age_cull_population,
-            _pre_age_cull_population - _post_age_cull_population
-        );
-
-        // 7. Re-evaluate spatial structure (bounding boxes, region keys, capacities).
-        // This call updates region min scores and carrying capacities internally.
-        // Returns true if resolution limit reached, false otherwise.
+        // SYNC PHASE: Global coordination
         let resolution_limit_reached = self
             .regions
             .update(&mut self.organisms, &mut self.dimensions);
 
-        crate::info!(
-            "=== TRAINING RUN END: Population = {}, Resolution limit: {} ===",
-            self.organisms.len(),
-            resolution_limit_reached
-        );
         resolution_limit_reached
     }
 }

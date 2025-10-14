@@ -88,7 +88,7 @@ mod tests {
         parameters::parameter_enhancement::enhance_parameters, phenotype::Phenotype,
         world::world_function::WorldFunction,
     };
-    use std::{ops::RangeInclusive, rc::Rc};
+    use std::{ops::RangeInclusive, sync::Arc};
 
     // A mock WorldFunction for testing purposes.
     #[derive(Debug)]
@@ -106,7 +106,7 @@ mod tests {
         let user_defined_parameters: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let all_params = enhance_parameters(&user_defined_parameters);
         let expressed_values: Vec<f64> = all_params.iter().map(|p| *p.start()).collect();
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed_values));
         Organism::new(phenotype, 0, (None, None))
     }
 

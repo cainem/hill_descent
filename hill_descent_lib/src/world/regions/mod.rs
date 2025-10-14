@@ -21,6 +21,11 @@ pub mod get_most_diverse_dimension;
 mod refill;
 pub mod repopulate;
 
+mod derive_region_seed;
+pub use derive_region_seed::derive_region_seed;
+
+mod parallel_process;
+
 use crate::parameters::global_constants::GlobalConstants;
 
 #[derive(Debug, Clone)]

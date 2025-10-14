@@ -113,19 +113,19 @@ mod tests {
         phenotype::Phenotype,
         world::{organisms::organism::Organism, regions::region::Region},
     };
-    use std::rc::Rc;
+    use std::sync::Arc;
 
-    fn test_phenotype() -> Rc<Phenotype> {
+    fn test_phenotype() -> Arc<Phenotype> {
         // 7 system parameters + 1 problem parameter (values arbitrary for tests)
-        Rc::new(Phenotype::new_for_test(vec![
+        Arc::new(Phenotype::new_for_test(vec![
             0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, 0.5,
         ]))
     }
 
-    fn make_org(score: Option<f64>, age: usize) -> Rc<Organism> {
+    fn make_org(score: Option<f64>, age: usize) -> Arc<Organism> {
         let o = Organism::new(test_phenotype(), age, (None, None));
         o.set_score(score);
-        Rc::new(o)
+        Arc::new(o)
     }
 
     #[test]

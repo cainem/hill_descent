@@ -1,5 +1,5 @@
 use crate::world::{World, organisms::Organism};
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl World {
     /// Applies one training epoch and returns the organism with the lowest fitness score (best fit).
@@ -10,7 +10,7 @@ impl World {
         &mut self,
         training_data: &[&[f64]],
         known_outputs: &[&[f64]],
-    ) -> Rc<Organism> {
+    ) -> Arc<Organism> {
         // 1. Validate inputs.
         crate::world::validate_training_sets::validate_training_sets(training_data, known_outputs);
 

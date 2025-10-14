@@ -8,7 +8,7 @@ impl super::Regions {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use crate::parameters::global_constants::GlobalConstants;
     use crate::phenotype::Phenotype;
@@ -17,7 +17,7 @@ mod tests {
     use crate::world::regions::region::Region;
 
     // Helper to create a test organism (with phenotype) using Phenotype::new_for_test
-    fn create_test_organism() -> Rc<Organism> {
+    fn create_test_organism() -> Arc<Organism> {
         // Provide default system parameters as per MEMORY[f61e5e69-4a9e-4874-b29b-c77dd5f97ec4]
         // and MEMORY[0a820419-f45b-4e9d-8d4e-7c8901b664ed]
         let expressed_values = vec![
@@ -29,8 +29,8 @@ mod tests {
             100.0, // max_age
             2.0,   // crossover_points
         ];
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed_values));
-        Rc::new(Organism::new(Rc::clone(&phenotype), 0, (None, None)))
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed_values));
+        Arc::new(Organism::new(Arc::clone(&phenotype), 0, (None, None)))
     }
 
     #[test]
@@ -40,12 +40,12 @@ mod tests {
         let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_organism(Rc::clone(&organism_rc));
+        region1.add_organism(Arc::clone(&organism_rc));
 
         let region2 = Region::new(); // Empty
 
         let mut region3 = Region::new();
-        region3.add_organism(Rc::clone(&organism_rc));
+        region3.add_organism(Arc::clone(&organism_rc));
 
         regions.regions =
             IndexMap::from_iter([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
@@ -65,9 +65,9 @@ mod tests {
         let organism_rc = create_test_organism();
 
         let mut region1 = Region::new();
-        region1.add_organism(Rc::clone(&organism_rc));
+        region1.add_organism(Arc::clone(&organism_rc));
         let mut region2 = Region::new();
-        region2.add_organism(Rc::clone(&organism_rc));
+        region2.add_organism(Arc::clone(&organism_rc));
 
         regions.regions = IndexMap::from_iter([(vec![0], region1), (vec![1], region2)]);
 

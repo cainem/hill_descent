@@ -45,7 +45,7 @@ mod tests {
     use rand::SeedableRng;
     use rand::rngs::StdRng;
     use std::ops::RangeInclusive;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Helper to create basic dimensions for testing
     fn create_test_dimensions_for_organisms(num_dims: usize) -> Dimensions {
@@ -97,7 +97,7 @@ mod tests {
         // Create a phenotype that will be made to fail.
         let failing_p_phenotype = Phenotype::new_random_phenotype(&mut rng, &full_bounds);
         let failing_organism = crate::world::organisms::organism::Organism::new(
-            Rc::new(failing_p_phenotype.clone()),
+            Arc::new(failing_p_phenotype.clone()),
             0,
             (None, None),
         );
@@ -187,7 +187,7 @@ mod tests {
         // to simulate the fast-path scenario where the cached key exists but new value is invalid
         let p_oob = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 5.0]); // problem values: [15.0, 5.0] - 15.0 > 10.0 bound
         let organism_oob =
-            crate::world::organisms::organism::Organism::new(Rc::new(p_oob), 0, (None, None));
+            crate::world::organisms::organism::Organism::new(Arc::new(p_oob), 0, (None, None));
         organism_oob.set_region_key(Some(vec![1, 1])); // Set a cached key to trigger fast path
 
         let mut organisms_with_oob = Organisms::new_from_organisms(vec![organism_oob.clone()]);

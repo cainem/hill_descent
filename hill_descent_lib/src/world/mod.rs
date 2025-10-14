@@ -31,6 +31,7 @@ pub struct World {
     regions: Regions,
     rng: StdRng,
     world_function: Box<dyn WorldFunction>,
+    global_constants: GlobalConstants,
 }
 
 impl World {
@@ -93,6 +94,7 @@ impl World {
             regions,
             rng,
             world_function: function,
+            global_constants,
         }
     }
 }

@@ -3,8 +3,9 @@ mod execute_single_reproduction_pass;
 mod pair_organisms_for_reproduction;
 mod perform_sexual_reproduction;
 mod reproduce;
+mod process_region;
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::world::organisms::organism::Organism;
 
@@ -13,7 +14,7 @@ use crate::world::organisms::organism::Organism;
 pub struct Region {
     min_score: Option<f64>,
     carrying_capacity: Option<usize>,
-    organisms: Vec<Rc<Organism>>,
+    organisms: Vec<Arc<Organism>>,
 }
 
 impl Region {
@@ -33,12 +34,12 @@ impl Region {
 
     /// Adds an organism to the region.
     ///
-    /// Uses `Rc<Organism>` to allow shared ownership without unnecessary clones.
+    /// Uses `Arc<Organism>` to allow shared ownership without unnecessary clones.
     /// Also updates the region's min_score if the organism has a score
     /// that is lower than the current min_score.
-    pub fn add_organism(&mut self, organism: Rc<Organism>) {
+    pub fn add_organism(&mut self, organism: Arc<Organism>) {
         // Add organism to the region
-        self.organisms.push(Rc::clone(&organism));
+        self.organisms.push(Arc::clone(&organism));
 
         // Update min_score if this organism has a score
         if let Some(score) = organism.score() {
@@ -70,11 +71,11 @@ impl Region {
         self.organisms.is_empty()
     }
 
-    pub fn organisms(&self) -> &[Rc<Organism>] {
+    pub fn organisms(&self) -> &[Arc<Organism>] {
         &self.organisms
     }
 
-    pub fn organisms_mut(&mut self) -> &mut Vec<Rc<Organism>> {
+    pub fn organisms_mut(&mut self) -> &mut Vec<Arc<Organism>> {
         &mut self.organisms
     }
 
