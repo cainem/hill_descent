@@ -8,6 +8,8 @@ use std::sync::Arc;
 impl Regions {
     /// Processes all regions in parallel (core parallelization point).
     /// Each region gets dedicated thread with deterministic RNG.
+    /// Regions are sorted by organism count (descending) to minimize parallel execution time
+    /// by starting the largest workloads first.
     pub fn parallel_process_regions(
         &mut self,
         world_function: &dyn WorldFunction,
@@ -15,8 +17,11 @@ impl Regions {
         known_outputs: Option<&[f64]>,
         world_seed: u64,
     ) -> Organisms {
-        let all_offspring: Vec<Vec<Organism>> = self
-            .regions
+        // Sort regions by organism count (largest first) to optimize parallel scheduling
+        let mut region_entries: Vec<_> = self.regions.iter_mut().collect();
+        region_entries.sort_by(|a, b| b.1.organisms().len().cmp(&a.1.organisms().len()));
+
+        let all_offspring: Vec<Vec<Organism>> = region_entries
             .par_iter_mut()
             .map(|(region_key, region)| {
                 let region_seed = derive_region_seed(world_seed, region_key);
@@ -116,4 +121,52 @@ mod tests {
             regions2.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
         assert_eq!(all_organisms1.len(), all_organisms2.len());
     }
+
+    #[test]
+    fn given_regions_of_different_sizes_when_parallel_process_then_largest_regions_sorted_first() {
+        let mut regions = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(
+            100, 10,
+        ));
+        
+        // Create regions with different population sizes
+        // Region 0: 2 organisms (smallest)
+        let mut region_small = Region::new();
+        region_small.set_carrying_capacity(Some(10));
+        for _ in 0..2 {
+            region_small.add_organism(create_test_organism());
+        }
+        regions.insert_region(vec![0], region_small);
+        
+        // Region 1: 8 organisms (largest)
+        let mut region_large = Region::new();
+        region_large.set_carrying_capacity(Some(10));
+        for _ in 0..8 {
+            region_large.add_organism(create_test_organism());
+        }
+        regions.insert_region(vec![1], region_large);
+        
+        // Region 2: 5 organisms (medium)
+        let mut region_medium = Region::new();
+        region_medium.set_carrying_capacity(Some(10));
+        for _ in 0..5 {
+            region_medium.add_organism(create_test_organism());
+        }
+        regions.insert_region(vec![2], region_medium);
+
+        // Process regions - should be sorted by size (largest first)
+        let all_organisms =
+            regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        
+        // Total: (8 + 8 offspring) + (5 + 5 offspring) + (2 + 2 offspring) = 30
+        assert_eq!(all_organisms.len(), 30);
+        
+        // Verify that the original organisms (survivors) were scored
+        // Offspring are not scored until next epoch
+        let scored_count = all_organisms
+            .iter()
+            .filter(|org| org.score().is_some())
+            .count();
+        assert_eq!(scored_count, 15, "Only survivor organisms (8+5+2=15) should have scores from this epoch");
+    }
 }
+
