@@ -31,11 +31,12 @@ impl Region {
 
         // 3. Truncate to capacity
         // Skip truncation if capacity is None or 0 (first iteration or no min_score)
-        if let Some(capacity) = self.carrying_capacity {
-            if capacity > 0 && self.organism_count() > capacity {
-                for organism in self.organisms.iter().skip(capacity) {
-                    organism.mark_dead();
-                }
+        if let Some(capacity) = self.carrying_capacity
+            && capacity > 0
+            && self.organism_count() > capacity
+        {
+            for organism in self.organisms.iter().skip(capacity) {
+                organism.mark_dead();
             }
         }
 

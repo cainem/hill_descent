@@ -56,5 +56,6 @@ cargo test --workspace                    # Run all tests
 ## Key Behaviors
 - **Always read `AGENTS.md`** for comprehensive context at conversation start
 - **Ask before changing** - clarify requirements vs assumptions
+- **Ask before changing** - clarify any apparent contradictions in and requests and/or the combination of request and the AGENTS.md file
 - **Check `pdd.md`** when domain logic changes to ensure consistency
 - **Use existing patterns** - examine similar functions before creating new approaches

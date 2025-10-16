@@ -29,6 +29,7 @@ pub struct World {
     dimensions: Dimensions,
     organisms: Organisms,
     regions: Regions,
+    #[allow(dead_code)] // Kept for backward compatibility; replaced by per-region RNG
     rng: StdRng,
     world_function: Box<dyn WorldFunction>,
     global_constants: GlobalConstants,

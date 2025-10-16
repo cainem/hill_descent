@@ -40,11 +40,8 @@ impl World {
         );
 
         // SYNC PHASE: Global coordination
-        let resolution_limit_reached = self
-            .regions
-            .update(&mut self.organisms, &mut self.dimensions);
-
-        resolution_limit_reached
+        self.regions
+            .update(&mut self.organisms, &mut self.dimensions)
     }
 }
 
