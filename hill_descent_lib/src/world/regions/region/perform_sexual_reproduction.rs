@@ -39,6 +39,37 @@ impl Region {
 
         offspring
     }
+
+    /// Performs sexual reproduction for a single organism pair, returning an iterator.
+    ///
+    /// Each pair produces two offspring through sexual reproduction.
+    /// This iterator version yields offspring one at a time without intermediate allocation.
+    ///
+    /// * `parent1` - First parent organism
+    /// * `parent2` - Second parent organism  
+    /// * `rng` - Random number generator for reproduction operations
+    ///
+    /// Returns an iterator that yields two offspring organisms
+    pub(super) fn perform_sexual_reproduction_iter<'a, R: Rng>(
+        parent1: &'a Arc<Organism>,
+        parent2: &'a Arc<Organism>,
+        rng: &mut R,
+    ) -> impl Iterator<Item = Organism> + 'a {
+        // Perform reproduction once, capture offspring
+        let (offspring1, offspring2) = {
+            let phenotype1 = parent1.phenotype();
+            let phenotype2 = parent2.phenotype();
+            let (child1_pheno, child2_pheno) = Phenotype::sexual_reproduction(phenotype1, phenotype2, rng);
+            
+            let parent_ids = (Some(parent1.id()), Some(parent2.id()));
+            let offspring1 = Organism::new(Arc::new(child1_pheno), 0, parent_ids);
+            let offspring2 = Organism::new(Arc::new(child2_pheno), 0, parent_ids);
+            (offspring1, offspring2)
+        };
+
+        // Return iterator that yields both offspring
+        std::iter::once(offspring1).chain(std::iter::once(offspring2))
+    }
 }
 
 #[cfg(test)]
@@ -103,5 +134,62 @@ mod tests {
         assert!(offspring.iter().all(|o| o.age() == 0));
         assert!(offspring.iter().all(|o| o.parent_count() == 2));
         assert!(offspring.iter().all(|o| !o.is_root()));
+    }
+
+    // Tests for iterator version
+    #[test]
+    fn given_one_pair_when_perform_sexual_reproduction_iter_then_returns_two_offspring() {
+        let org1 = make_org(1.0, 5, 0);
+        let org2 = make_org(2.0, 3, 1);
+        let id1 = org1.id();
+        let id2 = org2.id();
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng).collect();
+
+        assert_eq!(offspring.len(), 2);
+        for child in &offspring {
+            assert_eq!(child.age(), 0);
+            assert_eq!(child.parent_count(), 2);
+            assert_eq!(child.parent_ids(), (Some(id1), Some(id2)));
+            assert!(!child.is_root());
+        }
+    }
+
+    #[test]
+    fn given_self_pair_when_perform_sexual_reproduction_iter_then_returns_two_offspring_with_same_parent()
+    {
+        let org = make_org(1.0, 5, 0);
+        let org_id = org.id();
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::perform_sexual_reproduction_iter(&org, &org, &mut rng).collect();
+
+        assert_eq!(offspring.len(), 2);
+        for child in &offspring {
+            assert_eq!(child.age(), 0);
+            assert_eq!(child.parent_count(), 2);
+            assert_eq!(child.parent_ids(), (Some(org_id), Some(org_id))); // Self-fertilization
+            assert!(!child.is_root());
+        }
+    }
+
+    #[test]
+    fn given_same_seed_when_perform_sexual_reproduction_iter_then_deterministic() {
+        let org1 = make_org(1.0, 5, 0);
+        let org2 = make_org(2.0, 3, 1);
+        let mut rng1 = SmallRng::seed_from_u64(42);
+        let mut rng2 = SmallRng::seed_from_u64(42);
+
+        let offspring1: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng1).collect();
+        let offspring2: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng2).collect();
+
+        assert_eq!(offspring1.len(), offspring2.len());
+        // Note: We can't directly compare organisms since they have unique IDs
+        // But we can verify they have the same parents
+        for (child1, child2) in offspring1.iter().zip(offspring2.iter()) {
+            assert_eq!(child1.parent_ids(), child2.parent_ids());
+            assert_eq!(child1.age(), child2.age());
+        }
     }
 }

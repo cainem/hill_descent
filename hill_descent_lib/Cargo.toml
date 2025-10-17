@@ -17,6 +17,7 @@ indexmap = { version = "2.11", features = ["serde", "rayon"] }
 rustc-hash = "2.1"
 rayon = "1.10"
 mimalloc = { workspace = true }
+either = "1.15"
 
 [features]
 enable-tracing = ["tracing", "tracing-subscriber", "tracing-log", "log"]
