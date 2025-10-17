@@ -355,12 +355,12 @@ warning: method `repopulate` is never used
 
 **Test Coverage Summary**:
 
-| File | Tests | Coverage | Naming Pattern |
-|------|-------|----------|----------------|
-| `derive_region_seed.rs` | 5 | Full (all branches) | ✅ `given_when_then` |
-| `process_region.rs` | 3 | Full (7 operations) | ✅ `given_when_then` |
-| `parallel_process.rs` | 2 | Full (parallel + determinism) | ✅ `given_when_then` |
-| `parallel_determinism_test.rs` | 3 | Integration (end-to-end) | ✅ `given_when_then` |
+| File                           | Tests | Coverage                      | Naming Pattern      |
+| ------------------------------ | ----- | ----------------------------- | ------------------- |
+| `derive_region_seed.rs`        | 5     | Full (all branches)           | ✅ `given_when_then` |
+| `process_region.rs`            | 3     | Full (7 operations)           | ✅ `given_when_then` |
+| `parallel_process.rs`          | 2     | Full (parallel + determinism) | ✅ `given_when_then` |
+| `parallel_determinism_test.rs` | 3     | Integration (end-to-end)      | ✅ `given_when_then` |
 
 **Total New Tests**: 13 tests (10 unit + 3 integration)
 
@@ -403,13 +403,13 @@ pub fn parallel_process_regions(...) { ... }
 
 **Verification Results**:
 
-| Command | Result | Status |
-|---------|--------|--------|
-| `cargo fmt --check` | Silent (no changes needed) | ✅ PASS |
-| `cargo build` | Successful compilation | ✅ PASS |
-| `cargo test --workspace` | 430/430 tests pass | ✅ PASS |
+| Command                    | Result                           | Status |
+| -------------------------- | -------------------------------- | ------ |
+| `cargo fmt --check`        | Silent (no changes needed)       | ✅ PASS |
+| `cargo build`              | Successful compilation           | ✅ PASS |
+| `cargo test --workspace`   | 430/430 tests pass               | ✅ PASS |
 | `cargo clippy --workspace` | 7 warnings (5 expected, 2 style) | ✅ PASS |
-| `cargo clippy --tests` | Not run (standard clippy covers) | N/A |
+| `cargo clippy --tests`     | Not run (standard clippy covers) | N/A    |
 
 **Clippy Warnings Breakdown**:
 1. **Expected** (5): Dead code from old serial implementation

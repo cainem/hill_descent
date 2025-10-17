@@ -29,8 +29,13 @@ impl Regions {
             })
             .collect();
 
-        // Collect all surviving organisms from regions
-        let mut all_organisms: Vec<Arc<Organism>> = Vec::new();
+        // Calculate total organism count for pre-allocation
+        let surviving_count: usize = self.regions.iter().map(|(_, r)| r.organism_count()).sum();
+        let offspring_count: usize = all_offspring.iter().map(|v| v.len()).sum();
+        let total_capacity = surviving_count + offspring_count;
+
+        // Collect all surviving organisms from regions (pre-allocated)
+        let mut all_organisms: Vec<Arc<Organism>> = Vec::with_capacity(total_capacity);
         for (_key, region) in self.regions.iter() {
             for organism in region.organisms() {
                 all_organisms.push(Arc::clone(organism));
@@ -42,12 +47,12 @@ impl Regions {
             region.clear_organisms();
         }
 
-        // Add offspring
-        let all_offspring_flat: Vec<Arc<Organism>> = all_offspring
-            .into_iter()
-            .flat_map(|v| v.into_iter().map(Arc::new))
-            .collect();
-        all_organisms.extend(all_offspring_flat);
+        // Add offspring directly via iterator (no intermediate Vec allocation)
+        all_organisms.extend(
+            all_offspring
+                .into_iter()
+                .flat_map(|v| v.into_iter().map(Arc::new)),
+        );
 
         Organisms::new_from_arc_vec(all_organisms)
     }
@@ -127,7 +132,7 @@ mod tests {
         let mut regions = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(
             100, 10,
         ));
-        
+
         // Create regions with different population sizes
         // Region 0: 2 organisms (smallest)
         let mut region_small = Region::new();
@@ -136,7 +141,7 @@ mod tests {
             region_small.add_organism(create_test_organism());
         }
         regions.insert_region(vec![0], region_small);
-        
+
         // Region 1: 8 organisms (largest)
         let mut region_large = Region::new();
         region_large.set_carrying_capacity(Some(10));
@@ -144,7 +149,7 @@ mod tests {
             region_large.add_organism(create_test_organism());
         }
         regions.insert_region(vec![1], region_large);
-        
+
         // Region 2: 5 organisms (medium)
         let mut region_medium = Region::new();
         region_medium.set_carrying_capacity(Some(10));
@@ -156,17 +161,19 @@ mod tests {
         // Process regions - should be sorted by size (largest first)
         let all_organisms =
             regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
-        
+
         // Total: (8 + 8 offspring) + (5 + 5 offspring) + (2 + 2 offspring) = 30
         assert_eq!(all_organisms.len(), 30);
-        
+
         // Verify that the original organisms (survivors) were scored
         // Offspring are not scored until next epoch
         let scored_count = all_organisms
             .iter()
             .filter(|org| org.score().is_some())
             .count();
-        assert_eq!(scored_count, 15, "Only survivor organisms (8+5+2=15) should have scores from this epoch");
+        assert_eq!(
+            scored_count, 15,
+            "Only survivor organisms (8+5+2=15) should have scores from this epoch"
+        );
     }
 }
-

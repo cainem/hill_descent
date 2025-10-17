@@ -17,6 +17,7 @@ tracing-subscriber = { version = "0.3", features = [
     "time",
 ] }
 tracing-log = { version = "0.2" }
+mimalloc = { version = "0.1" }
 
 # Web server specific dependencies
 axum = "0.8"

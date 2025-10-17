@@ -21,10 +21,10 @@ impl Region {
 
         // 2. Sort by fitness (best first) then age (older first)
         self.organisms.sort_by(|a, b| {
-            let score_cmp = a
-                .score()
-                .unwrap_or(f64::INFINITY)
-                .partial_cmp(&b.score().unwrap_or(f64::INFINITY))
+            let score_a = a.score().unwrap_or(f64::INFINITY);
+            let score_b = b.score().unwrap_or(f64::INFINITY);
+            let score_cmp = score_a
+                .partial_cmp(&score_b)
                 .unwrap_or(std::cmp::Ordering::Equal);
             score_cmp.then_with(|| b.age().cmp(&a.age()))
         });

@@ -517,12 +517,12 @@ fn given_parallel_execution_when_same_seed_then_deterministic() {
 
 ## Expected Performance
 
-| Config | Baseline | Expected | Improvement |
-|--------|----------|----------|-------------|
-| Pop 10, R 2 | 10ms | 15ms | 0.67x (acceptable) |
-| Pop 100, R 10 | 103ms | 50ms | 2.1x |
-| Pop 500, R 20 | 419ms | 150ms | 2.8x |
-| Pop 10000, R 100 | 10,919ms | 3,000ms | 3.6x |
+| Config           | Baseline | Expected | Improvement        |
+| ---------------- | -------- | -------- | ------------------ |
+| Pop 10, R 2      | 10ms     | 15ms     | 0.67x (acceptable) |
+| Pop 100, R 10    | 103ms    | 50ms     | 2.1x               |
+| Pop 500, R 20    | 419ms    | 150ms    | 2.8x               |
+| Pop 10000, R 100 | 10,919ms | 3,000ms  | 3.6x               |
 
 **Why this works**: Coarser granularity (10-100 organisms/thread vs 1), better cache locality, less coordination overhead, scales with region count.
 
