@@ -21,11 +21,18 @@ impl Regions {
         let mut region_entries: Vec<_> = self.regions.iter_mut().collect();
         region_entries.sort_by(|a, b| b.1.organisms().len().cmp(&a.1.organisms().len()));
 
+        // Use iterator version of process_region_lifecycle
+        // This still returns Vec per region, but eliminates intermediate allocations within each region
         let all_offspring: Vec<Vec<Organism>> = region_entries
             .par_iter_mut()
             .map(|(region_key, region)| {
                 let region_seed = derive_region_seed(world_seed, region_key);
-                region.process_region_lifecycle(world_function, inputs, known_outputs, region_seed)
+                region.process_region_lifecycle_iter(
+                    world_function,
+                    inputs,
+                    known_outputs,
+                    region_seed,
+                )
             })
             .collect();
 
@@ -46,7 +53,8 @@ impl Regions {
             region.clear_organisms();
         }
 
-        // Add offspring directly via iterator (no intermediate Vec allocation)
+        // Add offspring directly via iterator
+        // Each region returns Vec, but we avoid intermediate Vec<Vec<>> holding and flatten directly
         all_organisms.extend(
             all_offspring
                 .into_iter()

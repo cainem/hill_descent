@@ -893,6 +893,7 @@ name = "hill_descent_lib"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "either",
  "getrandom",
  "indexmap",
  "log",
