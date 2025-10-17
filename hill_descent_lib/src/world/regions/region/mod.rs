@@ -62,6 +62,8 @@ impl Region {
     }
 
     /// Removes all organisms from the region.
+    ///
+    /// Vec capacity is preserved for reuse in subsequent generations.
     pub fn clear_organisms(&mut self) {
         self.organisms.clear();
     }
