@@ -62,7 +62,7 @@ impl Region {
         selected_organisms: &'a [Arc<Organism>],
     ) -> impl Iterator<Item = (&'a Arc<Organism>, &'a Arc<Organism>)> + 'a {
         let actual_count = selected_organisms.len();
-        
+
         if actual_count == 0 {
             return either::Left(std::iter::empty());
         }
@@ -89,9 +89,9 @@ impl Region {
                 // Duplicated array indices: 0 = best, 1 = best, 2..actual_count = rest of organisms
                 // Map duplicated index to original array index
                 let working_len = actual_count + 1;
-                let first_idx = i;  // Index in duplicated array
-                let last_idx = working_len - 1 - i;  // Index in duplicated array
-                
+                let first_idx = i; // Index in duplicated array
+                let last_idx = working_len - 1 - i; // Index in duplicated array
+
                 // Convert duplicated array indices to original array indices
                 // 0 -> 0 (first copy of best)
                 // 1 -> 0 (second copy of best)
@@ -100,13 +100,19 @@ impl Region {
                 // etc.
                 let orig_first_idx = if first_idx == 0 { 0 } else { first_idx - 1 };
                 let orig_last_idx = if last_idx == 0 { 0 } else { last_idx - 1 };
-                
-                (&selected_organisms[orig_first_idx], &selected_organisms[orig_last_idx])
+
+                (
+                    &selected_organisms[orig_first_idx],
+                    &selected_organisms[orig_last_idx],
+                )
             } else {
                 // Even count: direct extreme pairing
                 let best_idx = i;
                 let worst_idx = actual_count - 1 - i;
-                (&selected_organisms[best_idx], &selected_organisms[worst_idx])
+                (
+                    &selected_organisms[best_idx],
+                    &selected_organisms[worst_idx],
+                )
             }
         });
 

@@ -88,8 +88,11 @@ impl Region {
     /// * `rng` – RNG used for crossover & mutation in the underlying phenotype reproduction.
     ///
     /// Returns an iterator that yields offspring organisms with age 0 and no score.
-    pub fn reproduce_iter<'a, R: Rng>(&'a mut self, number_to_reproduce: usize, rng: &'a mut R) 
-        -> impl Iterator<Item = Organism> + 'a {
+    pub fn reproduce_iter<'a, R: Rng>(
+        &'a mut self,
+        number_to_reproduce: usize,
+        rng: &'a mut R,
+    ) -> impl Iterator<Item = Organism> + 'a {
         if number_to_reproduce == 0 || self.organisms.is_empty() {
             return either::Left(std::iter::empty());
         }
@@ -373,7 +376,8 @@ mod tests {
     }
 
     #[test]
-    fn given_single_organism_when_reproduce_iter_multiple_passes_then_produces_multiple_offspring() {
+    fn given_single_organism_when_reproduce_iter_multiple_passes_then_produces_multiple_offspring()
+    {
         let mut region = Region::new();
         region.set_carrying_capacity(Some(100)); // Set high carrying capacity to enable multiple passes
         region.add_organism(make_org(1.0, 5, 0));

@@ -59,8 +59,9 @@ impl Region {
         let (offspring1, offspring2) = {
             let phenotype1 = parent1.phenotype();
             let phenotype2 = parent2.phenotype();
-            let (child1_pheno, child2_pheno) = Phenotype::sexual_reproduction(phenotype1, phenotype2, rng);
-            
+            let (child1_pheno, child2_pheno) =
+                Phenotype::sexual_reproduction(phenotype1, phenotype2, rng);
+
             let parent_ids = (Some(parent1.id()), Some(parent2.id()));
             let offspring1 = Organism::new(Arc::new(child1_pheno), 0, parent_ids);
             let offspring2 = Organism::new(Arc::new(child2_pheno), 0, parent_ids);
@@ -145,7 +146,8 @@ mod tests {
         let id2 = org2.id();
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng).collect();
 
         assert_eq!(offspring.len(), 2);
         for child in &offspring {
@@ -158,12 +160,13 @@ mod tests {
 
     #[test]
     fn given_self_pair_when_perform_sexual_reproduction_iter_then_returns_two_offspring_with_same_parent()
-    {
+     {
         let org = make_org(1.0, 5, 0);
         let org_id = org.id();
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::perform_sexual_reproduction_iter(&org, &org, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::perform_sexual_reproduction_iter(&org, &org, &mut rng).collect();
 
         assert_eq!(offspring.len(), 2);
         for child in &offspring {
@@ -181,8 +184,10 @@ mod tests {
         let mut rng1 = SmallRng::seed_from_u64(42);
         let mut rng2 = SmallRng::seed_from_u64(42);
 
-        let offspring1: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng1).collect();
-        let offspring2: Vec<_> = Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng2).collect();
+        let offspring1: Vec<_> =
+            Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng1).collect();
+        let offspring2: Vec<_> =
+            Region::perform_sexual_reproduction_iter(&org1, &org2, &mut rng2).collect();
 
         assert_eq!(offspring1.len(), offspring2.len());
         // Note: We can't directly compare organisms since they have unique IDs

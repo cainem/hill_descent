@@ -179,7 +179,8 @@ mod tests {
         let parent_id = organisms[0].id();
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
 
         // Single organism pairs with itself, producing 2 offspring
         assert_eq!(offspring.len(), 2);
@@ -197,7 +198,8 @@ mod tests {
         let id2 = organisms[1].id();
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
 
         assert_eq!(offspring.len(), 2);
         for child in &offspring {
@@ -220,7 +222,8 @@ mod tests {
         let id3 = organisms[2].id(); // Worst
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::execute_single_reproduction_pass_iter(&organisms, 5, &mut rng).collect();
 
         // With 3 organisms, top performer duplicated: [best, best, middle, worst]
         // Pairs: (best, worst), (best, middle) = 4 offspring total
@@ -248,7 +251,8 @@ mod tests {
         let organisms = vec![make_org(1.0, 5, 0), make_org(2.0, 3, 1)];
         let mut rng = SmallRng::seed_from_u64(0);
 
-        let offspring: Vec<_> = Region::execute_single_reproduction_pass_iter(&organisms, 1, &mut rng).collect();
+        let offspring: Vec<_> =
+            Region::execute_single_reproduction_pass_iter(&organisms, 1, &mut rng).collect();
 
         assert_eq!(offspring.len(), 1); // Limited to 1 despite 2 organisms could produce 2
     }

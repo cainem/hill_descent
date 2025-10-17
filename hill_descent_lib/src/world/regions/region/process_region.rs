@@ -69,7 +69,7 @@ impl Region {
 
     /// Processes region's complete lifecycle independently, returning offspring as a Vec.
     /// Operations: Fitness → Sort → Truncate → Cull → Reproduce → Age → Cull
-    /// 
+    ///
     /// This version uses the iterator-based `reproduce_iter()` internally but collects the result
     /// into a Vec because we need to age organisms and remove aged-out ones after reproduction.
     /// The real benefit comes from parallel_process_regions not allocating Vec<Vec<>>.
@@ -113,7 +113,8 @@ impl Region {
             let current = self.organism_count();
             if current < capacity {
                 let mut region_rng = StdRng::seed_from_u64(region_seed);
-                self.reproduce_iter(capacity - current, &mut region_rng).collect()
+                self.reproduce_iter(capacity - current, &mut region_rng)
+                    .collect()
             } else {
                 Vec::new()
             }
@@ -207,7 +208,8 @@ mod tests {
             region.add_organism(create_test_organism(i));
         }
 
-        let offspring = region.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
+        let offspring =
+            region.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
 
         for org in region.organisms() {
             assert!(org.score().is_some());
@@ -223,7 +225,8 @@ mod tests {
             region.add_organism(create_test_organism(i));
         }
 
-        let _offspring = region.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
+        let _offspring =
+            region.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
         assert_eq!(region.organism_count(), 3);
     }
 
@@ -239,8 +242,10 @@ mod tests {
             region2.add_organism(create_test_organism(i));
         }
 
-        let offspring1 = region1.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
-        let offspring2 = region2.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
+        let offspring1 =
+            region1.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
+        let offspring2 =
+            region2.process_region_lifecycle_iter(&MockFunction, &[], Some(&[1.0]), 12345);
         assert_eq!(offspring1.len(), offspring2.len());
     }
 }

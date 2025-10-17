@@ -70,7 +70,7 @@ impl Region {
         rng: &'a mut R,
     ) -> impl Iterator<Item = Organism> + 'a {
         let selected_slice = &original_organisms[..parents_required];
-        
+
         // Chain iterators from multiple passes
         (0..max_passes)
             .scan(0, move |total_produced, _pass_num| {
@@ -78,16 +78,20 @@ impl Region {
                     return None;
                 }
 
-                let offspring_this_pass = (number_to_reproduce - *total_produced).min(max_offspring_per_pass);
-                
+                let offspring_this_pass =
+                    (number_to_reproduce - *total_produced).min(max_offspring_per_pass);
+
                 // Execute single reproduction pass and collect into a vec for this pass
                 // Note: We must collect here because we need to know the count before continuing
-                let offspring: Vec<_> = 
-                    Region::execute_single_reproduction_pass_iter(selected_slice, offspring_this_pass, rng)
-                        .collect();
-                
+                let offspring: Vec<_> = Region::execute_single_reproduction_pass_iter(
+                    selected_slice,
+                    offspring_this_pass,
+                    rng,
+                )
+                .collect();
+
                 *total_produced += offspring.len();
-                
+
                 Some(offspring.into_iter())
             })
             .flatten()
@@ -356,7 +360,8 @@ mod tests {
             1, // number_to_reproduce
             1, // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         assert_eq!(offspring.len(), 1);
         assert!(offspring.iter().all(|o| o.age() == 0));
@@ -373,7 +378,8 @@ mod tests {
             2, // number_to_reproduce
             1, // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         assert_eq!(offspring.len(), 2);
         assert!(offspring.iter().all(|o| o.age() == 0));
@@ -390,7 +396,8 @@ mod tests {
             3, // number_to_reproduce
             3, // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         assert_eq!(offspring.len(), 3);
         assert!(offspring.iter().all(|o| o.age() == 0));
@@ -407,7 +414,8 @@ mod tests {
             6, // number_to_reproduce
             3, // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         assert_eq!(offspring.len(), 6);
         assert!(offspring.iter().all(|o| o.age() == 0));
@@ -424,7 +432,8 @@ mod tests {
             0, // number_to_reproduce
             1, // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         assert!(offspring.is_empty());
     }
@@ -440,7 +449,8 @@ mod tests {
             10, // number_to_reproduce (way more than passes allow)
             3,  // max_passes
             &mut rng,
-        ).collect();
+        )
+        .collect();
 
         // Should only get 6 offspring due to max_passes limit (3 passes * 2 offspring each)
         assert_eq!(offspring.len(), 6);
