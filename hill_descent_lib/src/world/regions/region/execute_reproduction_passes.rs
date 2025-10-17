@@ -48,6 +48,50 @@ impl Region {
 
         all_offspring
     }
+
+    /// Executes multiple reproduction passes to generate offspring, returning an iterator.
+    ///
+    /// This helper function handles the core reproduction logic using extreme pairing strategy
+    /// across multiple passes when needed for population growth.
+    /// This iterator version avoids intermediate Vec accumulation.
+    ///
+    /// * `original_organisms` - The ranked parent organisms to use for reproduction
+    /// * `parents_required` - Number of parents available for reproduction
+    /// * `max_offspring_per_pass` - Maximum offspring that can be produced in a single pass
+    /// * `number_to_reproduce` - Total number of offspring requested
+    /// * `max_passes` - Maximum number of reproduction passes allowed
+    /// * `rng` - Random number generator for reproduction operations
+    pub(super) fn execute_reproduction_passes_iter<'a, R: Rng>(
+        original_organisms: &'a [Arc<Organism>],
+        parents_required: usize,
+        max_offspring_per_pass: usize,
+        number_to_reproduce: usize,
+        max_passes: usize,
+        rng: &'a mut R,
+    ) -> impl Iterator<Item = Organism> + 'a {
+        let selected_slice = &original_organisms[..parents_required];
+        
+        // Chain iterators from multiple passes
+        (0..max_passes)
+            .scan(0, move |total_produced, _pass_num| {
+                if *total_produced >= number_to_reproduce {
+                    return None;
+                }
+
+                let offspring_this_pass = (number_to_reproduce - *total_produced).min(max_offspring_per_pass);
+                
+                // Execute single reproduction pass and collect into a vec for this pass
+                // Note: We must collect here because we need to know the count before continuing
+                let offspring: Vec<_> = 
+                    Region::execute_single_reproduction_pass_iter(selected_slice, offspring_this_pass, rng)
+                        .collect();
+                
+                *total_produced += offspring.len();
+                
+                Some(offspring.into_iter())
+            })
+            .flatten()
+    }
 }
 
 #[cfg(test)]
@@ -298,5 +342,108 @@ mod tests {
                         && (p1 == Some(parent2_id) || p1 == Some(parent3_id)))
             );
         }
+    }
+
+    // Tests for iterator version
+    #[test]
+    fn given_single_organism_single_pass_when_execute_iter_then_one_offspring() {
+        let organisms = vec![make_org(1.0, 5, 0)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 1, // parents_required
+            1, // max_offspring_per_pass
+            1, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        ).collect();
+
+        assert_eq!(offspring.len(), 1);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_two_organisms_single_pass_when_execute_iter_then_two_offspring() {
+        let organisms = vec![make_org(1.0, 5, 0), make_org(2.0, 3, 1)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 2, // parents_required
+            2, // max_offspring_per_pass
+            2, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        ).collect();
+
+        assert_eq!(offspring.len(), 2);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_single_organism_multiple_passes_when_execute_iter_then_multiple_offspring() {
+        let organisms = vec![make_org(1.0, 5, 0)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 1, // parents_required
+            1, // max_offspring_per_pass
+            3, // number_to_reproduce
+            3, // max_passes
+            &mut rng,
+        ).collect();
+
+        assert_eq!(offspring.len(), 3);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_two_organisms_multiple_passes_when_execute_iter_then_multiple_offspring() {
+        let organisms = vec![make_org(1.0, 5, 0), make_org(2.0, 3, 1)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 2, // parents_required
+            2, // max_offspring_per_pass
+            6, // number_to_reproduce
+            3, // max_passes
+            &mut rng,
+        ).collect();
+
+        assert_eq!(offspring.len(), 6);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_zero_number_to_reproduce_when_execute_iter_then_empty_result() {
+        let organisms = vec![make_org(1.0, 5, 0)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 1, // parents_required
+            1, // max_offspring_per_pass
+            0, // number_to_reproduce
+            1, // max_passes
+            &mut rng,
+        ).collect();
+
+        assert!(offspring.is_empty());
+    }
+
+    #[test]
+    fn given_max_passes_limit_when_execute_iter_then_stops_at_limit() {
+        let organisms = vec![make_org(1.0, 5, 0)];
+        let mut rng = SmallRng::seed_from_u64(0);
+
+        let offspring: Vec<_> = Region::execute_reproduction_passes_iter(
+            &organisms, 1,  // parents_required
+            2,  // max_offspring_per_pass (single organism produces 2 via self-fertilization)
+            10, // number_to_reproduce (way more than passes allow)
+            3,  // max_passes
+            &mut rng,
+        ).collect();
+
+        // Should only get 6 offspring due to max_passes limit (3 passes * 2 offspring each)
+        assert_eq!(offspring.len(), 6);
+        assert!(offspring.iter().all(|o| o.age() == 0));
     }
 }
