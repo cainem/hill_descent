@@ -127,9 +127,9 @@ mod tests {
     use crate::world::organisms::Organisms;
     use crate::world::organisms::organism::Organism;
 
-    use std::rc::Rc;
+    use std::sync::Arc;
 
-    fn create_test_organism(expressed_values: Vec<f64>) -> Rc<Organism> {
+    fn create_test_organism(expressed_values: Vec<f64>) -> Arc<Organism> {
         // Ensure we have at least 7 values for NUM_SYSTEM_PARAMETERS + some spatial dimensions
         // We need at least 8 values to test dimension index 0 (7 system + 1 spatial)
         let mut full_values = expressed_values;
@@ -137,7 +137,7 @@ mod tests {
             full_values.push(0.0); // Pad with zeros
         }
         let phenotype = Phenotype::new_for_test(full_values);
-        Rc::new(Organism::new(Rc::new(phenotype), 0, (None, None)))
+        Arc::new(Organism::new(Arc::new(phenotype), 0, (None, None)))
     }
 
     #[test]

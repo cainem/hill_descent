@@ -1,3 +1,9 @@
+// Use mimalloc as the global allocator for better performance on Windows
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 pub mod gamete;
 pub mod gen_hybrid_range;
 pub mod locus;

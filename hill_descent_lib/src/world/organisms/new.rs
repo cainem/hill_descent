@@ -5,7 +5,7 @@ use crate::world::organisms::Organisms;
 use crate::world::organisms::organism::Organism;
 use rand::Rng;
 use std::ops::RangeInclusive;
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl Organisms {
     /// Creates a new `Organisms` collection with a specified population size.
@@ -46,7 +46,7 @@ impl Organisms {
                         0
                     };
 
-                    Rc::new(Organism::new(Rc::new(p), age, (None, None)))
+                    Arc::new(Organism::new(Arc::new(p), age, (None, None)))
                 })
                 .collect(),
         }

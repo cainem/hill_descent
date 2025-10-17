@@ -1,6 +1,6 @@
 use crate::world::organisms::Organisms;
 use crate::world::organisms::organism::Organism;
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl super::Regions {
     /// Adds organisms from the given `Organisms` collection to their respective regions.
@@ -24,7 +24,7 @@ impl super::Regions {
             let key = organism
                 .region_key()
                 .expect("All organisms must have a region key when adding to regions");
-            let organism_rc: Rc<Organism> = Rc::clone(organism);
+            let organism_rc: Arc<Organism> = Arc::clone(organism);
             let region = self.regions.entry(key.clone()).or_default();
             region.add_organism(organism_rc);
         }
@@ -38,7 +38,7 @@ mod tests {
         phenotype::Phenotype,
         world::{organisms::Organisms, regions::Regions},
     };
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Helper to create a Phenotype for testing
     // Phenotype::new_for_test requires at least NUM_SYSTEM_PARAMETERS (7) expressed values.
@@ -97,7 +97,7 @@ mod tests {
             .get_region(&region_key1)
             .expect("Region should exist");
         assert_eq!(region.organism_count(), 1);
-        assert!(Rc::ptr_eq(
+        assert!(Arc::ptr_eq(
             &region.organisms()[0].get_phenotype_rc(),
             &orgtype_rc_from_org
         ));
@@ -133,12 +133,12 @@ mod tests {
         assert!(
             region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &org1_rc_from_org))
+                .any(|p| Arc::ptr_eq(&p.get_phenotype_rc(), &org1_rc_from_org))
         );
         assert!(
             region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &org2_rc_from_org))
+                .any(|p| Arc::ptr_eq(&p.get_phenotype_rc(), &org2_rc_from_org))
         );
     }
 
@@ -170,7 +170,7 @@ mod tests {
             .get_region(&region_key1)
             .expect("Region 1 should exist");
         assert_eq!(region1.organism_count(), 1);
-        assert!(Rc::ptr_eq(
+        assert!(Arc::ptr_eq(
             &region1.organisms()[0].get_phenotype_rc(),
             &org1_rc_from_org
         ));
@@ -179,7 +179,7 @@ mod tests {
             .get_region(&region_key2)
             .expect("Region 2 should exist");
         assert_eq!(region2.organism_count(), 1);
-        assert!(Rc::ptr_eq(
+        assert!(Arc::ptr_eq(
             &region2.organisms()[0].get_phenotype_rc(),
             &org2_rc_from_org
         ));
@@ -230,12 +230,12 @@ mod tests {
         assert!(
             region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &existing_orgtype_rc))
+                .any(|p| Arc::ptr_eq(&p.get_phenotype_rc(), &existing_orgtype_rc))
         );
         assert!(
             region_orgtypes
                 .iter()
-                .any(|p| Rc::ptr_eq(&p.get_phenotype_rc(), &new_orgtype_rc))
+                .any(|p| Arc::ptr_eq(&p.get_phenotype_rc(), &new_orgtype_rc))
         );
     }
 }

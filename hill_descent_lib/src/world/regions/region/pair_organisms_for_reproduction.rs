@@ -1,8 +1,8 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::world::{organisms::organism::Organism, regions::region::Region};
 
-type OrganismPairs = Vec<(Rc<Organism>, Rc<Organism>)>;
+type OrganismPairs = Vec<(Arc<Organism>, Arc<Organism>)>;
 
 impl Region {
     /// Pairs organisms for reproduction using extreme pairing strategy.
@@ -15,7 +15,7 @@ impl Region {
     ///
     /// Returns a vector of organism pairs for sexual reproduction
     pub(super) fn pair_organisms_for_reproduction(
-        selected_organisms: &[Rc<Organism>],
+        selected_organisms: &[Arc<Organism>],
     ) -> OrganismPairs {
         let mut pairs = Vec::new();
 
@@ -26,22 +26,22 @@ impl Region {
         if selected_organisms.len() % 2 == 1 {
             // Odd count: duplicate the top performer and then use extreme pairing
             let mut working_list = Vec::with_capacity(selected_organisms.len() + 1);
-            working_list.push(Rc::clone(&selected_organisms[0])); // First copy of top performer
+            working_list.push(Arc::clone(&selected_organisms[0])); // First copy of top performer
             working_list.extend(selected_organisms.iter().cloned()); // Original list including top performer again
 
             // Pair using extreme strategy: first with last, second with second-to-last, etc.
             let len = working_list.len();
             for i in 0..(len / 2) {
-                let first = Rc::clone(&working_list[i]);
-                let last = Rc::clone(&working_list[len - 1 - i]);
+                let first = Arc::clone(&working_list[i]);
+                let last = Arc::clone(&working_list[len - 1 - i]);
                 pairs.push((first, last));
             }
         } else {
             // Even count: directly pair from the slice without creating a vector
             let len = selected_organisms.len();
             for i in 0..(len / 2) {
-                let first = Rc::clone(&selected_organisms[i]);
-                let last = Rc::clone(&selected_organisms[len - 1 - i]);
+                let first = Arc::clone(&selected_organisms[i]);
+                let last = Arc::clone(&selected_organisms[len - 1 - i]);
                 pairs.push((first, last));
             }
         }
@@ -54,21 +54,21 @@ impl Region {
 mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     /// Helper: create an Organism with given score and age.
-    fn make_org(score: f64, age: usize, idx: usize) -> Rc<Organism> {
+    fn make_org(score: f64, age: usize, idx: usize) -> Arc<Organism> {
         // Expressed values: default 7 system parameters + one dummy problem param
         let expressed = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0, idx as f64];
-        let phenotype = Rc::new(Phenotype::new_for_test(expressed));
-        let org = Organism::new(Rc::clone(&phenotype), age, (None, None));
+        let phenotype = Arc::new(Phenotype::new_for_test(expressed));
+        let org = Organism::new(Arc::clone(&phenotype), age, (None, None));
         org.set_score(Some(score));
-        Rc::new(org)
+        Arc::new(org)
     }
 
     #[test]
     fn given_empty_organisms_when_pair_organisms_then_returns_empty_pairs() {
-        let organisms: Vec<Rc<Organism>> = vec![];
+        let organisms: Vec<Arc<Organism>> = vec![];
 
         let pairs = Region::pair_organisms_for_reproduction(&organisms);
 
