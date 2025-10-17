@@ -29,13 +29,12 @@ impl Regions {
             })
             .collect();
 
-        // Calculate total organism count for pre-allocation
-        let surviving_count: usize = self.regions.iter().map(|(_, r)| r.organism_count()).sum();
-        let offspring_count: usize = all_offspring.iter().map(|v| v.len()).sum();
-        let total_capacity = surviving_count + offspring_count;
-
-        // Collect all surviving organisms from regions (pre-allocated)
-        let mut all_organisms: Vec<Arc<Organism>> = Vec::with_capacity(total_capacity);
+        // Pre-allocate using known population size with 10% buffer
+        // Sum of carrying capacities = population_size, so actual total ≈ population_size
+        // Small buffer handles edge cases where organisms temporarily exceed capacity before truncation
+        // In practice, population is usually smaller than max, so this avoids over-allocation
+        let capacity = self.population_size + (self.population_size / 10).max(100);
+        let mut all_organisms: Vec<Arc<Organism>> = Vec::with_capacity(capacity);
         for (_key, region) in self.regions.iter() {
             for organism in region.organisms() {
                 all_organisms.push(Arc::clone(organism));
