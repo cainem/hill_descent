@@ -78,6 +78,60 @@ impl Region {
             rng,
         )
     }
+
+    /// Reproduces new organisms for this region, returning an iterator.
+    ///
+    /// This is the iterator version of `reproduce()` that avoids intermediate Vec allocation.
+    /// See `reproduce()` for full documentation of the reproduction algorithm.
+    ///
+    /// * `number_to_reproduce` – the number of offspring **required** for this region.
+    /// * `rng` – RNG used for crossover & mutation in the underlying phenotype reproduction.
+    ///
+    /// Returns an iterator that yields offspring organisms with age 0 and no score.
+    pub fn reproduce_iter<'a, R: Rng>(&'a mut self, number_to_reproduce: usize, rng: &'a mut R) 
+        -> impl Iterator<Item = Organism> + 'a {
+        if number_to_reproduce == 0 || self.organisms.is_empty() {
+            return either::Left(std::iter::empty());
+        }
+
+        // Store current population size for carrying capacity check
+        let current_population = self.organisms.len();
+
+        // ------------- Select parents from pre-sorted organisms -------------
+        let slice = &self.organisms;
+        let parents_required = number_to_reproduce.min(slice.len());
+
+        // Calculate maximum offspring per pass
+        let max_offspring_per_pass = if parents_required % 2 == 1 {
+            parents_required + 1 // Odd: top performer duplicated creates one extra offspring
+        } else {
+            parents_required // Even: each organism pairs once
+        };
+
+        // Check if multiple passes are warranted
+        let should_do_multiple_passes = if let Some(capacity) = self.carrying_capacity {
+            let total_desired = current_population + number_to_reproduce;
+            total_desired <= capacity && number_to_reproduce > max_offspring_per_pass
+        } else {
+            false
+        };
+
+        let max_passes = if should_do_multiple_passes {
+            Self::REPRODUCTION_FACTOR
+        } else {
+            1
+        };
+
+        // Execute reproduction passes (returns iterator)
+        either::Right(Self::execute_reproduction_passes_iter(
+            slice,
+            parents_required,
+            max_offspring_per_pass,
+            number_to_reproduce,
+            max_passes,
+            rng,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -274,6 +328,75 @@ mod tests {
         // Should only do single pass since total would exceed capacity
         // 3 organisms with extreme pairing: top performer duplicated = 2 pairs = 4 offspring per pass
         assert_eq!(offspring.len(), 4);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    // Tests for iterator version
+    #[test]
+    fn given_even_r_when_reproduce_iter_then_returns_r_offspring() {
+        let mut region = Region::new();
+        for i in 0..4 {
+            region.add_organism(make_org(i as f64 + 1.0, i, i));
+        }
+        let mut rng = SmallRng::seed_from_u64(0);
+        let offspring: Vec<_> = region.reproduce_iter(4, &mut rng).collect();
+        assert_eq!(offspring.len(), 4);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_odd_r_when_reproduce_iter_then_returns_r_offspring() {
+        let mut region = Region::new();
+        for i in 0..5 {
+            region.add_organism(make_org(i as f64 + 1.0, i, i));
+        }
+        let mut rng = SmallRng::seed_from_u64(0);
+        let offspring: Vec<_> = region.reproduce_iter(3, &mut rng).collect();
+        assert_eq!(offspring.len(), 3);
+    }
+
+    #[test]
+    fn given_zero_r_when_reproduce_iter_then_returns_empty() {
+        let mut region = Region::new();
+        region.add_organism(make_org(1.0, 0, 0));
+        let mut rng = SmallRng::seed_from_u64(0);
+        let offspring: Vec<_> = region.reproduce_iter(0, &mut rng).collect();
+        assert!(offspring.is_empty());
+    }
+
+    #[test]
+    fn given_empty_region_when_reproduce_iter_then_returns_empty() {
+        let mut region = Region::new();
+        let mut rng = SmallRng::seed_from_u64(0);
+        let offspring: Vec<_> = region.reproduce_iter(3, &mut rng).collect();
+        assert!(offspring.is_empty());
+    }
+
+    #[test]
+    fn given_single_organism_when_reproduce_iter_multiple_passes_then_produces_multiple_offspring() {
+        let mut region = Region::new();
+        region.set_carrying_capacity(Some(100)); // Set high carrying capacity to enable multiple passes
+        region.add_organism(make_org(1.0, 5, 0));
+        let mut rng = SmallRng::seed_from_u64(0);
+        // Request more offspring than can be produced in single pass
+        let offspring: Vec<_> = region.reproduce_iter(3, &mut rng).collect();
+        // Single organism pairs with itself (self-fertilization), producing 2 offspring per pass
+        // 3 requested / 2 per pass = 2 passes = 3 offspring (last pass truncated)
+        assert_eq!(offspring.len(), 3);
+        assert!(offspring.iter().all(|o| o.age() == 0));
+    }
+
+    #[test]
+    fn given_two_organisms_when_reproduce_iter_multiple_passes_then_produces_multiple_offspring() {
+        let mut region = Region::new();
+        region.set_carrying_capacity(Some(100)); // Set high carrying capacity to enable multiple passes
+        region.add_organism(make_org(1.0, 5, 0));
+        region.add_organism(make_org(2.0, 3, 1));
+        let mut rng = SmallRng::seed_from_u64(0);
+        // Request more offspring than can be produced in single pass (2 parents -> 2 offspring per pass)
+        let offspring: Vec<_> = region.reproduce_iter(6, &mut rng).collect();
+        // Two organisms can produce 2 offspring per pass, so we get 6 offspring over 3 passes
+        assert_eq!(offspring.len(), 6);
         assert!(offspring.iter().all(|o| o.age() == 0));
     }
 }
