@@ -77,7 +77,7 @@ mod tests {
             );
             assert_eq!(
                 locus.value().bounds(),
-                &bounds,
+                bounds,
                 "Locus parameter bounds incorrect"
             );
             assert!(locus.adjustment().adjustment_value().get() >= 0.0);
