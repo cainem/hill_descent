@@ -14,7 +14,7 @@ impl Regions {
         &mut self,
         world_function: &dyn WorldFunction,
         inputs: &[f64],
-        known_outputs: Option<&[f64]>,
+        known_outputs: &[f64],
         world_seed: u64,
     ) -> Organisms {
         // Sort regions by organism count (largest first) to optimize parallel scheduling
@@ -91,8 +91,7 @@ mod tests {
             regions.insert_region(vec![i], region);
         }
 
-        let all_organisms =
-            regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms = regions.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
         // 3 regions * (5 survivors + 5 offspring) = 30 total
         assert_eq!(all_organisms.len(), 30);
     }
@@ -119,10 +118,8 @@ mod tests {
             regions2.insert_region(vec![i], r2);
         }
 
-        let all_organisms1 =
-            regions1.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
-        let all_organisms2 =
-            regions2.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms1 = regions1.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
+        let all_organisms2 = regions2.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
         assert_eq!(all_organisms1.len(), all_organisms2.len());
     }
 
@@ -158,8 +155,7 @@ mod tests {
         regions.insert_region(vec![2], region_medium);
 
         // Process regions - should be sorted by size (largest first)
-        let all_organisms =
-            regions.parallel_process_regions(&MockFunction, &[], Some(&[1.0]), 12345);
+        let all_organisms = regions.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
 
         // Total: (8 + 8 offspring) + (5 + 5 offspring) + (2 + 2 offspring) = 30
         assert_eq!(all_organisms.len(), 30);

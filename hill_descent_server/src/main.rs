@@ -311,13 +311,16 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
             actix_web::error::ErrorInternalServerError(e)
         })?;
 
+    // Get the function floor value for scoring
+    let floor = function_impl.function_floor();
+
     let global_constants = GlobalConstants::new(config.population_size, config.elite_size);
     let mut world = setup_world(&param_range, global_constants, function_impl);
 
     // Run to the new epoch
     let mut at_resolution_limit = false;
     for _ in 0..=current_epoch {
-        at_resolution_limit = world.training_run(&[], None);
+        at_resolution_limit = world.training_run(&[], &[floor]);
     }
 
     let response_data = StateResponse {

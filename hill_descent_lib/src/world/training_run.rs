@@ -7,28 +7,28 @@ impl World {
     )]
     /// Runs a single training iteration.
     ///
+    /// For `SingleValuedFunction` (objective-function mode), pass a single-element slice
+    /// containing the function's floor value (minimum): `&[floor]`.
+    ///
+    /// For supervised learning, pass the target output values: `&[target1, target2, ...]`.
+    ///
     /// # Panics
     ///
     /// This function will panic if:
-    /// - In supervised mode (`Some(&[f64])`), the known_outputs slice is empty
-    /// - In supervised mode (`Some(&[f64])`), any known_outputs contain non-finite numbers (NaN or Infinity)
+    /// - The known_outputs slice is empty
+    /// - Any known_outputs contain non-finite numbers (NaN or Infinity)
     ///
     /// # Returns
     ///
     /// Returns `true` if the resolution limit has been reached and no further
     /// meaningful splits are possible, `false` otherwise.
-    pub fn training_run(&mut self, inputs: &[f64], known_outputs: Option<&[f64]>) -> bool {
-        // Validate known_outputs if in supervised mode
-        if let Some(expected_outputs) = known_outputs {
-            assert!(
-                !expected_outputs.is_empty(),
-                "known_outputs must not be empty in supervised mode"
-            );
-            assert!(
-                expected_outputs.iter().all(|&x| x.is_finite()),
-                "known_outputs must only contain finite numbers"
-            );
-        }
+    pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
+        // Validate known_outputs
+        assert!(!known_outputs.is_empty(), "known_outputs must not be empty");
+        assert!(
+            known_outputs.iter().all(|&x| x.is_finite()),
+            "known_outputs must only contain finite numbers"
+        );
 
         // PARALLEL PHASE: Process all regions independently
         let world_seed = self.global_constants.world_seed();
@@ -57,7 +57,7 @@ mod tests {
     struct IdentityFn;
     impl WorldFunction for IdentityFn {
         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-            vec![0.5] // deterministic output
+            vec![1.5] // deterministic output above floor
         }
     }
 
@@ -70,10 +70,10 @@ mod tests {
         let gc = GlobalConstants::new(1000, 1); // Use only 1 region for simplicity
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
         let inputs = vec![0.0];
-        let known_outputs = vec![1.0];
+        let known_outputs = vec![1.0]; // Floor value
 
         // Act
-        let _at_resolution_limit = world.training_run(&inputs, Some(&known_outputs));
+        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
 
         // Assert
         // Note: With the new flow, organisms may die from aging but some should survive.
@@ -111,7 +111,7 @@ mod tests {
 
         // Act
         println!("Initial organism count: {}", world.organisms.len());
-        let _at_resolution_limit = world.training_run(&inputs, Some(&known_outputs));
+        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
         println!("Final organism count: {}", world.organisms.len());
 
         // Assert
@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "known_outputs must not be empty in supervised mode")]
+    #[should_panic(expected = "known_outputs must not be empty")]
     fn given_empty_known_outputs_when_training_run_then_panics() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(10, 1);
@@ -146,7 +146,7 @@ mod tests {
         let inputs = vec![0.0];
         let empty_outputs: &[f64] = &[];
 
-        world.training_run(&inputs, Some(empty_outputs));
+        world.training_run(&inputs, empty_outputs);
     }
 
     #[test]
@@ -158,7 +158,7 @@ mod tests {
         let inputs = vec![0.0];
         let infinite_outputs = vec![1.0, f64::INFINITY];
 
-        world.training_run(&inputs, Some(&infinite_outputs));
+        world.training_run(&inputs, &infinite_outputs);
     }
 
     #[test]
@@ -170,6 +170,6 @@ mod tests {
         let inputs = vec![0.0];
         let nan_outputs = vec![f64::NAN];
 
-        world.training_run(&inputs, Some(&nan_outputs));
+        world.training_run(&inputs, &nan_outputs);
     }
 }

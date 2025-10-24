@@ -35,8 +35,8 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
     c.bench_function("hill_descent_train_epoch_100d", |b| {
         b.iter(|| {
-            // Objective-function mode: no known inputs/outputs.
-            world.training_run(&[], None);
+            // Objective-function mode: pass function floor
+            world.training_run(&[], &[SumSquares.function_floor()]);
         })
     });
 }

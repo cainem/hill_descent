@@ -149,6 +149,9 @@ fn run_single_benchmark(
     let global_constants =
         GlobalConstants::new_with_seed(population as usize, regions as usize, seed);
 
+    // Get the function floor value for scoring
+    let floor = function.function_floor();
+
     let mut world = setup_world(&param_ranges, global_constants, function);
     let start_time = Instant::now();
 
@@ -164,7 +167,7 @@ fn run_single_benchmark(
         }
 
         // Run training and count resolution limit hits
-        if world.training_run(&[], None) {
+        if world.training_run(&[], &[floor]) {
             resolution_limit_count += 1;
         }
     }

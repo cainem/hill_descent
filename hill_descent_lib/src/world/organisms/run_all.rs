@@ -12,12 +12,7 @@ impl Organisms {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, function, inputs, known_outputs))
     )]
-    pub fn run_all(
-        &self,
-        function: &dyn WorldFunction,
-        inputs: &[f64],
-        known_outputs: Option<&[f64]>,
-    ) {
+    pub fn run_all(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
         for organism in self.organisms.iter() {
             organism.run(function, inputs, known_outputs);
         }
@@ -60,7 +55,7 @@ mod tests {
         // Before run_all none of the organisms should have a score.
         assert!(orgs.iter().all(|o| o.score().is_none()));
 
-        orgs.run_all(&wf, &inputs, Some(&known_outputs));
+        orgs.run_all(&wf, &inputs, &known_outputs);
 
         // After run_all every organism should have Some(score)
         assert!(orgs.iter().all(|o| o.score().is_some()));

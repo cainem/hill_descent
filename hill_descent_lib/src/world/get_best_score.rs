@@ -26,7 +26,7 @@ mod tests {
     struct TestFn;
     impl WorldFunction for TestFn {
         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-            vec![0.5]
+            vec![1.5] // Returns value above floor of 1.0
         }
     }
 
@@ -36,14 +36,14 @@ mod tests {
         let gc = GlobalConstants::new(10, 5);
         let mut world = World::new(&bounds, gc, Box::new(TestFn));
 
-        // Run training to score organisms
-        world.training_run(&[0.5], Some(&[1.0]));
+        // Run training to score organisms, floor = 1.0
+        world.training_run(&[0.5], &[1.0]);
 
         let best_score = world.get_best_score();
         assert!(best_score < f64::MAX, "Should have a valid score");
         assert!(
-            best_score > 0.0,
-            "Score should be positive for this test function"
+            best_score >= 0.0,
+            "Score should be non-negative (distance metric)"
         );
     }
 
