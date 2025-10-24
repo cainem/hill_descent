@@ -78,7 +78,7 @@ mod tests {
 
         // Check bounds of the value Parameter for the first locus
         let locus0_value_param = loci[0].value();
-        assert_eq!(*locus0_value_param.bounds(), parameter_bounds[0]);
+        assert_eq!(locus0_value_param.bounds(), parameter_bounds[0]);
         assert!(
             locus0_value_param.get() >= *parameter_bounds[0].start(),
             "Locus 0 value {} is not >= start {}",
@@ -94,7 +94,7 @@ mod tests {
 
         // Check bounds of the value Parameter for the second locus
         let locus1_value_param = loci[1].value();
-        assert_eq!(*locus1_value_param.bounds(), parameter_bounds[1]);
+        assert_eq!(locus1_value_param.bounds(), parameter_bounds[1]);
         assert!(
             locus1_value_param.get() >= *parameter_bounds[1].start(),
             "Locus 1 value {} is not >= start {}",
