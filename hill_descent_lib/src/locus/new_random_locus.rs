@@ -38,7 +38,7 @@ impl Locus {
                 // If the operation would push the locus value out of its bounds,
                 // reconstruct the LocusAdjustment with the doubling_or_halving_flag set to false.
                 adjustment = LocusAdjustment::new(
-                    adjustment.adjustment_value().clone(), // Keep the original random adjustment value
+                    *adjustment.adjustment_value(), // Keep the original random adjustment value
                     adjustment.direction_of_travel(),
                     false, // Force flag to false
                 );

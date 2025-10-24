@@ -30,7 +30,7 @@ pub fn enhance_parameters(
     // Prepend system parameter bounds to the existing ones
     let mut system_parameter_bounds: Vec<RangeInclusive<f64>> = system_params_to_prepend
         .iter()
-        .map(|p| p.bounds().clone())
+        .map(|p| p.bounds())
         .collect();
     system_parameter_bounds.extend_from_slice(existing_parameter_bounds);
     system_parameter_bounds
