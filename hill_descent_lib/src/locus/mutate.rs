@@ -13,7 +13,7 @@ impl Locus {
         tracing::instrument(level = "trace", skip(self, rng, sys))
     )]
     pub fn mutate<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
-        let mut new_adj_val = self.adjustment.adjustment_value().clone();
+        let mut new_adj_val = *self.adjustment.adjustment_value();
         let mut new_direction = self.adjustment.direction_of_travel();
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
@@ -48,7 +48,7 @@ impl Locus {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true
-        let mut new_value = self.value.clone();
+        let mut new_value = self.value;
         if new_apply_flag {
             let sign = match new_adjustment.direction_of_travel() {
                 DirectionOfTravel::Add => 1.0,
@@ -67,7 +67,7 @@ impl Locus {
         tracing::instrument(level = "trace", skip(self, rng, sys))
     )]
     pub fn mutate_unbound<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
-        let mut new_adj_val = self.adjustment.adjustment_value().clone();
+        let mut new_adj_val = *self.adjustment.adjustment_value();
         let mut new_direction = self.adjustment.direction_of_travel();
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
@@ -102,7 +102,7 @@ impl Locus {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true (without clamping)
-        let mut new_value = self.value.clone();
+        let mut new_value = self.value;
         if new_apply_flag {
             let sign = match new_adjustment.direction_of_travel() {
                 DirectionOfTravel::Add => 1.0,

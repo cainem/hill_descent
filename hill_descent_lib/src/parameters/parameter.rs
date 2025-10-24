@@ -2,10 +2,11 @@
 use std::ops::RangeInclusive;
 
 /// Parameter struct for bounded/unbounded f64 values
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Parameter {
     value: f64,
-    bounds: RangeInclusive<f64>,
+    min_bound: f64,
+    max_bound: f64,
 }
 
 impl Parameter {
@@ -18,7 +19,8 @@ impl Parameter {
         );
         Self {
             value,
-            bounds: f64::MIN..=f64::MAX,
+            min_bound: f64::MIN,
+            max_bound: f64::MAX,
         }
     }
 
@@ -44,7 +46,8 @@ impl Parameter {
         }
         Self {
             value: v,
-            bounds: min_val..=max_val,
+            min_bound: min_val,
+            max_bound: max_val,
         }
     }
 
@@ -60,12 +63,10 @@ impl Parameter {
             new_value.is_finite(),
             "value must be finite and not NaN or infinite"
         );
-        let lo = *self.bounds.start();
-        let hi = *self.bounds.end();
-        let v = if new_value < lo {
-            lo
-        } else if new_value > hi {
-            hi
+        let v = if new_value < self.min_bound {
+            self.min_bound
+        } else if new_value > self.max_bound {
+            self.max_bound
         } else {
             new_value
         };
@@ -82,9 +83,9 @@ impl Parameter {
         self.value = new_value;
     }
 
-    /// Returns the bounds of the parameter.
-    pub fn bounds(&self) -> &RangeInclusive<f64> {
-        &self.bounds
+    /// Returns the bounds of the parameter as a RangeInclusive.
+    pub fn bounds(&self) -> RangeInclusive<f64> {
+        self.min_bound..=self.max_bound
     }
 }
 
@@ -96,7 +97,7 @@ mod tests {
     fn given_new_when_value_is_valid_then_parameter_is_created_with_default_bounds() {
         let p = Parameter::new(1.23);
         assert_eq!(p.get(), 1.23);
-        assert_eq!(p.bounds(), &(f64::MIN..=f64::MAX));
+        assert_eq!(p.bounds(), f64::MIN..=f64::MAX);
     }
 
     #[test]
@@ -116,7 +117,7 @@ mod tests {
     fn given_with_bounds_when_value_is_within_bounds_then_parameter_is_created() {
         let p = Parameter::with_bounds(1.5, 1.0, 2.0);
         assert_eq!(p.get(), 1.5);
-        assert_eq!(p.bounds(), &(1.0..=2.0));
+        assert_eq!(p.bounds(), 1.0..=2.0);
     }
 
     #[test]

@@ -21,7 +21,8 @@ impl Region {
         organism_pairs: &OrganismPairs,
         rng: &mut R,
     ) -> Vec<Organism> {
-        let mut offspring = Vec::new();
+        // Pre-allocate: each pair produces exactly 2 offspring
+        let mut offspring = Vec::with_capacity(organism_pairs.len() * 2);
 
         for (p1, p2) in organism_pairs {
             let (c1, c2) = Phenotype::sexual_reproduction(p1.phenotype(), p2.phenotype(), rng);
