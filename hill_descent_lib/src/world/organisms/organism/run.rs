@@ -47,7 +47,10 @@ impl Organism {
             );
         }
 
-        // Validate that outputs are finite and not below their corresponding floors
+        // Validate that outputs are finite and not below their corresponding floors.
+        // IMPORTANT: The order of these checks matters - we must check is_finite() BEFORE
+        // checking the floor comparison, because NaN >= floor is always false and would
+        // produce a misleading "below floor" error instead of the correct "not finite" error.
         for (i, (&output, &floor)) in outputs.iter().zip(known_outputs.iter()).enumerate() {
             assert!(
                 output.is_finite(),
