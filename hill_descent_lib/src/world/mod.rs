@@ -1,3 +1,39 @@
+//! The main simulation container and fitness evaluation interfaces.
+//!
+//! This module contains the [`World`] struct, which is the primary entry point for
+//! running genetic algorithm optimizations, as well as the traits for defining
+//! optimization functions.
+//!
+//! # Key Types
+//!
+//! - [`World`] - The main optimization container created by [`setup_world`](crate::setup_world)
+//! - [`single_valued_function::SingleValuedFunction`] - Trait for defining single-output optimization functions (most common)
+//! - [`world_function::WorldFunction`] - Advanced trait for multi-output functions with external inputs
+//!
+//! # Basic Usage
+//!
+//! ```
+//! use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+//!
+//! #[derive(Debug)]
+//! struct MyFunction;
+//!
+//! impl SingleValuedFunction for MyFunction {
+//!     fn single_run(&self, params: &[f64]) -> f64 {
+//!         params.iter().map(|x| x * x).sum()
+//!     }
+//! }
+//!
+//! let param_range = vec![-10.0..=10.0; 2];
+//! let constants = GlobalConstants::new(100, 10);
+//! let mut world = setup_world(&param_range, constants, Box::new(MyFunction));
+//!
+//! for _ in 0..100 {
+//!     world.training_run(&[], &[0.0]);
+//! }
+//! println!("Best score: {}", world.get_best_score());
+//! ```
+
 use crate::parameters::global_constants::GlobalConstants;
 use crate::world::dimensions::Dimensions;
 use organisms::Organisms;
@@ -22,8 +58,97 @@ mod training_run;
 mod validate_training_sets;
 pub mod world_function;
 
-// Top-level simulation container holding dimensions, organisms, regions, RNG, and the evaluation function.
-
+/// The main optimization container managing population evolution and fitness evaluation.
+///
+/// `World` is created by [`setup_world`](crate::setup_world) and contains all the state
+/// needed for genetic algorithm optimization, including:
+///
+/// - **Population**: A collection of organisms (candidate solutions)
+/// - **Spatial regions**: Adaptive partitioning of the parameter space
+/// - **Evaluation function**: Your fitness function implementing [`single_valued_function::SingleValuedFunction`] or [`world_function::WorldFunction`]
+/// - **Configuration**: Global constants controlling population size, regions, etc.
+///
+/// # Core Workflow
+///
+/// 1. Create world with [`setup_world`](crate::setup_world)
+/// 2. Run optimization with [`training_run`](World::training_run)
+/// 3. Extract results with [`get_best_score`](World::get_best_score) and [`get_best_organism`](World::get_best_organism)
+///
+/// # Examples
+///
+/// ## Basic Optimization
+///
+/// ```
+/// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+///
+/// #[derive(Debug)]
+/// struct Sphere;
+///
+/// impl SingleValuedFunction for Sphere {
+///     fn single_run(&self, params: &[f64]) -> f64 {
+///         params.iter().map(|x| x * x).sum()
+///     }
+/// }
+///
+/// let param_range = vec![-5.0..=5.0; 3];  // 3D problem
+/// let constants = GlobalConstants::new(200, 20);
+/// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
+///
+/// // Run 100 epochs of evolution
+/// for _ in 0..100 {
+///     world.training_run(&[], &[0.0]);
+/// }
+///
+/// // Get results
+/// let best_score = world.get_best_score();
+/// assert!(best_score < 0.01);  // Should find near-zero minimum
+/// ```
+///
+/// ## Progressive Optimization with Monitoring
+///
+/// ```
+/// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+///
+/// #[derive(Debug)]
+/// struct Rosenbrock;
+///
+/// impl SingleValuedFunction for Rosenbrock {
+///     fn single_run(&self, params: &[f64]) -> f64 {
+///         let x = params[0];
+///         let y = params[1];
+///         (1.0 - x).powi(2) + 100.0 * (y - x.powi(2)).powi(2)
+///     }
+/// }
+///
+/// let param_range = vec![-5.0..=5.0; 2];
+/// let constants = GlobalConstants::new(500, 50);
+/// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
+///
+/// // Run optimization in stages, monitoring progress
+/// for stage in 0..10 {
+///     for _ in 0..50 {
+///         world.training_run(&[], &[0.0]);
+///     }
+///     println!("Stage {}: Best score = {}", stage, world.get_best_score());
+///     
+///     if world.get_best_score() < 0.001 {
+///         println!("Converged after {} total epochs", (stage + 1) * 50);
+///         break;
+///     }
+/// }
+/// ```
+///
+/// # Performance Characteristics
+///
+/// - **Parallel Evaluation**: Fitness evaluations run concurrently across CPU cores
+/// - **Memory Efficient**: Organism storage grows with population size, not parameter dimensionality
+/// - **Scalability**: Handles 2D to 100D+ problems; larger populations for higher dimensions
+///
+/// # Thread Safety
+///
+/// `World` is **not** thread-safe and should not be shared across threads. However,
+/// the fitness function implementations must be `Sync` since they're called concurrently
+/// during each epoch.
 #[derive(Debug)]
 pub struct World {
     dimensions: Dimensions,
@@ -37,6 +162,10 @@ pub struct World {
 
 impl World {
     /// Creates a new `World` instance, initializing the entire simulation environment.
+    ///
+    /// **Note**: Use [`setup_world`](crate::setup_world) instead of calling this directly.
+    /// This constructor is public to support advanced use cases but most users should
+    /// use the convenience function.
     ///
     /// This function orchestrates the setup of the world based on the initial parameters,
     /// aligning with the initialization process described in the Product Definition Document (PDD),

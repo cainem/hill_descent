@@ -172,6 +172,143 @@ impl super::World {
     /// 
     /// Panics if the world is not exactly 2-dimensional.
     /// 
+    /// Returns a JSON representation optimized for 2D web visualization.
+    ///
+    /// This is a specialized version of [`get_state`](super::World::get_state) designed for
+    /// the `hill_descent_server` web interface. It formats data specifically for
+    /// 2D visualizations and includes additional metadata for rendering.
+    ///
+    /// **Important**: This method only works with 2-dimensional optimization problems
+    /// and will panic if called on worlds with more or fewer than 2 dimensions.
+    ///
+    /// # Returns
+    ///
+    /// A JSON string containing:
+    ///
+    /// - **world_bounds**: X and Y parameter ranges
+    /// - **organisms**: Living organisms with 2D coordinates, scores, ages, parent IDs
+    /// - **regions**: Spatial partitions with 2D bounding boxes
+    /// - **score_range**: Min/max scores across all organisms
+    ///
+    /// Dead organisms are filtered out for cleaner visualization.
+    ///
+    /// # JSON Structure
+    ///
+    /// ```json
+    /// {
+    ///   "world_bounds": {
+    ///     "x": [-10.0, 10.0],
+    ///     "y": [-10.0, 10.0]
+    ///   },
+    ///   "organisms": [
+    ///     {
+    ///       "id": 42,
+    ///       "params": {"x": 1.23, "y": 4.56},
+    ///       "age": 5,
+    ///       "max_age": 10,
+    ///       "score": 0.0123,
+    ///       "region_key": [0, 1],
+    ///       "is_dead": false,
+    ///       "parent_id_1": 20,
+    ///       "parent_id_2": 35,
+    ///       "phenotype": { ... }
+    ///     }
+    ///   ],
+    ///   "regions": [
+    ///     {
+    ///       "carrying_capacity": 10,
+    ///       "bounds": {
+    ///         "x": [0.0, 5.0],
+    ///         "y": [0.0, 5.0]
+    ///       },
+    ///       "min_score": 0.01
+    ///     }
+    ///   ],
+    ///   "score_range": {
+    ///     "min": 0.001,
+    ///     "max": 10.5
+    ///   }
+    /// }
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// ## Web Server Integration
+    ///
+    /// ```
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Himmelblau;
+    ///
+    /// impl SingleValuedFunction for Himmelblau {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         let x = params[0];
+    ///         let y = params[1];
+    ///         (x.powi(2) + y - 11.0).powi(2) + (x + y.powi(2) - 7.0).powi(2)
+    ///     }
+    /// }
+    ///
+    /// // Must be 2D
+    /// let param_range = vec![-5.0..=5.0, -5.0..=5.0];
+    /// let constants = GlobalConstants::new(200, 20);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Himmelblau));
+    ///
+    /// world.training_run(&[], &[0.0]);
+    ///
+    /// // Get web-optimized JSON
+    /// let json = world.get_state_for_web();
+    ///
+    /// // Send to web client
+    /// // http_response.body(json)
+    /// ```
+    ///
+    /// ## Visualization API Endpoint
+    ///
+    /// ```ignore
+    /// // In hill_descent_server
+    /// #[get("/api/state")]
+    /// async fn get_state(world: web::Data<Mutex<World>>) -> impl Responder {
+    ///     let world = world.lock().unwrap();
+    ///     HttpResponse::Ok()
+    ///         .content_type("application/json")
+    ///         .body(world.get_state_for_web())
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the world is not 2-dimensional:
+    ///
+    /// ```should_panic
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct F;
+    /// impl SingleValuedFunction for F {
+    ///     fn single_run(&self, p: &[f64]) -> f64 { p.iter().sum() }
+    /// }
+    ///
+    /// // 3D world - will panic!
+    /// let param_range = vec![-1.0..=1.0; 3];
+    /// let constants = GlobalConstants::new(10, 2);
+    /// let mut world = setup_world(&param_range, constants, Box::new(F));
+    ///
+    /// world.training_run(&[], &[0.0]);
+    /// world.get_state_for_web(); // PANICS: not 2D
+    /// ```
+    ///
+    /// # Performance
+    ///
+    /// Similar to [`get_state`](super::World::get_state), this is O(n) for n organisms.
+    /// The additional filtering and 2D-specific formatting has minimal overhead.
+    ///
+    /// # See Also
+    ///
+    /// - [`get_state`](super::World::get_state) - Full state for n-dimensional problems
+    /// - `hill_descent_server` - Web visualization server using this method
+    /// - `web_pdd.md` - Documentation of the web visualization contract
+    ///
     /// # Example
     /// 
     /// ```ignore

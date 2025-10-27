@@ -1,14 +1,160 @@
 use crate::WorldFunction;
 
 use std::fmt::Debug;
-/// this trait represents the special case for a function that represents a
-/// line or a surface (or even higher dimensions) for which we want to minimize a single
-/// value
-/// A simple line graph or the height of a surface say is a good example
+
+/// Trait for optimization functions that return a single scalar value to minimize.
 ///
-/// Here the expressed values are fed into the function and a value is returned and the
-/// algorithm will vary the expressed values to minimize the return value
+/// This is the primary trait users implement to define their optimization problem.
+/// The genetic algorithm will evolve parameters to minimize the value returned by
+/// [`single_run`](SingleValuedFunction::single_run).
+///
+/// # Common Use Cases
+///
+/// - **Mathematical Functions**: Minimizing surfaces like Rosenbrock, Rastrigin, Ackley
+/// - **Parameter Tuning**: Finding optimal configuration values for models
+/// - **Engineering Design**: Minimizing cost, weight, or error metrics
+/// - **Machine Learning**: Hyperparameter optimization
+///
+/// # Thread Safety
+///
+/// Functions must be `Sync` as they are called concurrently from multiple threads
+/// during fitness evaluation.
+///
+/// # Examples
+///
+/// ## Simple Quadratic Function
+///
+/// ```
+/// use hill_descent_lib::SingleValuedFunction;
+///
+/// #[derive(Debug)]
+/// struct Quadratic;
+///
+/// impl SingleValuedFunction for Quadratic {
+///     fn single_run(&self, params: &[f64]) -> f64 {
+///         // Minimize f(x, y) = x² + y²
+///         // Global minimum: f(0, 0) = 0
+///         params.iter().map(|x| x * x).sum()
+///     }
+/// }
+///
+/// // Use with setup_world:
+/// use hill_descent_lib::{setup_world, GlobalConstants};
+///
+/// let param_range = vec![-10.0..=10.0, -10.0..=10.0];
+/// let constants = GlobalConstants::new(100, 10);
+/// let mut world = setup_world(&param_range, constants, Box::new(Quadratic));
+///
+/// for _ in 0..100 {
+///     world.training_run(&[], &[0.0]);
+/// }
+/// assert!(world.get_best_score() < 0.01);  // Should find near-zero minimum
+/// ```
+///
+/// ## Function with Custom Floor
+///
+/// ```
+/// use hill_descent_lib::SingleValuedFunction;
+///
+/// #[derive(Debug)]
+/// struct ShiftedFunction;
+///
+/// impl SingleValuedFunction for ShiftedFunction {
+///     fn single_run(&self, params: &[f64]) -> f64 {
+///         // Function with minimum value of -5.0
+///         params.iter().map(|x| x * x).sum::<f64>() - 5.0
+///     }
+///
+///     fn function_floor(&self) -> f64 {
+///         -5.0  // Specify theoretical minimum
+///     }
+/// }
+/// ```
+///
+/// ## Complex Optimization Problem
+///
+/// ```
+/// use hill_descent_lib::SingleValuedFunction;
+///
+/// #[derive(Debug)]
+/// struct ModelFitness {
+///     target_data: Vec<f64>,
+/// }
+///
+/// impl SingleValuedFunction for ModelFitness {
+///     fn single_run(&self, params: &[f64]) -> f64 {
+///         // params[0]: learning_rate, params[1]: regularization, etc.
+///         // Return mean squared error or similar metric
+///         let predictions = self.run_model(params);
+///         self.compute_error(&predictions)
+///     }
+/// }
+///
+/// impl ModelFitness {
+///     fn run_model(&self, _params: &[f64]) -> Vec<f64> {
+///         // Model execution logic
+///         vec![0.0; self.target_data.len()]
+///     }
+///
+///     fn compute_error(&self, predictions: &[f64]) -> f64 {
+///         // Error calculation
+///         predictions.iter()
+///             .zip(&self.target_data)
+///             .map(|(p, t)| (p - t).powi(2))
+///             .sum::<f64>() / self.target_data.len() as f64
+///     }
+/// }
+/// ```
+///
+/// # Implementation Notes
+///
+/// - The function should be **deterministic** - same inputs must produce same output
+/// - Avoid expensive operations if possible - called millions of times during optimization
+/// - Return `f64::INFINITY` for invalid parameter combinations
+/// - Consider implementing [`function_floor`](SingleValuedFunction::function_floor) if your function has a known theoretical minimum
+///
+/// # See Also
+///
+/// - [`crate::WorldFunction`] - For multi-output functions (automatically implemented)
+/// - [`crate::setup_world`] - Initialize optimization with your function
+/// - [`super::World::training_run`] - Run optimization epochs
 pub trait SingleValuedFunction: Debug + Sync {
+    /// Evaluates the function for given parameter values.
+    ///
+    /// This is the core method that defines your optimization problem. The genetic
+    /// algorithm will call this method millions of times with different parameter
+    /// combinations, seeking the combination that produces the minimum return value.
+    ///
+    /// # Parameters
+    ///
+    /// * `phenotype_expressed_values` - The parameter values to evaluate. Length matches
+    ///   the number of ranges provided to [`setup_world`](crate::setup_world). Values are
+    ///   guaranteed to be within the bounds specified by those ranges.
+    ///
+    /// # Returns
+    ///
+    /// The fitness score to minimize. Lower values indicate better solutions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hill_descent_lib::SingleValuedFunction;
+    ///
+    /// #[derive(Debug)]
+    /// struct Distance;
+    ///
+    /// impl SingleValuedFunction for Distance {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         // Euclidean distance from origin
+    ///         params.iter().map(|x| x * x).sum::<f64>().sqrt()
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// # Thread Safety
+    ///
+    /// This method must be thread-safe as it's called concurrently. Avoid mutable
+    /// state or use appropriate synchronization primitives.
     fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64;
 
     /// Returns the theoretical minimum value (floor) of this function.
