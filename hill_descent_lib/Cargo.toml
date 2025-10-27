@@ -2,6 +2,13 @@
 name = "hill_descent_lib"
 version = "0.1.0"
 edition = "2024"
+authors = ["Mick Caine <mick.caine@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Genetic algorithm library for n-dimensional optimization problems"
+repository = "https://github.com/cainem/hill_descent"
+# readme = "README.md"  # Will be added in Stage 3
+keywords = ["optimization", "genetic-algorithm", "hill-descent", "evolution", "fitness"]
+categories = ["algorithms", "science"]
 
 [dependencies]
 xxhash-rust = { workspace = true }
