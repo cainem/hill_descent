@@ -513,4 +513,278 @@ mod test_update_carrying_capacities {
         assert!(cap2 >= cap3); // Better score gets more capacity
         assert_eq!(cap1 + cap2 + cap3, population_size); // All capacity allocated
     }
+
+    #[test]
+    fn given_regions_with_odd_population_when_update_capacities_then_total_equals_population() {
+        // Test with odd population size to ensure proper remainder distribution
+        let population_size = 97;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(5, population_size);
+
+        for i in 1..=5 {
+            let key = vec![i];
+            regions_struct.insert_region(key, setup_region_with_min_score(Some(10.0 * i as f64)));
+        }
+
+        regions_struct.update_carrying_capacities();
+
+        let mut total_capacity = 0;
+        for i in 1..=5 {
+            let key = vec![i];
+            total_capacity += regions_struct
+                .get_region(&key)
+                .unwrap()
+                .carrying_capacity()
+                .unwrap();
+        }
+
+        assert_eq!(total_capacity, population_size);
+    }
+
+    #[test]
+    fn given_large_number_of_regions_when_update_capacities_then_all_regions_get_capacity() {
+        let population_size = 1000;
+        let num_regions = 50;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(num_regions, population_size);
+
+        for i in 1..=num_regions {
+            let key = vec![i];
+            regions_struct.insert_region(key, setup_region_with_min_score(Some((i * 2) as f64)));
+        }
+
+        regions_struct.update_carrying_capacities();
+
+        let mut total_capacity = 0;
+        let mut regions_with_capacity = 0;
+        for i in 1..=num_regions {
+            let key = vec![i];
+            let capacity = regions_struct
+                .get_region(&key)
+                .unwrap()
+                .carrying_capacity()
+                .unwrap();
+            total_capacity += capacity;
+            if capacity > 0 {
+                regions_with_capacity += 1;
+            }
+        }
+
+        assert_eq!(total_capacity, population_size);
+        assert!(regions_with_capacity > 0);
+    }
+
+    #[test]
+    fn given_two_regions_with_zero_scores_when_update_capacities_then_split_equally() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
+
+        let key1 = vec![1];
+        let key2 = vec![2];
+
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
+        regions_struct.insert_region(key2.clone(), setup_region_with_min_score(Some(0.0)));
+
+        regions_struct.update_carrying_capacities();
+
+        let cap1 = regions_struct
+            .get_region(&key1)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap2 = regions_struct
+            .get_region(&key2)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+
+        // Should split evenly
+        assert_eq!(cap1 + cap2, population_size);
+        assert_eq!(cap1, 50);
+        assert_eq!(cap2, 50);
+    }
+
+    #[test]
+    fn given_regions_with_very_close_scores_when_update_capacities_then_similar_capacity() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
+
+        let key1 = vec![1];
+        let key2 = vec![2];
+        let key3 = vec![3];
+
+        // Very similar scores
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(10.0)));
+        regions_struct.insert_region(key2.clone(), setup_region_with_min_score(Some(10.01)));
+        regions_struct.insert_region(key3.clone(), setup_region_with_min_score(Some(10.02)));
+
+        regions_struct.update_carrying_capacities();
+
+        let cap1 = regions_struct
+            .get_region(&key1)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap2 = regions_struct
+            .get_region(&key2)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap3 = regions_struct
+            .get_region(&key3)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+
+        // All should be very close
+        assert!((cap1 as i32 - cap2 as i32).abs() <= 1);
+        assert!((cap2 as i32 - cap3 as i32).abs() <= 1);
+        assert_eq!(cap1 + cap2 + cap3, population_size);
+    }
+
+    #[test]
+    fn given_region_with_extremely_high_score_when_update_capacities_then_gets_minimal_capacity() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
+
+        let key_low = vec![1];
+        let key_high = vec![2];
+
+        regions_struct.insert_region(key_low.clone(), setup_region_with_min_score(Some(1.0)));
+        regions_struct.insert_region(key_high.clone(), setup_region_with_min_score(Some(1000.0)));
+
+        regions_struct.update_carrying_capacities();
+
+        let cap_low = regions_struct
+            .get_region(&key_low)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap_high = regions_struct
+            .get_region(&key_high)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+
+        // Low score should get almost all capacity
+        assert!(cap_low > cap_high);
+        assert_eq!(cap_low + cap_high, population_size);
+    }
+
+    #[test]
+    fn given_single_infinite_among_many_finite_when_update_capacities_then_infinite_gets_all() {
+        let population_size = 200;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(10, population_size);
+
+        let key_infinite = vec![1];
+        // One region with infinite inverse fitness
+        regions_struct.insert_region(key_infinite.clone(), setup_region_with_min_score(Some(0.0)));
+
+        // Nine regions with finite scores
+        for i in 2..=10 {
+            let key = vec![i];
+            regions_struct.insert_region(key, setup_region_with_min_score(Some((i * 5) as f64)));
+        }
+
+        regions_struct.update_carrying_capacities();
+
+        // Infinite fitness region gets all capacity
+        assert_eq!(
+            regions_struct
+                .get_region(&key_infinite)
+                .unwrap()
+                .carrying_capacity(),
+            Some(population_size)
+        );
+
+        // All finite regions get zero
+        for i in 2..=10 {
+            let key = vec![i];
+            assert_eq!(
+                regions_struct.get_region(&key).unwrap().carrying_capacity(),
+                Some(0)
+            );
+        }
+    }
+
+    #[test]
+    fn given_uneven_split_with_remainder_when_update_capacities_then_remainder_distributed() {
+        let population_size = 103;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(5, population_size);
+
+        // Five regions with zero scores (infinite fitness)
+        for i in 1..=5 {
+            let key = vec![i];
+            regions_struct.insert_region(key, setup_region_with_min_score(Some(0.0)));
+        }
+
+        regions_struct.update_carrying_capacities();
+
+        let mut total = 0;
+        let mut capacities = Vec::new();
+        for i in 1..=5 {
+            let key = vec![i];
+            let cap = regions_struct
+                .get_region(&key)
+                .unwrap()
+                .carrying_capacity()
+                .unwrap();
+            total += cap;
+            capacities.push(cap);
+        }
+
+        // 103 / 5 = 20 remainder 3
+        // Three regions should get 21, two should get 20
+        assert_eq!(total, population_size);
+        assert_eq!(capacities.iter().filter(|&&c| c == 21).count(), 3);
+        assert_eq!(capacities.iter().filter(|&&c| c == 20).count(), 2);
+    }
+
+    #[test]
+    fn given_mixed_none_and_positive_scores_when_update_capacities_then_none_scores_get_zero() {
+        let population_size = 100;
+        let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
+
+        let key1 = vec![1];
+        let key2 = vec![2];
+        let key3 = vec![3];
+        let key4 = vec![4];
+
+        regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(5.0)));
+        regions_struct.insert_region(key2.clone(), setup_region_with_min_score(None));
+        regions_struct.insert_region(key3.clone(), setup_region_with_min_score(Some(10.0)));
+        regions_struct.insert_region(key4.clone(), setup_region_with_min_score(None));
+
+        regions_struct.update_carrying_capacities();
+
+        // Regions with scores should split capacity
+        let cap1 = regions_struct
+            .get_region(&key1)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+        let cap3 = regions_struct
+            .get_region(&key3)
+            .unwrap()
+            .carrying_capacity()
+            .unwrap();
+
+        assert!(cap1 > 0);
+        assert!(cap3 > 0);
+        assert_eq!(cap1 + cap3, population_size);
+
+        // Regions without scores get zero
+        assert_eq!(
+            regions_struct
+                .get_region(&key2)
+                .unwrap()
+                .carrying_capacity(),
+            Some(0)
+        );
+        assert_eq!(
+            regions_struct
+                .get_region(&key4)
+                .unwrap()
+                .carrying_capacity(),
+            Some(0)
+        );
+    }
 }

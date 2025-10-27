@@ -146,4 +146,147 @@ mod tests {
         assert!(parsed.get("organisms").is_some());
         assert!(parsed.get("regions").is_some());
     }
+
+    #[test]
+    fn given_world_when_get_state_then_json_contains_correct_dimension_data() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0, -5.0..=5.0];
+        let gc = GlobalConstants::new(5, 2);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let dimensions = parsed.get("dimensions").unwrap().as_array().unwrap();
+        assert_eq!(dimensions.len(), 2);
+
+        // Check first dimension - bounds may have been adjusted
+        let dim0 = &dimensions[0];
+        assert!(dim0.get("range").is_some());
+        assert!(dim0.get("number_of_doublings").is_some());
+        assert_eq!(
+            dim0.get("number_of_doublings").unwrap().as_u64().unwrap(),
+            0
+        );
+
+        // Check second dimension - bounds may have been adjusted
+        let dim1 = &dimensions[1];
+        assert!(dim1.get("range").is_some());
+        assert!(dim1.get("number_of_doublings").is_some());
+    }
+
+    #[test]
+    fn given_empty_world_when_get_state_then_json_is_still_valid() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(1, 1); // At least 1 organism required
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        assert!(parsed.get("dimensions").is_some());
+        assert!(parsed.get("organisms").is_some());
+        assert!(parsed.get("regions").is_some());
+
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        assert_eq!(organisms.len(), 1);
+    }
+
+    #[test]
+    fn given_world_when_get_state_then_json_contains_organism_data() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(3, 2);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        assert_eq!(organisms.len(), 3);
+
+        // Check that each organism has expected fields
+        for org in organisms {
+            assert!(org.get("region_key").is_some());
+            assert!(org.get("age").is_some());
+            assert!(org.get("score").is_some());
+            assert!(org.get("is_dead").is_some());
+            assert!(org.get("phenotype").is_some());
+
+            let phenotype = org.get("phenotype").unwrap();
+            assert!(phenotype.get("expressed_values").is_some());
+            let expressed_values = phenotype
+                .get("expressed_values")
+                .unwrap()
+                .as_array()
+                .unwrap();
+            assert!(!expressed_values.is_empty());
+        }
+    }
+
+    #[test]
+    fn given_world_when_get_state_then_json_contains_region_data() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 4);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let regions = parsed.get("regions").unwrap().as_array().unwrap();
+        assert!(!regions.is_empty());
+
+        // Check that each region has expected fields
+        for region in regions {
+            assert!(region.get("key").is_some());
+            assert!(region.get("min_score").is_some());
+            assert!(region.get("carrying_capacity").is_some());
+            assert!(region.get("organism_count").is_some());
+
+            let key = region.get("key").unwrap().as_array().unwrap();
+            assert!(!key.is_empty());
+        }
+    }
+
+    #[test]
+    fn given_minimal_world_when_get_state_then_json_is_still_valid() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(1, 1); // Minimum population of 1
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        assert!(parsed.get("dimensions").is_some());
+        assert!(parsed.get("organisms").is_some());
+        assert!(parsed.get("regions").is_some());
+
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        assert_eq!(organisms.len(), 1);
+    }
+
+    #[test]
+    fn given_world_with_dead_organisms_when_get_state_then_dead_flag_is_serialized() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(5, 2);
+        let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
+        let world = super::super::World::new(&bounds, gc, world_fn);
+
+        // Mark first organism as dead
+        world.organisms.iter().next().unwrap().mark_dead();
+
+        let json = world.get_state();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let organisms = parsed.get("organisms").unwrap().as_array().unwrap();
+        let dead_count = organisms
+            .iter()
+            .filter(|o| o.get("is_dead").unwrap().as_bool().unwrap())
+            .count();
+
+        assert_eq!(dead_count, 1);
+    }
 }
