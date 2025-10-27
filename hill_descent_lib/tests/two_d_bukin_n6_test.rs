@@ -46,8 +46,8 @@ pub fn execute() {
 
     // Run for a number of epochs to allow the system to find the minimum.
     for i in 0..2000 {
-        // Objective-function mode: no known outputs
-        let at_resolution_limit = world.training_run(&[], None);
+        // Objective-function mode: pass function floor
+        let at_resolution_limit = world.training_run(&[], &[BukinN6.function_floor()]);
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();

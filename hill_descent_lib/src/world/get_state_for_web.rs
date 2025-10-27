@@ -322,7 +322,7 @@ mod tests {
         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
         let mut world = super::super::World::new(&bounds, gc, world_fn);
         // Manually run a round to populate regions and organisms with some data
-        world.training_run(&[], None);
+        world.training_run(&[], &[0.0]);
 
         let json = world.get_state_for_web();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();

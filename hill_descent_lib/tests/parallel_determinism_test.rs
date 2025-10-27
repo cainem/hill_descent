@@ -27,14 +27,14 @@ fn given_same_seed_when_multiple_runs_then_identical_results() {
     let mut world1 = setup_world(&bounds, constants1, Box::new(SimpleTestFunction));
 
     for _ in 0..10 {
-        world1.training_run(&[0.5], Some(&[1.0]));
+        world1.training_run(&[0.5], &[1.0]);
     }
 
     let constants2 = parameters::global_constants::GlobalConstants::new_with_seed(100, 10, seed);
     let mut world2 = setup_world(&bounds, constants2, Box::new(SimpleTestFunction));
 
     for _ in 0..10 {
-        world2.training_run(&[0.5], Some(&[1.0]));
+        world2.training_run(&[0.5], &[1.0]);
     }
 
     assert_eq!(get_organism_count(&world1), get_organism_count(&world2));
@@ -48,13 +48,13 @@ fn given_different_seeds_when_run_then_different_results() {
     let constants1 = parameters::global_constants::GlobalConstants::new_with_seed(100, 10, 42);
     let mut world1 = setup_world(&bounds, constants1, Box::new(SimpleTestFunction));
     for _ in 0..10 {
-        world1.training_run(&[0.5], Some(&[1.0]));
+        world1.training_run(&[0.5], &[1.0]);
     }
 
     let constants2 = parameters::global_constants::GlobalConstants::new_with_seed(100, 10, 123);
     let mut world2 = setup_world(&bounds, constants2, Box::new(SimpleTestFunction));
     for _ in 0..10 {
-        world2.training_run(&[0.5], Some(&[1.0]));
+        world2.training_run(&[0.5], &[1.0]);
     }
 
     // With different seeds, organism counts may differ due to different random mutations
@@ -74,7 +74,7 @@ fn given_parallel_execution_when_same_seed_then_deterministic() {
         let constants = parameters::global_constants::GlobalConstants::new_with_seed(500, 20, seed);
         let mut world = setup_world(&bounds, constants, Box::new(SimpleTestFunction));
         for _ in 0..20 {
-            world.training_run(&[0.0], Some(&[1.0]));
+            world.training_run(&[0.0], &[1.0]);
         }
         results.push((get_organism_count(&world), world.get_best_score()));
     }

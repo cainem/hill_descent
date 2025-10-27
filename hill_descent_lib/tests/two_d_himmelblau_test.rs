@@ -52,8 +52,8 @@ pub fn execute() {
         //     hill_descent_lib::init_tracing();
         // }
 
-        // Objective-function mode: no known outputs
-        let at_resolution_limit = world.training_run(&[], None);
+        // Objective-function mode: pass function floor
+        let at_resolution_limit = world.training_run(&[], &[Himmelblau.function_floor()]);
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();

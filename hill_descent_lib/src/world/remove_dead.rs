@@ -131,4 +131,73 @@ mod tests {
         assert_eq!(region.organism_count(), 1);
         assert!(Arc::ptr_eq(&region.organisms()[0], &live));
     }
+
+    #[test]
+    fn given_organisms_with_mixed_death_states_when_remove_dead_then_removes_only_dead_from_all_regions()
+     {
+        let gc = GlobalConstants::new(30, 10);
+        let mut world = World::new(&default_bounds(), gc, Box::new(DummyFn));
+
+        // Mark some organisms as dead - note organisms are Arc cloned between main list and regions
+        let mut dead_count = 0;
+        for (i, o) in world.organisms.iter().enumerate() {
+            if i % 3 == 0 {
+                o.mark_dead();
+                dead_count += 1;
+            }
+        }
+
+        world.remove_dead();
+
+        // Verify dead organisms removed from main list
+        assert_eq!(world.organisms.len(), 30 - dead_count);
+        assert!(world.organisms.iter().all(|o| !o.is_dead()));
+
+        // Verify all regions only contain live organisms
+        for region in world.regions.iter_region_values() {
+            assert!(region.organisms().iter().all(|o| !o.is_dead()));
+        }
+    }
+
+    #[test]
+    fn given_entire_region_dead_when_remove_dead_then_region_is_removed() {
+        let gc = GlobalConstants::new(30, 10);
+        let mut world = World::new(&default_bounds(), gc, Box::new(DummyFn));
+
+        let initial_region_count = world.regions.len();
+
+        // Find a region and mark all its organisms as dead
+        if let Some(region_key) = world.regions.iter_region_keys().next().cloned() {
+            if let Some(region) = world.regions.get_region(&region_key) {
+                for o in region.organisms() {
+                    o.mark_dead();
+                }
+            }
+        }
+
+        world.remove_dead();
+
+        // Verify at least one region was removed (the one we emptied)
+        assert!(world.regions.len() < initial_region_count);
+    }
+
+    #[test]
+    fn given_empty_organisms_collection_when_retain_live_then_remains_empty() {
+        let mut organisms = Organisms::new_empty();
+        organisms.retain_live();
+        assert_eq!(organisms.len(), 0);
+        assert!(organisms.is_empty());
+    }
+
+    #[test]
+    fn given_all_live_organisms_when_retain_live_then_all_remain() {
+        let phenotype = Arc::new(Phenotype::new_for_test(default_sys_params()));
+        let mut organisms = Organisms::new_from_organisms(vec![
+            Organism::new(Arc::clone(&phenotype), 0, (None, None)),
+            Organism::new(Arc::clone(&phenotype), 0, (None, None)),
+            Organism::new(Arc::clone(&phenotype), 0, (None, None)),
+        ]);
+        organisms.retain_live();
+        assert_eq!(organisms.len(), 3);
+    }
 }

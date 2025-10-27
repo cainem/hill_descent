@@ -30,6 +30,10 @@ impl SingleValuedFunction for Quadratic {
 
         score
     }
+
+    fn function_floor(&self) -> f64 {
+        1.0 // Minimum value of 2(x+13)^2 + 1 is 1.0
+    }
 }
 
 #[test]
@@ -44,8 +48,8 @@ pub fn execute() {
 
     for i in 0..1200 {
         dbg!(i);
-        // Objective-function mode: no known outputs
-        dbg!(world.training_run(&[], None));
+        // Objective-function mode: pass function floor
+        dbg!(world.training_run(&[], &[Quadratic.function_floor()]));
         println!("{}\n\n", world.get_state());
     }
 

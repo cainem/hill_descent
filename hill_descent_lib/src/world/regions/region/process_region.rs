@@ -11,7 +11,7 @@ impl Region {
         &mut self,
         world_function: &dyn WorldFunction,
         inputs: &[f64],
-        known_outputs: Option<&[f64]>,
+        known_outputs: &[f64],
         region_seed: u64,
     ) -> Vec<Organism> {
         // 1. Fitness evaluation
@@ -96,7 +96,7 @@ mod tests {
             region.add_organism(create_test_organism(i));
         }
 
-        let offspring = region.process_region_lifecycle(&MockFunction, &[], Some(&[1.0]), 12345);
+        let offspring = region.process_region_lifecycle(&MockFunction, &[], &[1.0], 12345);
 
         for org in region.organisms() {
             assert!(org.score().is_some());
@@ -112,7 +112,7 @@ mod tests {
             region.add_organism(create_test_organism(i));
         }
 
-        region.process_region_lifecycle(&MockFunction, &[], Some(&[1.0]), 12345);
+        region.process_region_lifecycle(&MockFunction, &[], &[1.0], 12345);
         assert_eq!(region.organism_count(), 3);
     }
 
@@ -128,8 +128,8 @@ mod tests {
             region2.add_organism(create_test_organism(i));
         }
 
-        let offspring1 = region1.process_region_lifecycle(&MockFunction, &[], Some(&[1.0]), 12345);
-        let offspring2 = region2.process_region_lifecycle(&MockFunction, &[], Some(&[1.0]), 12345);
+        let offspring1 = region1.process_region_lifecycle(&MockFunction, &[], &[1.0], 12345);
+        let offspring2 = region2.process_region_lifecycle(&MockFunction, &[], &[1.0], 12345);
         assert_eq!(offspring1.len(), offspring2.len());
     }
 }

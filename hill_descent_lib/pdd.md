@@ -18,8 +18,8 @@ Where:
 
 **2.2. Fitness Function:** The fitness function measures the "goodness" of a set of parameters $(x_1, ..., x_n)$ by comparing the produced outputs $(R_1, ..., R_p)$ to a set of known target outputs $(A_1, ..., A_p)$ for the given `inputs`. The goal is to minimize this fitness value.  
 
-The fitness function is defined as:  
-$fitness(inputs, x_1, x_2, ..., x_n) = \sum_{i=1}^{p} (A_i - R_i)^2$  
+The fitness function is defined as the Euclidean distance between the outputs and target outputs:  
+$fitness(inputs, x_1, x_2, ..., x_n) = \sqrt{\sum_{i=1}^{p} (A_i - R_i)^2}$  
 
 Where:  
 * $(A_1, ..., A_p)$: The known target outputs for the given `inputs`.  

@@ -37,7 +37,7 @@ mod tests {
     struct MockFn;
     impl WorldFunction for MockFn {
         fn run(&self, _p: &[f64], _v: &[f64]) -> Vec<f64> {
-            vec![0.5]
+            vec![1.5] // Returns value above floor of 1.0
         }
     }
 
@@ -49,7 +49,7 @@ mod tests {
 
         // Single-example dataset
         let inputs = [vec![1.0]];
-        let outputs = [vec![1.0]];
+        let outputs = [vec![1.0]]; // Floor value
         let input_refs: Vec<&[f64]> = inputs.iter().map(|v| v.as_slice()).collect();
         let output_refs: Vec<&[f64]> = outputs.iter().map(|v| v.as_slice()).collect();
 
