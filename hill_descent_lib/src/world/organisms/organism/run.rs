@@ -27,8 +27,8 @@ impl Organism {
     /// - The computed fitness score is non-finite (NaN or Infinity)
     pub fn run(&self, function: &dyn WorldFunction, inputs: &[f64], known_outputs: &[f64]) {
         // Validate known_outputs
-        debug_assert!(!known_outputs.is_empty(), "known_outputs must not be empty");
-        debug_assert!(
+        assert!(!known_outputs.is_empty(), "known_outputs must not be empty");
+        assert!(
             known_outputs.iter().all(|&x| x.is_finite()),
             "known_outputs must only contain finite numbers"
         );
@@ -47,8 +47,12 @@ impl Organism {
             );
         }
 
-        // Validate that outputs are not below their corresponding floors
+        // Validate that outputs are finite and not below their corresponding floors
         for (i, (&output, &floor)) in outputs.iter().zip(known_outputs.iter()).enumerate() {
+            assert!(
+                output.is_finite(),
+                "Output[{i}] = {output} is not finite (NaN or Infinity). This indicates a bug in the function implementation."
+            );
             assert!(
                 output >= floor,
                 "Output[{i}] = {output} is below the function floor {floor}. This indicates a bug in the function implementation."
@@ -235,23 +239,23 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Fitness score must be finite")]
+    #[should_panic(expected = "is not finite")]
     fn given_infinite_output_when_run_then_panics() {
         let organism = create_test_organism();
         let inputs = vec![1.0];
         let test_fn = TestFn {
-            output_values: vec![f64::INFINITY], // Infinite output produces infinite distance
+            output_values: vec![f64::INFINITY], // Infinite output
         };
         organism.run(&test_fn, &inputs, &[0.0]);
     }
 
     #[test]
-    #[should_panic(expected = "is below the function floor")]
+    #[should_panic(expected = "is not finite")]
     fn given_nan_output_when_run_then_panics() {
         let organism = create_test_organism();
         let inputs = vec![1.0];
         let test_fn = TestFn {
-            output_values: vec![f64::NAN], // NaN fails floor validation (NaN < x is always false)
+            output_values: vec![f64::NAN], // NaN output
         };
         organism.run(&test_fn, &inputs, &[0.0]);
     }

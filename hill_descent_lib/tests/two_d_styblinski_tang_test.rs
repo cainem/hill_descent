@@ -82,8 +82,8 @@ pub fn execute() {
 
     println!("Final best score: {best_score}");
 
-    // The goal is to get the score very close to the global minimum.
-    // Since the floor is now -78.33, the score represents the Euclidean distance from the floor.
+    // Since the floor is now -78.33, the score here represents how close the function output is to the global minimum (floor) value.
+    // A score close to 0 means the function output is close to the global minimum floor value of -78.33.
     // A tolerance of 0.01 should be achievable for this function.
     assert!(
         best_score < 0.01,
