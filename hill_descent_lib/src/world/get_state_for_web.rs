@@ -162,7 +162,22 @@ impl PhenotypeState {
 
 impl super::World {
     /// Returns a `String` containing a JSON representation of the current World state,
-    /// structured according to the `web_pdd.md` for web visualization.
+    /// structured for 2D web visualization.
+    /// 
+    /// **Note:** This method is specifically designed for 2D worlds and produces a format
+    /// optimized for web-based visualization. For general-purpose state serialization that
+    /// works with any number of dimensions, use [`get_state()`](Self::get_state) instead.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the world is not exactly 2-dimensional.
+    /// 
+    /// # Example
+    /// 
+    /// ```ignore
+    /// let world = setup_world(&two_d_params, constants, function);
+    /// let json = world.get_state_for_web(); // Works for 2D only
+    /// ```
     pub fn get_state_for_web(&self) -> String {
         let dims = self.dimensions.get_dimensions();
         // This function is specifically for a 2D visualization.

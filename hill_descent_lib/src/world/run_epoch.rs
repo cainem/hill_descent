@@ -6,6 +6,9 @@ impl super::World {
     /// This function processes each input/output pair in the training data once,
     /// updating the world state after each example. It validates the training
     /// data before processing.
+    /// 
+    /// This is an internal method used by `get_best_organism()`. External users
+    /// should use `training_run()` for single-step optimization.
     ///
     /// # Panics
     ///
@@ -20,7 +23,7 @@ impl super::World {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, training_data, known_outputs))
     )]
-    pub fn run_epoch(&mut self, training_data: &[&[f64]], known_outputs: &[&[f64]]) {
+    pub(crate) fn run_epoch(&mut self, training_data: &[&[f64]], known_outputs: &[&[f64]]) {
         validate_training_sets(training_data, known_outputs);
 
         for (input, output) in training_data.iter().zip(known_outputs) {

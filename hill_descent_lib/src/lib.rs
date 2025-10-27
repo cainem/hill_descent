@@ -4,11 +4,14 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-pub mod gamete;
-pub mod gen_hybrid_range;
-pub mod locus;
+// Internal modules - not exposed in public API
+mod gamete;
+mod gen_hybrid_range;
+mod locus;
+mod phenotype;
+
+// Public modules containing public types and traits
 pub mod parameters;
-pub mod phenotype;
 pub mod world;
 
 #[cfg(test)]
@@ -55,16 +58,16 @@ macro_rules! error {
     ($($arg:tt)*) => {{}};
 }
 
-pub const NUM_SYSTEM_PARAMETERS: usize = 7;
-pub const E0: f64 = f64::MIN_POSITIVE;
+// Internal constants used by the algorithm implementation
+pub(crate) const NUM_SYSTEM_PARAMETERS: usize = 7;
+pub(crate) const E0: f64 = f64::MIN_POSITIVE;
 
 use std::ops::RangeInclusive;
 
-pub use gamete::Gamete;
-pub use locus::Locus;
+// Re-export core public types for convenient imports
 pub use parameters::GlobalConstants;
-pub use phenotype::Phenotype;
 pub use world::World;
+pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
 
 // this will take a list of parameters and return a world
