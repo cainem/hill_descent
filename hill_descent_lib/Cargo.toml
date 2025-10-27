@@ -6,7 +6,7 @@ authors = ["Mick Caine <mick.caine@gmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "Genetic algorithm library for n-dimensional optimization problems"
 repository = "https://github.com/cainem/hill_descent"
-# readme = "README.md"  # Will be added in Stage 3
+readme = "README.md"
 keywords = ["optimization", "genetic-algorithm", "hill-descent", "evolution", "fitness"]
 categories = ["algorithms", "science"]
 
