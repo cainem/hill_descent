@@ -6,7 +6,7 @@ impl super::World {
     /// This function processes each input/output pair in the training data once,
     /// updating the world state after each example. It validates the training
     /// data before processing.
-    /// 
+    ///
     /// This is an internal method used by `get_best_organism()`. External users
     /// should use `training_run()` for single-step optimization.
     ///

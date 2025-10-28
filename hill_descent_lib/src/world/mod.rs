@@ -37,8 +37,8 @@
 use crate::parameters::global_constants::GlobalConstants;
 use crate::world::dimensions::Dimensions;
 use organisms::Organisms;
-use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rand::SeedableRng;
 use regions::Regions; // Required for StdRng::from_seed
 use std::ops::RangeInclusive;
 

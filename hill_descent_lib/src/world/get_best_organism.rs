@@ -1,4 +1,4 @@
-use crate::world::{World, organisms::Organism};
+use crate::world::{organisms::Organism, World};
 use std::sync::Arc;
 
 impl World {
