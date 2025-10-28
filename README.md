@@ -179,7 +179,7 @@ The algorithm excels at:
 ## Performance Characteristics
 
 | Dimensions | Population | Regions | Typical Epochs |
-|------------|------------|---------|----------------|
+| ---------- | ---------- | ------- | -------------- |
 | 2D         | 200        | 20      | 100-500        |
 | 5D         | 400        | 40      | 500-1000       |
 | 10D        | 800        | 80      | 1000-2000      |

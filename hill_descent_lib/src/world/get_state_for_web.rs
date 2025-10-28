@@ -161,22 +161,15 @@ impl PhenotypeState {
 }
 
 impl super::World {
-    /// Returns a `String` containing a JSON representation of the current World state,
-    /// structured for 2D web visualization.
-    ///
-    /// **Note:** This method is specifically designed for 2D worlds and produces a format
-    /// optimized for web-based visualization. For general-purpose state serialization that
-    /// works with any number of dimensions, use [`get_state()`](Self::get_state) instead.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the world is not exactly 2-dimensional.
-    ///
     /// Returns a JSON representation optimized for 2D web visualization.
     ///
     /// This is a specialized version of [`get_state`](super::World::get_state) designed for
     /// the `hill_descent_server` web interface. It formats data specifically for
     /// 2D visualizations and includes additional metadata for rendering.
+    ///
+    /// **Note:** This method is specifically designed for 2D worlds and produces a format
+    /// optimized for web-based visualization. For general-purpose state serialization that
+    /// works with any number of dimensions, use [`get_state()`](Self::get_state) instead.
     ///
     /// **Important**: This method only works with 2-dimensional optimization problems
     /// and will panic if called on worlds with more or fewer than 2 dimensions.
@@ -276,6 +269,11 @@ impl super::World {
     /// }
     /// ```
     ///
+    /// # Performance
+    ///
+    /// Similar to [`get_state`](super::World::get_state), this is O(n) for n organisms.
+    /// The additional filtering and 2D-specific formatting has minimal overhead.
+    ///
     /// # Panics
     ///
     /// Panics if the world is not 2-dimensional:
@@ -298,23 +296,11 @@ impl super::World {
     /// world.get_state_for_web(); // PANICS: not 2D
     /// ```
     ///
-    /// # Performance
-    ///
-    /// Similar to [`get_state`](super::World::get_state), this is O(n) for n organisms.
-    /// The additional filtering and 2D-specific formatting has minimal overhead.
-    ///
     /// # See Also
     ///
     /// - [`get_state`](super::World::get_state) - Full state for n-dimensional problems
     /// - `hill_descent_server` - Web visualization server using this method
     /// - `web_pdd.md` - Documentation of the web visualization contract
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let world = setup_world(&two_d_params, constants, function);
-    /// let json = world.get_state_for_web(); // Works for 2D only
-    /// ```
     pub fn get_state_for_web(&self) -> String {
         let dims = self.dimensions.get_dimensions();
         // This function is specifically for a 2D visualization.
