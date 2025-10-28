@@ -1,2 +1,5 @@
 /target
 run_stats
+
+# Doc test output files
+state_epoch_*.json

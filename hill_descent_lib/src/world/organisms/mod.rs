@@ -59,7 +59,7 @@ impl Organisms {
         }
     }
 
-    /// Creates a new `Organisms` collection from a vector of Arc<Organism>.
+    /// Creates a new `Organisms` collection from a vector of `Arc<Organism>`.
     pub fn new_from_arc_vec(organisms: Vec<Arc<Organism>>) -> Self {
         Self { organisms }
     }

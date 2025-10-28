@@ -83,9 +83,164 @@ impl RegionState {
 }
 
 impl super::World {
-    /// Returns a `String` containing a JSON representation of the current World state.
+    /// Returns a JSON representation of the complete world state.
     ///
-    /// Only the `dimensions`, `organisms` and `regions` fields are represented, as requested.
+    /// This method serializes the entire state of the optimization system including
+    /// all organisms, regions, and dimensions. Useful for:
+    ///
+    /// - **Debugging**: Inspect internal algorithm state
+    /// - **Visualization**: Feed to external tools for graphical analysis
+    /// - **Checkpointing**: Save state for later resumption (though not directly supported)
+    /// - **Analysis**: Detailed post-processing of optimization behavior
+    ///
+    /// # Returns
+    ///
+    /// A JSON string containing:
+    ///
+    /// - **dimensions**: Parameter ranges and subdivision levels
+    /// - **organisms**: Complete population with parameters, scores, ages, regions
+    /// - **regions**: Spatial partitions with capacity and statistics
+    ///
+    /// # JSON Structure
+    ///
+    /// ```json
+    /// {
+    ///   "dimensions": [
+    ///     {"range": [-10.0, 10.0], "number_of_doublings": 3},
+    ///     ...
+    ///   ],
+    ///   "organisms": [
+    ///     {
+    ///       "region_key": [0, 1],
+    ///       "age": 5,
+    ///       "score": 0.0123,
+    ///       "is_dead": false,
+    ///       "phenotype": {"expressed_values": [1.23, 4.56]}
+    ///     },
+    ///     ...
+    ///   ],
+    ///   "regions": [
+    ///     {
+    ///       "key": [0, 0],
+    ///       "min_score": 0.01,
+    ///       "carrying_capacity": 10,
+    ///       "organism_count": 8
+    ///     },
+    ///     ...
+    ///   ]
+    /// }
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// ## Basic State Inspection
+    ///
+    /// ```
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Simple;
+    ///
+    /// impl SingleValuedFunction for Simple {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         params[0].powi(2)
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-10.0..=10.0];
+    /// let constants = GlobalConstants::new(20, 5);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Simple));
+    ///
+    /// world.training_run(&[], &[0.0]);
+    ///
+    /// let state_json = world.get_state();
+    ///
+    /// // Parse for analysis
+    /// let parsed: serde_json::Value = serde_json::from_str(&state_json).unwrap();
+    /// let organism_count = parsed["organisms"].as_array().unwrap().len();
+    /// // Population size may vary slightly due to deaths
+    /// assert!(organism_count >= 15 && organism_count <= 20);
+    /// ```
+    ///
+    /// ## Progress Monitoring
+    ///
+    /// ```no_run
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Sphere;
+    ///
+    /// impl SingleValuedFunction for Sphere {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         params.iter().map(|x| x * x).sum()
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-5.0..=5.0; 2];
+    /// let constants = GlobalConstants::new(100, 10);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
+    ///
+    /// for epoch in 0..100 {
+    ///     world.training_run(&[], &[0.0]);
+    ///     
+    ///     if epoch % 25 == 0 {
+    ///         let state = world.get_state();
+    ///         // Save or analyze state at checkpoints
+    ///         std::fs::write(
+    ///             format!("state_epoch_{:03}.json", epoch),
+    ///             state
+    ///         ).ok();
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// ## Extract Specific Information
+    ///
+    /// ```
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Test;
+    ///
+    /// impl SingleValuedFunction for Test {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         params.iter().map(|x| x.powi(2)).sum()
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-1.0..=1.0; 2];
+    /// let constants = GlobalConstants::new(50, 5);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Test));
+    ///
+    /// world.training_run(&[], &[0.0]);
+    ///
+    /// let state_json = world.get_state();
+    /// let state: serde_json::Value = serde_json::from_str(&state_json).unwrap();
+    ///
+    /// // Analyze region distribution
+    /// let region_count = state["regions"].as_array().unwrap().len();
+    /// println!("Active regions: {}", region_count);
+    ///
+    /// // Check population ages
+    /// let avg_age: f64 = state["organisms"]
+    ///     .as_array().unwrap()
+    ///     .iter()
+    ///     .map(|o| o["age"].as_u64().unwrap() as f64)
+    ///     .sum::<f64>() / 50.0;
+    /// println!("Average age: {:.1}", avg_age);
+    /// ```
+    ///
+    /// # Performance
+    ///
+    /// Serialization is O(n) where n is the population size. For populations of thousands,
+    /// this typically takes milliseconds. Avoid calling every epoch if performance is critical;
+    /// instead, call periodically or only when needed.
+    ///
+    /// # See Also
+    ///
+    /// - [`get_state_for_web`](super::World::get_state_for_web) - Simplified version for web visualization
+    /// - [`get_best_score`](super::World::get_best_score) - Quick fitness check without full state
+    /// - [`get_best_organism`](super::World::get_best_organism) - Extract just the best solution
     pub fn get_state(&self) -> String {
         let dimensions: Vec<DimensionState> = self
             .dimensions

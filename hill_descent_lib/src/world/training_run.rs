@@ -5,23 +5,156 @@ impl World {
         feature = "enable-tracing",
         tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
     )]
-    /// Runs a single training iteration.
+    /// Runs a single epoch of genetic algorithm evolution.
     ///
-    /// For `SingleValuedFunction` (objective-function mode), pass a single-element slice
-    /// containing the function's floor value (minimum): `&[floor]`.
+    /// Each call to `training_run` performs one complete cycle of:
+    /// 1. Fitness evaluation of all organisms
+    /// 2. Regional selection and reproduction
+    /// 3. Mutation and crossover operations
+    /// 4. Region boundary adaptation
     ///
-    /// For supervised learning, pass the target output values: `&[target1, target2, ...]`.
+    /// Call this method repeatedly (typically hundreds to thousands of times)
+    /// to evolve toward optimal parameter values.
+    ///
+    /// # Parameters for SingleValuedFunction (Most Common)
+    ///
+    /// For standard optimization problems using [`SingleValuedFunction`](crate::SingleValuedFunction):
+    ///
+    /// * `inputs` - Pass an empty slice `&[]`
+    /// * `known_outputs` - Pass a single-element slice containing your function's floor
+    ///   (minimum possible value): `&[function.function_floor()]`
+    ///
+    /// # Parameters for WorldFunction (Advanced)
+    ///
+    /// For multi-output functions with external inputs:
+    ///
+    /// * `inputs` - External input data for function evaluation
+    /// * `known_outputs` - Target outputs for supervised learning or reference values
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the resolution limit has been reached (regions cannot be split
+    /// further meaningfully). This indicates the algorithm has maximally explored the
+    /// parameter space, though it doesn't guarantee the global minimum was found.
+    ///
+    /// Returns `false` during normal operation.
+    ///
+    /// # Examples
+    ///
+    /// ## Standard Optimization Loop
+    ///
+    /// ```
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Sphere;
+    ///
+    /// impl SingleValuedFunction for Sphere {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         params.iter().map(|x| x * x).sum()
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-10.0..=10.0; 2];
+    /// let constants = GlobalConstants::new(100, 10);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
+    ///
+    /// // Run 500 epochs
+    /// for epoch in 0..500 {
+    ///     let converged = world.training_run(&[], &[0.0]);  // Floor is 0.0 for sphere
+    ///     if converged {
+    ///         println!("Converged after {} epochs", epoch + 1);
+    ///         break;
+    ///     }
+    /// }
+    ///
+    /// println!("Best score: {}", world.get_best_score());
+    /// ```
+    ///
+    /// ## With Progress Monitoring
+    ///
+    /// ```
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct Rosenbrock;
+    ///
+    /// impl SingleValuedFunction for Rosenbrock {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         let x = params[0];
+    ///         let y = params[1];
+    ///         (1.0 - x).powi(2) + 100.0 * (y - x.powi(2)).powi(2)
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-5.0..=5.0; 2];
+    /// let constants = GlobalConstants::new(500, 50);
+    /// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
+    ///
+    /// for epoch in 0..1000 {
+    ///     world.training_run(&[], &[0.0]);
+    ///     
+    ///     if epoch % 100 == 0 {
+    ///         println!("Epoch {}: Best = {}", epoch, world.get_best_score());
+    ///     }
+    ///     
+    ///     if world.get_best_score() < 0.001 {
+    ///         break;
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// ## Function with Custom Floor
+    ///
+    /// ```no_run
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    ///
+    /// #[derive(Debug)]
+    /// struct ShiftedParabola;
+    ///
+    /// impl SingleValuedFunction for ShiftedParabola {
+    ///     fn single_run(&self, params: &[f64]) -> f64 {
+    ///         params[0].powi(2) - 5.0  // Minimum is -5.0 at x=0
+    ///     }
+    ///
+    ///     fn function_floor(&self) -> f64 {
+    ///         -5.0
+    ///     }
+    /// }
+    ///
+    /// let param_range = vec![-10.0..=10.0];
+    /// let constants = GlobalConstants::new(100, 10);
+    /// let mut world = setup_world(&param_range, constants, Box::new(ShiftedParabola));
+    ///
+    /// for _ in 0..500 {
+    ///     world.training_run(&[], &[ShiftedParabola.function_floor()]);
+    /// }
+    ///
+    /// // Should find value close to theoretical minimum
+    /// assert!(world.get_best_score() < -4.0);
+    /// ```
     ///
     /// # Panics
     ///
     /// This function will panic if:
-    /// - The known_outputs slice is empty
-    /// - Any known_outputs contain non-finite numbers (NaN or Infinity)
+    /// - `known_outputs` is empty
+    /// - Any value in `known_outputs` is NaN or infinite
     ///
-    /// # Returns
+    /// # Performance
     ///
-    /// Returns `true` if the resolution limit has been reached and no further
-    /// meaningful splits are possible, `false` otherwise.
+    /// Each epoch evaluates the fitness function once per organism (population_size times).
+    /// Evaluations run in parallel across available CPU cores for maximum throughput.
+    ///
+    /// Typical performance: 1000s-100000s of evaluations per second depending on:
+    /// - Function complexity
+    /// - Parameter dimensionality  
+    /// - CPU core count
+    ///
+    /// # See Also
+    ///
+    /// - [`get_best_score`](World::get_best_score) - Retrieve current best fitness
+    /// - [`get_best_organism`](World::get_best_organism) - Get optimal parameters found
+    /// - [`get_state`](World::get_state) - Full system state for analysis
     pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
         // Validate known_outputs
         assert!(!known_outputs.is_empty(), "known_outputs must not be empty");
