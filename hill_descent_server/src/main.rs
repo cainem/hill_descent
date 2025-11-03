@@ -2,8 +2,8 @@ use actix_cors::Cors;
 use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, web};
 use hill_descent_lib::{
-    GlobalConstants, TrainingData, setup_world, world::single_valued_function::SingleValuedFunction,
-    world::world_function::WorldFunction,
+    GlobalConstants, TrainingData, setup_world,
+    world::single_valued_function::SingleValuedFunction, world::world_function::WorldFunction,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, ops::RangeInclusive, sync::Mutex};

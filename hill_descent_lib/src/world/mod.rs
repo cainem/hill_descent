@@ -53,10 +53,8 @@ mod get_state_for_web;
 pub mod organisms;
 mod regions;
 mod remove_dead;
-mod run_epoch;
 pub mod single_valued_function;
 mod training_run;
-mod validate_training_sets;
 pub mod world_function;
 
 /// The main optimization container managing population evolution and fitness evaluation.

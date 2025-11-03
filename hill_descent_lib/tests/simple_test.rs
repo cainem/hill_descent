@@ -56,7 +56,9 @@ pub fn execute() {
         println!("{}\n\n", world.get_state());
     }
 
-    let best_organism = world.get_best_organism(&[&[]], &[&[]]);
+    let best_organism = world.get_best_organism(TrainingData::None {
+        floor_value: Quadratic.function_floor(),
+    });
 
     dbg!(best_organism.phenotype().expression_problem_values());
 }
