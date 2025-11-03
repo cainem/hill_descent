@@ -294,3 +294,156 @@ All reproduction is sexual. Organisms are paired using an "extreme pairing" stra
 
 **7.3. Hashing:** 
 * The XXH3 algorithm is used to generate 64-bit positive integer checksums for `LocusAdjustment` states.
+
+## 8. Public API and Usage Patterns
+
+The hill_descent_lib implementation provides a Rust API that abstracts the internal algorithm details described in this document. This section documents the key types and usage patterns.
+
+### 8.1. TrainingData Enum
+
+The `TrainingData` enum unifies the representation of different optimization scenarios:
+
+```rust
+pub enum TrainingData<'a> {
+    /// Standard single-valued function optimization
+    /// No external training data required
+    None { floor_value: f64 },
+    
+    /// Supervised learning with training examples
+    /// For functions requiring input/output pairs
+    Supervised {
+        inputs: &'a [Vec<f64>],
+        outputs: &'a [Vec<f64>],
+    },
+}
+```
+
+**8.1.1. TrainingData::None Pattern:**
+* Used for optimizing `SingleValuedFunction` implementations
+* Represents scenarios where no external data is needed (e.g., mathematical function minimization)
+* `floor_value`: The target minimum fitness value (typically 0.0)
+* Corresponds to Section 2.2 when optimizing inherent function properties
+
+**8.1.2. TrainingData::Supervised Pattern:**
+* Used for optimizing `WorldFunction` implementations requiring external data
+* Represents supervised learning scenarios (e.g., neural network training)
+* `inputs`: Training input samples
+* `outputs`: Expected output values for corresponding inputs
+* Corresponds to Section 2.2 with known target outputs $(A_1, ..., A_p)$
+* The fitness function internally compares function outputs to these targets
+
+### 8.2. Core API Methods
+
+**8.2.1. World::training_run()**
+
+Executes one evolutionary epoch (corresponds to one iteration of Section 5.2):
+
+```rust
+pub fn training_run(&mut self, data: TrainingData) -> bool
+```
+
+* Evaluates all organisms using the provided training data
+* Performs selection, reproduction, and region management
+* Returns `true` if spatial resolution limit reached, `false` otherwise
+* Typically called in a loop for multiple epochs
+
+**8.2.2. World::get_best_organism()**
+
+Extracts the best solution after training (corresponds to Section 5.3.2):
+
+```rust
+pub fn get_best_organism(&mut self, data: TrainingData) -> Arc<Organism>
+```
+
+* Re-evaluates population with provided training data
+* Returns organism with lowest fitness score
+* Extract parameters via `organism.phenotype().expression_problem_values()`
+
+**8.2.3. World::get_best_params()**
+
+Convenience method for parameter extraction:
+
+```rust
+pub fn get_best_params(&self) -> Vec<f64>
+```
+
+* Returns the problem parameters of the current best organism
+* Non-mutating (uses cached scores)
+* Excludes system parameters (mutation rates, max age)
+* Returns expressed values from phenotype (per Section 4.1.2)
+
+**8.2.4. World::get_best_score()**
+
+Query current optimization progress:
+
+```rust
+pub fn get_best_score(&self) -> f64
+```
+
+* Returns minimum fitness across all organisms
+* Returns `f64::MAX` if no organisms have been scored
+* Non-mutating query of cached fitness values
+
+### 8.3. Usage Pattern Examples
+
+**8.3.1. Standard Optimization (No External Data):**
+
+```rust
+use hill_descent_lib::{setup_world, TrainingData, GlobalConstants};
+
+let mut world = setup_world(&param_bounds, constants, Box::new(MyFunction));
+
+for _epoch in 0..100 {
+    world.training_run(TrainingData::None { floor_value: 0.0 });
+}
+
+let best_params = world.get_best_params();
+```
+
+**8.3.2. Supervised Learning (With Training Data):**
+
+```rust
+let train_inputs = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
+let train_outputs = vec![vec![5.0], vec![6.0]];
+
+for _epoch in 0..100 {
+    world.training_run(TrainingData::Supervised {
+        inputs: &train_inputs,
+        outputs: &train_outputs,
+    });
+}
+```
+
+### 8.4. Implementation Mapping
+
+The public API maps to internal algorithm components as follows:
+
+| API Concept | Internal PDD Section | Notes |
+|-------------|---------------------|-------|
+| `TrainingData::None` | Section 2.2 (single-valued) | Fitness = distance from floor |
+| `TrainingData::Supervised` | Section 2.2 (multi-valued) | Fitness = Euclidean distance |
+| `training_run()` | Section 5.2 (one round) | One evolutionary epoch |
+| `get_best_organism()` | Section 5.3.2 (solution extraction) | Best organism by fitness |
+| `World` | Section 3 (System Overview) | Contains population, regions |
+| `GlobalConstants` | Section 6.1 | System-wide configuration |
+| `SingleValuedFunction` | Section 2.1 (specialized) | No external inputs needed |
+| `WorldFunction` | Section 2.1 (general) | Accepts external inputs |
+
+### 8.5. API Design Rationale
+
+**8.5.1. TrainingData Enum vs Method Variants:**
+* Unified interface prevents API duplication
+* Type system enforces correct usage patterns
+* Lifetime parameters (`'a`) prevent data copying
+* Pattern matching makes intent explicit
+
+**8.5.2. Mutation vs Non-Mutation:**
+* `training_run()` and `get_best_organism()` are mutating (run epochs)
+* `get_best_score()` and `get_best_params()` are non-mutating (query state)
+* Clear separation between training and inspection operations
+
+**8.5.3. Internal Data Management:**
+* Training data is **not** stored in `World`
+* Avoids large memory copies
+* Users manage data lifetime
+* Supports streaming/batching patterns

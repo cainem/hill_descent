@@ -95,12 +95,12 @@ mod tests {
     #[test]
     fn given_valid_params_when_new_then_fields_set() {
         let p = Parameter::new(1.23);
-        let adj1 = LocusAdjustment::new(p.clone(), DirectionOfTravel::Add, false);
+        let adj1 = LocusAdjustment::new(p, DirectionOfTravel::Add, false);
         assert_eq!(adj1.adjustment_value(), &p);
         assert_eq!(adj1.direction_of_travel(), DirectionOfTravel::Add);
         assert!(!adj1.doubling_or_halving_flag());
         // deterministic checksum
-        let adj2 = LocusAdjustment::new(p.clone(), DirectionOfTravel::Add, false);
+        let adj2 = LocusAdjustment::new(p, DirectionOfTravel::Add, false);
         assert_eq!(adj1.checksum(), adj2.checksum());
     }
 
