@@ -77,6 +77,7 @@ mod phenotype;
 
 // Public modules containing public types and traits
 pub mod parameters;
+pub mod training_data;
 pub mod world;
 
 #[cfg(test)]
@@ -131,6 +132,7 @@ use std::ops::RangeInclusive;
 
 // Re-export core public types for convenient imports
 pub use parameters::GlobalConstants;
+pub use training_data::TrainingData;
 pub use world::World;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
