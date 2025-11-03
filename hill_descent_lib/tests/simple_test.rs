@@ -1,7 +1,8 @@
 use std::ops::RangeInclusive;
 
 use hill_descent_lib::{
-    parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    TrainingData, parameters::GlobalConstants, setup_world,
+    world::single_valued_function::SingleValuedFunction,
 };
 
 #[derive(Debug)]
@@ -48,8 +49,10 @@ pub fn execute() {
 
     for i in 0..1200 {
         dbg!(i);
-        // Objective-function mode: pass function floor
-        dbg!(world.training_run(&[], &[Quadratic.function_floor()]));
+        // Objective-function mode: use TrainingData::None with function floor
+        dbg!(world.training_run(TrainingData::None {
+            floor_value: Quadratic.function_floor()
+        }));
         println!("{}\n\n", world.get_state());
     }
 

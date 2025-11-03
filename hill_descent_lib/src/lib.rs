@@ -25,12 +25,13 @@
 //! }
 //!
 //! // Set up and run optimization
+//! use hill_descent_lib::TrainingData;
 //! let bounds = vec![-10.0..=10.0, -10.0..=10.0];
 //! let constants = GlobalConstants::new(100, 10);
 //! let mut world = setup_world(&bounds, constants, Box::new(Quadratic));
 //!
 //! for _ in 0..100 {
-//!     world.training_run(&[], &[0.0]);
+//!     world.training_run(TrainingData::None { floor_value: 0.0 });
 //! }
 //!
 //! println!("Best score: {}", world.get_best_score());

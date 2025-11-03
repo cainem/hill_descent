@@ -58,8 +58,9 @@
 ///     world.training_run(TrainingData::None { floor_value: 0.0 });
 /// }
 ///
-/// let best_params = world.get_best_params();
-/// println!("Optimized parameters: {:?}", best_params);
+/// // Extract best organism to get parameters (no additional training needed)
+/// let best_score = world.get_best_score();
+/// println!("Best score achieved: {:.6}", best_score);
 /// ```
 ///
 /// ## Large-Scale Optimization (Neural Network Weights)
@@ -69,6 +70,7 @@
 /// use std::sync::Arc;
 ///
 /// # // Mock training data structure
+/// # #[derive(Debug)]
 /// # struct TrainingSet { data: Vec<Vec<f64>>, labels: Vec<usize> }
 /// #
 /// /// Fitness function that evaluates neural network performance
@@ -88,25 +90,26 @@
 /// }
 ///
 /// # let training_data = Arc::new(TrainingSet { data: vec![], labels: vec![] });
-/// // Optimize 50,000 neural network weights
-/// let param_count = 50_000;
+/// // Optimize neural network weights (reduced for doctest)
+/// let param_count = 100;  // In practice, could be 50,000+
 /// let bounds = vec![-1.0..=1.0; param_count];
-/// let constants = GlobalConstants::new(500, 50);
+/// let constants = GlobalConstants::new(50, 5);
 ///
 /// let fitness = NetworkFitness { training_data };
 /// let mut world = setup_world(&bounds, constants, Box::new(fitness));
 ///
 /// // Training loop - no external data passed to training_run
-/// for generation in 0..1000 {
+/// for generation in 0..10 {
 ///     world.training_run(TrainingData::None { floor_value: 0.0 });
 ///     
-///     if generation % 100 == 0 {
+///     if generation % 5 == 0 {
 ///         println!("Generation {}: Loss = {:.6}", generation, world.get_best_score());
 ///     }
 /// }
 ///
-/// // Extract optimized weights
-/// let best_weights = world.get_best_params();
+/// // Extract optimized weights (no additional training needed)
+/// let best_score = world.get_best_score();
+/// println!("Final loss: {:.6}", best_score);
 /// ```
 ///
 /// ## Supervised Learning (Advanced)
@@ -117,27 +120,21 @@
 /// # #[derive(Debug)]
 /// # struct CustomFunction;
 /// # impl WorldFunction for CustomFunction {
-/// #     fn run(&self, params: &[f64], inputs: &[f64]) -> Vec<f64> {
-/// #         vec![0.0]
+/// #     fn run(&self, _params: &[f64], _inputs: &[f64]) -> Vec<f64> {
+/// #         vec![5.0]  // Returns value above floor
 /// #     }
 /// # }
 /// #
-/// let bounds = vec![-5.0..=5.0; 3];
-/// let constants = GlobalConstants::new(200, 20);
+/// let bounds = vec![-5.0..=5.0; 2];  // 2 parameters to optimize
+/// let constants = GlobalConstants::new(50, 5);  // Smaller for doctest
 /// let mut world = setup_world(&bounds, constants, Box::new(CustomFunction));
 ///
-/// // External training data
-/// let inputs = vec![
-///     vec![1.0, 2.0, 3.0],
-///     vec![4.0, 5.0, 6.0],
-/// ];
-/// let targets = vec![
-///     vec![10.0],
-///     vec![20.0],
-/// ];
+/// // External training data: 1 input value, expect 1 output value
+/// let inputs = vec![vec![1.0]];
+/// let targets = vec![vec![3.0]];
 ///
-/// // Train with external data
-/// for _ in 0..100 {
+/// // Train with external data (just a few iterations for the example)
+/// for _ in 0..3 {
 ///     world.training_run(TrainingData::Supervised {
 ///         inputs: &inputs,
 ///         outputs: &targets,

@@ -147,11 +147,12 @@ impl super::World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-10.0..=10.0];
     /// let constants = GlobalConstants::new(20, 5);
     /// let mut world = setup_world(&param_range, constants, Box::new(Simple));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     ///
     /// let state_json = world.get_state();
     ///
@@ -176,12 +177,13 @@ impl super::World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-5.0..=5.0; 2];
     /// let constants = GlobalConstants::new(100, 10);
     /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
     ///
     /// for epoch in 0..100 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     ///     
     ///     if epoch % 25 == 0 {
     ///         let state = world.get_state();
@@ -208,11 +210,12 @@ impl super::World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-1.0..=1.0; 2];
     /// let constants = GlobalConstants::new(50, 5);
     /// let mut world = setup_world(&param_range, constants, Box::new(Test));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     ///
     /// let state_json = world.get_state();
     /// let state: serde_json::Value = serde_json::from_str(&state_json).unwrap();

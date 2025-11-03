@@ -242,12 +242,13 @@ impl super::World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// // Must be 2D
     /// let param_range = vec![-5.0..=5.0, -5.0..=5.0];
     /// let constants = GlobalConstants::new(200, 20);
     /// let mut world = setup_world(&param_range, constants, Box::new(Himmelblau));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     ///
     /// // Get web-optimized JSON
     /// let json = world.get_state_for_web();
@@ -287,12 +288,13 @@ impl super::World {
     ///     fn single_run(&self, p: &[f64]) -> f64 { p.iter().sum() }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// // 3D world - will panic!
     /// let param_range = vec![-1.0..=1.0; 3];
     /// let constants = GlobalConstants::new(10, 2);
     /// let mut world = setup_world(&param_range, constants, Box::new(F));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     /// world.get_state_for_web(); // PANICS: not 2D
     /// ```
     ///
@@ -440,6 +442,7 @@ impl super::World {
 
 #[cfg(test)]
 mod tests {
+    use crate::TrainingData;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
@@ -460,7 +463,7 @@ mod tests {
         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
         let mut world = super::super::World::new(&bounds, gc, world_fn);
         // Manually run a round to populate regions and organisms with some data
-        world.training_run(&[], &[0.0]);
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         let json = world.get_state_for_web();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();

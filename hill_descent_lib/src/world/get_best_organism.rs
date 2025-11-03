@@ -44,13 +44,14 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-10.0..=10.0; 3];
     /// let constants = GlobalConstants::new(200, 20);
     /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
     ///
     /// // Run optimization
     /// for _ in 0..500 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
     /// // Extract best solution (with one final epoch)
@@ -80,12 +81,13 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-5.0..=5.0; 2];
     /// let constants = GlobalConstants::new(1000, 100);
     /// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
     ///
     /// for _ in 0..1000 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
     /// let best = world.get_best_organism(&[&[]], &[&[]]);
@@ -116,13 +118,14 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let dimensions = 10;
     /// let param_range = vec![-5.12..=5.12; dimensions];
     /// let constants = GlobalConstants::new(2000, 200);
     /// let mut world = setup_world(&param_range, constants, Box::new(HighDimension));
     ///
     /// for _ in 0..2000 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
     /// let best = world.get_best_organism(&[&[]], &[&[]]);

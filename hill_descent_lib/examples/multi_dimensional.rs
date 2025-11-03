@@ -8,7 +8,7 @@
 //! cargo run --example multi_dimensional
 //! ```
 
-use hill_descent_lib::{GlobalConstants, SingleValuedFunction, setup_world};
+use hill_descent_lib::{GlobalConstants, SingleValuedFunction, TrainingData, setup_world};
 use std::f64::consts::PI;
 
 /// Rastrigin function in n dimensions.
@@ -79,7 +79,7 @@ fn optimize_dimension(dimensions: usize, epochs: usize, population_size: usize) 
 
     let report_interval = epochs / 5;
     for epoch in 0..epochs {
-        world.training_run(&[], &[0.0]);
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         if (epoch + 1) % report_interval == 0 || epoch == 0 {
             let best_score = world.get_best_score();

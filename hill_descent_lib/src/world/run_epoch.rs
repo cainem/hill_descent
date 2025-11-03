@@ -1,3 +1,4 @@
+use crate::TrainingData;
 use crate::world::validate_training_sets::validate_training_sets;
 
 impl super::World {
@@ -26,8 +27,15 @@ impl super::World {
     pub(crate) fn run_epoch(&mut self, training_data: &[&[f64]], known_outputs: &[&[f64]]) {
         validate_training_sets(training_data, known_outputs);
 
+        // Process each training sample individually
         for (input, output) in training_data.iter().zip(known_outputs) {
-            self.training_run(input, output);
+            let input_vec = vec![input.to_vec()];
+            let output_vec = vec![output.to_vec()];
+
+            self.training_run(TrainingData::Supervised {
+                inputs: &input_vec,
+                outputs: &output_vec,
+            });
         }
     }
 }

@@ -2,7 +2,7 @@ use actix_cors::Cors;
 use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, web};
 use hill_descent_lib::{
-    GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    GlobalConstants, TrainingData, setup_world, world::single_valued_function::SingleValuedFunction,
     world::world_function::WorldFunction,
 };
 use serde::{Deserialize, Serialize};
@@ -320,7 +320,7 @@ async fn step_handler(app_state: web::Data<Mutex<AppState>>) -> Result<HttpRespo
     // Run to the new epoch
     let mut at_resolution_limit = false;
     for _ in 0..=current_epoch {
-        at_resolution_limit = world.training_run(&[], &[floor]);
+        at_resolution_limit = world.training_run(TrainingData::None { floor_value: floor });
     }
 
     let response_data = StateResponse {

@@ -24,12 +24,13 @@
 //!     }
 //! }
 //!
+//! use hill_descent_lib::TrainingData;
 //! let param_range = vec![-10.0..=10.0; 2];
 //! let constants = GlobalConstants::new(100, 10);
 //! let mut world = setup_world(&param_range, constants, Box::new(MyFunction));
 //!
 //! for _ in 0..100 {
-//!     world.training_run(&[], &[0.0]);
+//!     world.training_run(TrainingData::None { floor_value: 0.0 });
 //! }
 //! println!("Best score: {}", world.get_best_score());
 //! ```
@@ -90,13 +91,14 @@ pub mod world_function;
 ///     }
 /// }
 ///
+/// use hill_descent_lib::TrainingData;
 /// let param_range = vec![-5.0..=5.0; 3];  // 3D problem
 /// let constants = GlobalConstants::new(200, 20);
 /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
 ///
 /// // Run 100 epochs of evolution
 /// for _ in 0..100 {
-///     world.training_run(&[], &[0.0]);
+///     world.training_run(TrainingData::None { floor_value: 0.0 });
 /// }
 ///
 /// // Get results
@@ -120,6 +122,7 @@ pub mod world_function;
 ///     }
 /// }
 ///
+/// use hill_descent_lib::TrainingData;
 /// let param_range = vec![-5.0..=5.0; 2];
 /// let constants = GlobalConstants::new(500, 50);
 /// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
@@ -127,7 +130,7 @@ pub mod world_function;
 /// // Run optimization in stages, monitoring progress
 /// for stage in 0..10 {
 ///     for _ in 0..50 {
-///         world.training_run(&[], &[0.0]);
+///         world.training_run(TrainingData::None { floor_value: 0.0 });
 ///     }
 ///     println!("Stage {}: Best score = {}", stage, world.get_best_score());
 ///     

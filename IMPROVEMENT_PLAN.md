@@ -6,7 +6,7 @@
 
 ## Status Overview
 
-- [ ] Phase 1: Core API Redesign (HIGH Priority)
+- [🚧] Phase 1: Core API Redesign (HIGH Priority) - 1/4 tasks complete
 - [ ] Phase 2: Update Tests & Examples  
 - [ ] Phase 3: Documentation Improvements (MEDIUM Priority)
 - [ ] Phase 4: Final Cleanup & Release
@@ -17,17 +17,17 @@
 
 ### Task 1.1: Create TrainingData Enum ✅ = DONE, 🚧 = IN PROGRESS, ⏸️ = BLOCKED, ❌ = FAILED
 
-**Status:** ⬜ Not Started  
-**Files to Create:**
+**Status:** ✅ DONE  
+**Files Created:**
 - `hill_descent_lib/src/training_data.rs`
 
 **Acceptance Criteria:**
-- [ ] Enum with two variants: `None { floor_value: f64 }` and `Supervised { inputs: &'a [[f64]], outputs: &'a [[f64]] }`
-- [ ] Comprehensive doc comments with examples for both variants
-- [ ] Export from `lib.rs`
-- [ ] Unit tests for enum creation and basic usage
+- [x] Enum with two variants: `None { floor_value: f64 }` and `Supervised { inputs, outputs }` variants
+- [x] Comprehensive doc comments with examples for both variants
+- [x] Export from `lib.rs`
+- [x] Unit tests for enum creation and basic usage
 
-**Commit Message:** `feat: add TrainingData enum for clearer API`
+**Commit:** 15e77ca - `feat: add TrainingData enum for clearer API`
 
 ---
 
@@ -290,10 +290,11 @@
 ## Progress Tracking
 
 ### Commits Made
-1. (none yet)
+1. e3efd6a - `docs: add improvement suggestions and implementation plan`
+2. 15e77ca - `feat: add TrainingData enum for clearer API`
 
 ### Next Action
-**Start with Task 1.1:** Create TrainingData enum
+**Start with Task 1.2:** Refactor World::training_run() to use TrainingData enum
 
 ### Notes & Decisions
 - Using enum approach (Option A) for clearest API

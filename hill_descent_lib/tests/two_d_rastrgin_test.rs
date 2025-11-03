@@ -1,5 +1,5 @@
 use hill_descent_lib::{
-    GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    GlobalConstants, TrainingData, setup_world, world::single_valued_function::SingleValuedFunction,
 };
 use std::ops::RangeInclusive;
 
@@ -40,7 +40,9 @@ pub fn execute() {
 
     // Allow sufficient epochs to traverse multiple local minima basins.
     for epoch in 0..3000 {
-        let at_resolution_limit = world.training_run(&[], &[Rastrigin.function_floor()]);
+        let at_resolution_limit = world.training_run(TrainingData::None {
+            floor_value: Rastrigin.function_floor(),
+        });
         let current_best = world.get_best_score();
         if current_best < best_score {
             best_score = current_best;
