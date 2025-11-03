@@ -6,7 +6,7 @@
 
 ## Status Overview
 
-- [🚧] Phase 1: Core API Redesign (HIGH Priority) - 1/4 tasks complete
+- [✅] Phase 1: Core API Redesign (HIGH Priority) - 3/4 tasks complete
 - [ ] Phase 2: Update Tests & Examples  
 - [ ] Phase 3: Documentation Improvements (MEDIUM Priority)
 - [ ] Phase 4: Final Cleanup & Release
@@ -33,31 +33,42 @@
 
 ### Task 1.2: Refactor World::training_run()
 
-**Status:** ⬜ Not Started  
+**Status:** ✅ DONE  
 **Depends On:** Task 1.1  
-**Files to Modify:**
-- `hill_descent_lib/src/world.rs` (or relevant world module file)
+**Files Modified:**
+- `hill_descent_lib/src/world/training_run.rs` - Signature and implementation updated
+- `hill_descent_lib/src/world/run_epoch.rs` - Refactored to iterate samples individually
+- All integration tests and examples updated
+- All doctests updated
 
 **Acceptance Criteria:**
-- [ ] Change signature from `training_run(&mut self, inputs: &[[f64]], known_outputs: &[[f64]])` to `training_run(&mut self, data: TrainingData)`
-- [ ] Update internal logic to handle both enum variants
-- [ ] Remove old validation that caused confusion
-- [ ] Ensure consistent behavior for both variants
+- [x] Change signature from `training_run(&mut self, inputs: &[[f64]], known_outputs: &[[f64]])` to `training_run(&mut self, data: TrainingData)`
+- [x] Update internal logic to handle both enum variants
+- [x] Remove old validation that caused confusion
+- [x] Ensure consistent behavior for both variants
 
-**Commit Message:** `refactor: update World::training_run to use TrainingData enum`
+**Commit:** c7fffc2 - `Task 1.2: Refactor World::training_run to use TrainingData enum`
 
 ---
 
 ### Task 1.3: Refactor World::get_best_organism()
 
-**Status:** ⬜ Not Started  
+**Status:** ✅ DONE  
 **Depends On:** Task 1.1  
-**Files to Modify:**
-- `hill_descent_lib/src/world.rs` (or relevant world module file)
+**Files Modified:**
+- `hill_descent_lib/src/world/get_best_organism.rs` - Signature changed to use TrainingData
+- `hill_descent_lib/src/world/mod.rs` - Removed run_epoch and validate_training_sets modules
+- `hill_descent_lib/src/world/run_epoch.rs` - DELETED (no longer needed)
+- `hill_descent_lib/src/world/validate_training_sets.rs` - DELETED (validation moved to training_run)
+- `hill_descent_lib/tests/simple_test.rs` - Updated to new API
 
 **Acceptance Criteria:**
-- [ ] Change signature to accept `TrainingData` instead of separate parameters
-- [ ] Make behavior consistent with `training_run` for `TrainingData::None`
+- [x] Change signature to accept `TrainingData` instead of separate parameters
+- [x] Make behavior consistent with `training_run` for `TrainingData::None`
+- [x] Remove unused helper functions (run_epoch, validate_training_sets)
+- [x] Update all tests and documentation
+
+**Commit:** 2f44201 - `Task 1.3: Refactor get_best_organism to use TrainingData enum`
 - [ ] Remove panic on empty training data when using `None` variant
 - [ ] Update internal implementation
 

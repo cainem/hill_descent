@@ -47,6 +47,7 @@ use world_function::WorldFunction;
 
 mod dimensions;
 mod get_best_organism;
+mod get_best_params;
 mod get_best_score;
 mod get_state;
 mod get_state_for_web;
