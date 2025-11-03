@@ -135,6 +135,7 @@ use std::ops::RangeInclusive;
 pub use parameters::GlobalConstants;
 pub use training_data::TrainingData;
 pub use world::World;
+pub use world::format_score;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
 

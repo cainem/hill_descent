@@ -46,6 +46,7 @@ use std::ops::RangeInclusive;
 use world_function::WorldFunction;
 
 mod dimensions;
+mod format_score;
 mod get_best_organism;
 mod get_best_params;
 mod get_best_score;
@@ -57,6 +58,8 @@ mod remove_dead;
 pub mod single_valued_function;
 mod training_run;
 pub mod world_function;
+
+pub use format_score::format_score;
 
 /// The main optimization container managing population evolution and fitness evaluation.
 ///
