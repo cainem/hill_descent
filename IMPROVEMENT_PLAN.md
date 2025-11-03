@@ -6,7 +6,7 @@
 
 ## Status Overview
 
-- [✅] Phase 1: Core API Redesign (HIGH Priority) - 3/4 tasks complete
+- [✅] Phase 1: Core API Redesign (HIGH Priority) - 4/4 tasks complete - **PHASE COMPLETE!**
 - [ ] Phase 2: Update Tests & Examples  
 - [ ] Phase 3: Documentation Improvements (MEDIUM Priority)
 - [ ] Phase 4: Final Cleanup & Release
@@ -78,45 +78,47 @@
 
 ### Task 1.4: Add Convenience Methods to World
 
-**Status:** ⬜ Not Started  
+**Status:** ✅ DONE  
 **Depends On:** Task 1.3  
-**Files to Modify:**
-- `hill_descent_lib/src/world.rs`
+**Files Modified:**
+- `hill_descent_lib/src/world/get_best_params.rs` - New file with get_best_params() method
+- `hill_descent_lib/src/world/mod.rs` - Added module declaration
 
 **Acceptance Criteria:**
-- [ ] Add `get_best_params(&self) -> &[f64]` - non-mutating accessor
-- [ ] Add `get_best_score(&self) -> f64` - if not already present as public method
-- [ ] Add doc comments with usage examples
-- [ ] Add unit tests for new methods
+- [x] Add `get_best_params(&self) -> Vec<f64>` - non-mutating accessor for problem parameters
+- [x] `get_best_score(&self) -> f64` already exists as public non-mutating method
+- [x] Add doc comments with usage examples (2 doctests)
+- [x] Add unit tests for new methods (3 tests)
 
-**Commit Message:** `feat: add convenience methods get_best_params and get_best_score`
+**Commit:** 0ea3336 - `Task 1.4: Add get_best_params() convenience method`
+
+**Notes:**
+- Changed return type from `&[f64]` to `Vec<f64>` to avoid lifetime issues
+- Returns only problem-specific parameters (excludes system parameters)
+- Very fast O(1) + O(n) operation, no training triggered
 
 ---
 
 ## Phase 2: Update Tests & Examples
 
+**Note:** Integration tests were already updated during Task 1.2 and 1.3 refactoring.
+All 10 integration tests, 3 example files, and all doctests now use the TrainingData API.
+
 ### Task 2.1: Update Integration Tests
 
-**Status:** ⬜ Not Started  
+**Status:** ✅ DONE (Completed during Phase 1)  
 **Depends On:** Tasks 1.2, 1.3, 1.4  
-**Files to Modify:**
-- `hill_descent_lib/tests/organism_persistence_test.rs`
-- `hill_descent_lib/tests/parallel_determinism_test.rs`
-- `hill_descent_lib/tests/simple_test.rs`
-- `hill_descent_lib/tests/two_d_ackley_test.rs`
-- `hill_descent_lib/tests/two_d_bukin_n6_test.rs`
-- `hill_descent_lib/tests/two_d_himmelblau_test.rs`
-- `hill_descent_lib/tests/two_d_levi_n13_test.rs`
-- `hill_descent_lib/tests/two_d_rastrgin_test.rs`
-- `hill_descent_lib/tests/two_d_schaffer_n2_test.rs`
-- `hill_descent_lib/tests/two_d_styblinski_tang_test.rs`
+**Files Modified:**
+- All 10 integration test files already updated in Task 1.2
+- All 3 example files (simple_optimization.rs, custom_function.rs, multi_dimensional.rs) updated in Task 1.2
+- simple_test.rs additionally updated in Task 1.3
 
 **Acceptance Criteria:**
-- [ ] All tests updated to use `TrainingData::None { floor_value: 0.0 }`
-- [ ] All tests pass: `cargo test --workspace`
-- [ ] No clippy warnings: `cargo clippy --tests`
+- [x] All tests updated to use `TrainingData::None { floor_value }` and `TrainingData::Supervised`
+- [x] All tests pass: `cargo test --workspace` (437 unit + 39 doctests passing)
+- [x] No clippy warnings: `cargo clippy --workspace --tests` (zero warnings)
 
-**Commit Message:** `refactor: update all integration tests to use TrainingData API`
+**Notes:** This task was completed proactively during Phase 1 to ensure the refactored code was validated at each step.
 
 ---
 
