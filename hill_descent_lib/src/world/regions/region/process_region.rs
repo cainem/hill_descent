@@ -3,6 +3,7 @@ use crate::world::organisms::organism::Organism;
 use crate::world::world_function::WorldFunction;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rayon::prelude::*;
 
 impl Region {
     /// Processes region's complete lifecycle independently (designed for parallel execution).
@@ -14,10 +15,10 @@ impl Region {
         known_outputs: &[f64],
         region_seed: u64,
     ) -> Vec<Organism> {
-        // 1. Fitness evaluation
-        for organism in self.organisms.iter() {
+        // 1. Fitness evaluation (parallel within region for expensive fitness functions)
+        self.organisms.par_iter().for_each(|organism| {
             organism.run(world_function, inputs, known_outputs);
-        }
+        });
 
         // 2. Sort by fitness (best first) then age (older first)
         self.organisms.sort_by(|a, b| {
