@@ -65,10 +65,11 @@
 //! and search space expansion.
 
 // Use mimalloc as the global allocator for better performance on Windows
-use mimalloc::MiMalloc;
+// Temporarily disabled for testing
+// use mimalloc::MiMalloc;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+// #[global_allocator]
+// static GLOBAL: MiMalloc = MiMalloc;
 
 // Internal modules - not exposed in public API
 mod gamete;
