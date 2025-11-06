@@ -418,16 +418,16 @@ for _epoch in 0..100 {
 
 The public API maps to internal algorithm components as follows:
 
-| API Concept | Internal PDD Section | Notes |
-|-------------|---------------------|-------|
-| `TrainingData::None` | Section 2.2 (single-valued) | Fitness = distance from floor |
-| `TrainingData::Supervised` | Section 2.2 (multi-valued) | Fitness = Euclidean distance |
-| `training_run()` | Section 5.2 (one round) | One evolutionary epoch |
-| `get_best_organism()` | Section 5.3.2 (solution extraction) | Best organism by fitness |
-| `World` | Section 3 (System Overview) | Contains population, regions |
-| `GlobalConstants` | Section 6.1 | System-wide configuration |
-| `SingleValuedFunction` | Section 2.1 (specialized) | No external inputs needed |
-| `WorldFunction` | Section 2.1 (general) | Accepts external inputs |
+| API Concept                | Internal PDD Section                | Notes                         |
+| -------------------------- | ----------------------------------- | ----------------------------- |
+| `TrainingData::None`       | Section 2.2 (single-valued)         | Fitness = distance from floor |
+| `TrainingData::Supervised` | Section 2.2 (multi-valued)          | Fitness = Euclidean distance  |
+| `training_run()`           | Section 5.2 (one round)             | One evolutionary epoch        |
+| `get_best_organism()`      | Section 5.3.2 (solution extraction) | Best organism by fitness      |
+| `World`                    | Section 3 (System Overview)         | Contains population, regions  |
+| `GlobalConstants`          | Section 6.1                         | System-wide configuration     |
+| `SingleValuedFunction`     | Section 2.1 (specialized)           | No external inputs needed     |
+| `WorldFunction`            | Section 2.1 (general)               | Accepts external inputs       |
 
 ### 8.5. API Design Rationale
 

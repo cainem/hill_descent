@@ -168,11 +168,12 @@ mod tests {
 
         // Find a region and mark all its organisms as dead
         if let Some(region_key) = world.regions.iter_region_keys().next().cloned()
-            && let Some(region) = world.regions.get_region(&region_key) {
-                for o in region.organisms() {
-                    o.mark_dead();
-                }
+            && let Some(region) = world.regions.get_region(&region_key)
+        {
+            for o in region.organisms() {
+                o.mark_dead();
             }
+        }
 
         world.remove_dead();
 

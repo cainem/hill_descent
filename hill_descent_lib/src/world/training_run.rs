@@ -187,6 +187,8 @@ impl World {
     /// - [`get_state`](World::get_state) - Full system state for analysis
     pub fn training_run(&mut self, data: TrainingData) -> bool {
         // Process training data and run the algorithm
+        let world_seed = self.global_constants.world_seed();
+
         match data {
             TrainingData::None { floor_value } => {
                 // Validate floor_value
@@ -196,8 +198,8 @@ impl World {
                 );
 
                 // For standard optimization, use empty inputs and floor as single output
-                let known_outputs = vec![floor_value];
-                let world_seed = self.global_constants.world_seed();
+                // Use stack array to avoid heap allocation
+                let known_outputs = [floor_value];
                 self.organisms = self.regions.parallel_process_regions(
                     self.world_function.as_ref(),
                     &[],
@@ -240,7 +242,6 @@ impl World {
                 );
 
                 // Process with flattened data
-                let world_seed = self.global_constants.world_seed();
                 self.organisms = self.regions.parallel_process_regions(
                     self.world_function.as_ref(),
                     &flat_inputs,

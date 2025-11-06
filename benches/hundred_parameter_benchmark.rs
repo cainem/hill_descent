@@ -1,6 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use hill_descent::{
     parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    TrainingData,
 };
 use std::ops::RangeInclusive;
 
@@ -35,8 +36,8 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
     c.bench_function("hill_descent_train_epoch_100d", |b| {
         b.iter(|| {
-            // Objective-function mode: no known inputs/outputs.
-            world.training_run(&[], None);
+            // Objective-function mode: no external data needed
+            world.training_run(TrainingData::None { floor_value: 0.0 });
         })
     });
 }

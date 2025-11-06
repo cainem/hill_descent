@@ -319,13 +319,13 @@ Understanding how hill_descent_lib scales helps you configure it effectively for
 
 #### Parameter Count vs Performance
 
-| Parameters | Recommended Pop Size | Recommended Regions | Memory (approx) | Time per Epoch |
-|-----------|---------------------|---------------------|-----------------|----------------|
-| 2-10      | 100-200            | 10-15              | < 1 MB          | < 1ms          |
-| 10-100    | 500-1,000          | 20-30              | < 10 MB         | 10-50ms        |
-| 100-1,000 | 1,000-5,000        | 30-70              | 10-100 MB       | 50-500ms       |
-| 1,000-10,000 | 5,000-10,000    | 70-100             | 100 MB - 1 GB   | 0.5-5s         |
-| 10,000+   | 10,000 (capped)    | 100                | 1-10 GB         | 5-30s          |
+| Parameters   | Recommended Pop Size | Recommended Regions | Memory (approx) | Time per Epoch |
+| ------------ | -------------------- | ------------------- | --------------- | -------------- |
+| 2-10         | 100-200              | 10-15               | < 1 MB          | < 1ms          |
+| 10-100       | 500-1,000            | 20-30               | < 10 MB         | 10-50ms        |
+| 100-1,000    | 1,000-5,000          | 30-70               | 10-100 MB       | 50-500ms       |
+| 1,000-10,000 | 5,000-10,000         | 70-100              | 100 MB - 1 GB   | 0.5-5s         |
+| 10,000+      | 10,000 (capped)      | 100                 | 1-10 GB         | 5-30s          |
 
 *Times measured on modern multi-core CPU (Ryzen/Intel i7+). Actual performance varies with fitness function complexity.*
 
