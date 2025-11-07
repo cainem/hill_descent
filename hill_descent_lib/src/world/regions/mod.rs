@@ -82,6 +82,13 @@ impl Regions {
         self.regions.get_mut(key)
     }
 
+    /// Returns a mutable reference to the region at the given index.
+    /// Index corresponds to insertion order in the IndexMap.
+    #[allow(dead_code)]
+    pub fn get_region_mut_by_index(&mut self, index: usize) -> Option<&mut Region> {
+        self.regions.get_index_mut(index).map(|(_, region)| region)
+    }
+
     /// Returns an iterator over (key, region) pairs.
     pub fn iter_regions(&self) -> impl Iterator<Item = (&Vec<usize>, &Region)> {
         self.regions.iter()
