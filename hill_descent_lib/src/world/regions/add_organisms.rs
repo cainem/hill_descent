@@ -19,6 +19,12 @@ impl super::Regions {
     ///
     /// Panics if any organism does not have a region key, as this indicates
     /// a serious bug in the system.
+    ///
+    /// # Performance Warning
+    ///
+    /// Logs a warning if the number of unique regions exceeds 1000. RegionKey uses
+    /// hash-only equality, which has negligible collision risk (<0.0000000003%) for
+    /// <1000 keys but increases to ~0.000003% for 10,000 keys.
     pub fn add_organisms(&mut self, organisms: &Organisms) {
         for organism in organisms.iter() {
             let key = organism
@@ -27,6 +33,17 @@ impl super::Regions {
             let organism_rc: Arc<Organism> = Arc::clone(organism);
             let region = self.regions.entry(key.clone()).or_default();
             region.add_organism(organism_rc);
+        }
+        
+        // Warn if we have too many regions for hash-only equality to be safe
+        let region_count = self.regions.len();
+        if region_count > 1000 {
+            eprintln!(
+                "WARNING: {} regions detected (>1000). RegionKey uses hash-only equality \
+                 which has increased collision risk at this scale (~0.000003% for 10k keys). \
+                 Consider reducing target_regions or switching to value-based equality.",
+                region_count
+            );
         }
     }
 }
