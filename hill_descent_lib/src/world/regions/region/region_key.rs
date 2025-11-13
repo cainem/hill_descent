@@ -219,6 +219,63 @@ impl std::hash::Hash for RegionKey {
     }
 }
 
+// Conversion traits for gradual migration from Vec<usize>
+
+/// Creates a RegionKey from a Vec<usize>.
+///
+/// This allows seamless conversion during the migration from Vec<usize> to RegionKey.
+impl From<Vec<usize>> for RegionKey {
+    fn from(values: Vec<usize>) -> Self {
+        Self::new(values)
+    }
+}
+
+/// Creates a RegionKey from a slice reference.
+///
+/// Clones the slice into a Vec and creates a RegionKey.
+impl From<&[usize]> for RegionKey {
+    fn from(values: &[usize]) -> Self {
+        Self::new(values.to_vec())
+    }
+}
+
+/// Converts a RegionKey back to a Vec<usize>.
+///
+/// This clones the underlying Arc data. Use sparingly during migration,
+/// prefer keeping RegionKey where possible for better performance.
+impl From<RegionKey> for Vec<usize> {
+    fn from(key: RegionKey) -> Self {
+        (*key.values).clone()
+    }
+}
+
+/// Converts a RegionKey reference back to a Vec<usize>.
+///
+/// This clones the underlying Arc data. Use sparingly during migration.
+impl From<&RegionKey> for Vec<usize> {
+    fn from(key: &RegionKey) -> Self {
+        (*key.values).clone()
+    }
+}
+
+/// Provides slice access to the underlying values.
+///
+/// This allows RegionKey to be used where &[usize] is expected without conversion.
+impl AsRef<[usize]> for RegionKey {
+    fn as_ref(&self) -> &[usize] {
+        self.values()
+    }
+}
+
+/// Allows borrowing RegionKey as a slice.
+///
+/// This enables using RegionKey with functions that accept `impl AsRef<[usize]>`.
+impl std::borrow::Borrow<[usize]> for RegionKey {
+    fn borrow(&self) -> &[usize] {
+        self.values()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -327,6 +384,56 @@ mod tests {
         assert_eq!(map.get(&key2), Some(&"second"));
         assert_eq!(map.get(&key3), Some(&"first")); // key3 equals key1
         assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn given_vec_when_from_vec_then_creates_region_key() {
+        let vec = vec![1, 2, 3];
+        let key = RegionKey::from(vec.clone());
+        
+        assert_eq!(key.values(), &vec[..]);
+    }
+
+    #[test]
+    fn given_slice_when_from_slice_then_creates_region_key() {
+        let slice: &[usize] = &[1, 2, 3];
+        let key = RegionKey::from(slice);
+        
+        assert_eq!(key.values(), slice);
+    }
+
+    #[test]
+    fn given_region_key_when_into_vec_then_clones_values() {
+        let key = RegionKey::new(vec![1, 2, 3]);
+        let vec: Vec<usize> = key.clone().into();
+        
+        assert_eq!(vec, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn given_region_key_ref_when_into_vec_then_clones_values() {
+        let key = RegionKey::new(vec![1, 2, 3]);
+        let vec: Vec<usize> = (&key).into();
+        
+        assert_eq!(vec, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn given_region_key_when_as_ref_then_returns_slice() {
+        let key = RegionKey::new(vec![1, 2, 3]);
+        let slice: &[usize] = key.as_ref();
+        
+        assert_eq!(slice, &[1, 2, 3]);
+    }
+
+    #[test]
+    fn given_region_key_when_borrow_then_returns_slice() {
+        use std::borrow::Borrow;
+        
+        let key = RegionKey::new(vec![1, 2, 3]);
+        let slice: &[usize] = key.borrow();
+        
+        assert_eq!(slice, &[1, 2, 3]);
     }
 
     #[test]
