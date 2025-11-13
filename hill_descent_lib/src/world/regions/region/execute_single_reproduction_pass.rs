@@ -20,13 +20,10 @@ impl Region {
         max_offspring_this_pass: usize,
         rng: &mut R,
     ) -> Vec<Organism> {
+        let mut offspring = Vec::new();
+
         // Pair organisms for reproduction using extreme pairing strategy
         let organism_pairs = Self::pair_organisms_for_reproduction(selected_organisms);
-
-        // Pre-allocate for sexual offspring (each pair produces 2 offspring)
-        // Limited by max_offspring_this_pass
-        let estimated_offspring = (organism_pairs.len() * 2).min(max_offspring_this_pass);
-        let mut offspring = Vec::with_capacity(estimated_offspring);
 
         // Perform sexual reproduction for all pairs (no more asexual reproduction)
         let sexual_offspring = Self::perform_sexual_reproduction(&organism_pairs, rng);

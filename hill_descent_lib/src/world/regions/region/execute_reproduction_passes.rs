@@ -26,8 +26,7 @@ impl Region {
         max_passes: usize,
         rng: &mut R,
     ) -> Vec<Organism> {
-        // Pre-allocate for all expected offspring to avoid reallocations
-        let mut all_offspring: Vec<Organism> = Vec::with_capacity(number_to_reproduce);
+        let mut all_offspring: Vec<Organism> = Vec::new();
         let mut remaining_to_reproduce = number_to_reproduce;
 
         // Reproduction passes

@@ -1,19 +1,4 @@
 use crate::world::regions::Regions;
-use xxhash_rust::xxh3::xxh3_64;
-
-/// Helper function to compute a deterministic hash of a region key.
-/// Uses XXH3 which is optimized for large keys (our 800-byte region keys).
-/// XXH3 is significantly faster than both SipHash and FxHash for large inputs.
-fn hash_key(key: &[usize]) -> u64 {
-    // Convert slice to bytes for hashing
-    let bytes = unsafe {
-        std::slice::from_raw_parts(
-            key.as_ptr() as *const u8,
-            key.len() * std::mem::size_of::<usize>(),
-        )
-    };
-    xxh3_64(bytes)
-}
 
 impl Regions {
     /// Updates the carrying capacity for all regions.
@@ -36,13 +21,11 @@ impl Regions {
     pub(super) fn update_carrying_capacities(&mut self) {
         let total_population_size = self.population_size;
 
-        // First pass: collect indices and fitness data
-        // Use IndexMap indices for access and hash keys for deterministic sorting
-        // This avoids cloning 800-byte keys (100 usize values)
-        let mut infinite_fitness_indices = Vec::new();
-        let mut finite_fitness_data = Vec::new(); // (index, key_hash, inverse_fitness)
+        // First, identify regions with infinite and finite inverse fitness
+        let mut infinite_fitness_regions = Vec::new();
+        let mut finite_fitness_data = Vec::new(); // (key, region_ref, inverse_fitness)
 
-        for (index, (key, region)) in self.iter_regions().enumerate() {
+        for (key, region) in self.iter_regions() {
             if let Some(min_score) = region.min_score() {
                 // Fitness values should already be validated upstream, but double-check defensively
                 debug_assert!(
@@ -53,11 +36,9 @@ impl Regions {
                 let inverse_fitness = 1.0 / min_score;
                 if inverse_fitness.is_infinite() {
                     // Zero min_score results in infinite fitness (perfect solution)
-                    infinite_fitness_indices.push(index);
+                    infinite_fitness_regions.push(key.clone());
                 } else {
-                    // Hash the key for deterministic sorting without cloning
-                    let key_hash = hash_key(key);
-                    finite_fitness_data.push((index, key_hash, inverse_fitness));
+                    finite_fitness_data.push((key.clone(), inverse_fitness));
                 }
             }
         }
@@ -68,14 +49,14 @@ impl Regions {
         }
 
         // If there are regions with infinite inverse fitness, they get all the capacity
-        if !infinite_fitness_indices.is_empty() {
+        if !infinite_fitness_regions.is_empty() {
             let capacity_per_infinite_region =
-                total_population_size / infinite_fitness_indices.len();
-            let remainder = total_population_size % infinite_fitness_indices.len();
+                total_population_size / infinite_fitness_regions.len();
+            let remainder = total_population_size % infinite_fitness_regions.len();
 
             // Set capacity for infinite fitness regions
-            for (i, &index) in infinite_fitness_indices.iter().enumerate() {
-                if let Some(region) = self.get_region_mut_by_index(index) {
+            for (i, key) in infinite_fitness_regions.iter().enumerate() {
+                if let Some(region) = self.get_region_mut(key) {
                     let mut capacity = capacity_per_infinite_region;
                     // Distribute remainder among first few regions
                     if i < remainder {
@@ -86,21 +67,18 @@ impl Regions {
             }
         } else if !finite_fitness_data.is_empty() {
             // Handle regions with finite inverse fitness using proportional allocation
-            let sum_inverse_fitness: f64 = finite_fitness_data
-                .iter()
-                .map(|(_, _, inv_fit)| inv_fit)
-                .sum();
+            let sum_inverse_fitness: f64 =
+                finite_fitness_data.iter().map(|(_, inv_fit)| inv_fit).sum();
 
             // Calculate capacities and track allocated total
             let mut allocated_so_far = 0;
             let mut finite_regions: Vec<_> = finite_fitness_data.iter().collect();
 
-            // Sort by key hash for deterministic remainder allocation
-            // Hash provides same ordering as key comparison but without cloning
-            finite_regions.sort_by_key(|&(_, key_hash, _)| key_hash);
+            // Sort by key for deterministic remainder allocation
+            finite_regions.sort_by(|a, b| a.0.cmp(&b.0));
 
-            for (i, &(index, _key_hash, inverse_fitness)) in finite_regions.iter().enumerate() {
-                if let Some(region) = self.get_region_mut_by_index(*index) {
+            for (i, (key, inverse_fitness)) in finite_regions.iter().enumerate() {
+                if let Some(region) = self.get_region_mut(key) {
                     let capacity = if i == finite_regions.len() - 1 {
                         // Last region gets remaining capacity to ensure exact total
                         total_population_size - allocated_so_far
