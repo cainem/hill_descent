@@ -337,7 +337,7 @@ impl super::World {
                     age: o.age(),
                     max_age: rounded_max_age,
                     score: o.score(),
-                    region_key: o.region_key(),
+                    region_key: o.region_key().map(Vec::<usize>::from),
                     is_dead: o.is_dead(),
                     parent_id_1,
                     parent_id_2,

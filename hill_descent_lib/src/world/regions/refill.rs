@@ -48,7 +48,10 @@ mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
         phenotype::Phenotype,
-        world::{organisms::organism::Organism, regions::Regions},
+        world::{
+            organisms::organism::Organism,
+            regions::{Regions, region::region_key::RegionKey},
+        },
     };
     use std::sync::Arc;
 
@@ -61,7 +64,7 @@ mod tests {
         let phenotype = Arc::new(Phenotype::new_for_test(expressed_values));
         let organism = Organism::new(phenotype, 0, (None, None));
         organism.set_score(score);
-        organism.set_region_key(region_key);
+        organism.set_region_key(region_key.map(RegionKey::from));
         organism
     }
 

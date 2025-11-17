@@ -30,11 +30,12 @@ impl super::Regions {
             let key = organism
                 .region_key()
                 .expect("All organisms must have a region key when adding to regions");
+            let key_vec: Vec<usize> = key.into();
             let organism_rc: Arc<Organism> = Arc::clone(organism);
-            let region = self.regions.entry(key.clone()).or_default();
+            let region = self.regions.entry(key_vec).or_default();
             region.add_organism(organism_rc);
         }
-        
+
         // Warn if we have too many regions for hash-only equality to be safe
         let region_count = self.regions.len();
         if region_count > 1000 {
@@ -105,7 +106,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key1.clone()));
+            .set_region_key(Some(region_key1.clone().into()));
 
         regions.add_organisms(&organisms_collection);
 
@@ -131,11 +132,11 @@ mod tests {
         let mut org_iter_mut = organisms_collection.iter();
 
         let org1_mut = org_iter_mut.next().unwrap();
-        org1_mut.set_region_key(Some(region_key.clone()));
+        org1_mut.set_region_key(Some(region_key.clone().into()));
         let org1_rc_from_org = org1_mut.get_phenotype_rc();
 
         let org2_mut = org_iter_mut.next().unwrap();
-        org2_mut.set_region_key(Some(region_key.clone()));
+        org2_mut.set_region_key(Some(region_key.clone().into()));
         let org2_rc_from_org = org2_mut.get_phenotype_rc();
 
         regions.add_organisms(&organisms_collection);
@@ -172,11 +173,11 @@ mod tests {
         let mut iter_mut = organisms_collection.iter();
 
         let organism1_mut = iter_mut.next().unwrap();
-        organism1_mut.set_region_key(Some(region_key1.clone()));
+        organism1_mut.set_region_key(Some(region_key1.clone().into()));
         let org1_rc_from_org = organism1_mut.get_phenotype_rc();
 
         let organism2_mut = iter_mut.next().unwrap();
-        organism2_mut.set_region_key(Some(region_key2.clone()));
+        organism2_mut.set_region_key(Some(region_key2.clone().into()));
         let org2_rc_from_org = organism2_mut.get_phenotype_rc();
 
         regions.add_organisms(&organisms_collection);
@@ -216,7 +217,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key.clone()));
+            .set_region_key(Some(region_key.clone().into()));
         regions.add_organisms(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
@@ -230,7 +231,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key.clone()));
+            .set_region_key(Some(region_key.clone().into()));
 
         // Act: add the new organism
         regions.add_organisms(&new_organisms_to_add);

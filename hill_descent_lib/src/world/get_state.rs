@@ -62,7 +62,7 @@ impl PhenotypeState {
 impl OrganismState {
     fn from_organism(o: &Organism) -> Self {
         Self {
-            region_key: o.region_key(),
+            region_key: o.region_key().map(Vec::<usize>::from),
             age: o.age(),
             score: o.score(),
             is_dead: o.is_dead(),

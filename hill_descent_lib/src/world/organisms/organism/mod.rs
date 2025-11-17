@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::phenotype::Phenotype;
+use crate::world::regions::region::region_key::RegionKey;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
@@ -24,7 +25,7 @@ pub struct Organism {
     /// - Sexual reproduction: (Some(parent1_id), Some(parent2_id))
     /// - Root/initial organisms: (None, None)
     parent_ids: (Option<usize>, Option<usize>),
-    region_key: Mutex<Option<Vec<usize>>>,
+    region_key: Mutex<Option<RegionKey>>,
     phenotype: Arc<Phenotype>,
     /// Fitness score stored as f64 bit representation (u64::MAX = None).
     /// Uses atomic operations for lock-free concurrent access during parallel processing.
@@ -97,13 +98,12 @@ impl Organism {
     }
 
     /// Returns the region key of the organism, if set.
-    pub fn region_key(&self) -> Option<Vec<usize>> {
-        // TODO - this clone needs to ber gotten rid of
+    pub fn region_key(&self) -> Option<RegionKey> {
         self.region_key.lock().unwrap().clone()
     }
 
     /// Sets the region key of the organism.
-    pub fn set_region_key(&self, region_key: Option<Vec<usize>>) {
+    pub fn set_region_key(&self, region_key: Option<RegionKey>) {
         *self.region_key.lock().unwrap() = region_key;
     }
 

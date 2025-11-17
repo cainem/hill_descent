@@ -77,16 +77,16 @@ impl RegionKey {
         let combined = ((position as u128) << 64) | (value as u128);
         let low = combined as u64;
         let high = (combined >> 64) as u64;
-        
+
         // FNV-1a style mixing
         const FNV_PRIME: u64 = 0x100000001b3;
         let mut hash = 0xcbf29ce484222325; // FNV offset basis
-        
+
         hash ^= low;
         hash = hash.wrapping_mul(FNV_PRIME);
         hash ^= high;
         hash = hash.wrapping_mul(FNV_PRIME);
-        
+
         hash
     }
 
@@ -156,7 +156,7 @@ impl RegionKey {
 impl PartialEq for RegionKey {
     fn eq(&self, other: &Self) -> bool {
         let hashes_equal = self.hash == other.hash;
-        
+
         // Safety check in debug builds to catch the near-impossible hash collision
         #[cfg(debug_assertions)]
         if hashes_equal {
@@ -167,7 +167,7 @@ impl PartialEq for RegionKey {
                  Consider using a larger hash or value-based equality."
             );
         }
-        
+
         hashes_equal
     }
 }
@@ -195,7 +195,7 @@ impl PartialOrd for RegionKey {
 impl Ord for RegionKey {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         let ordering = self.hash.cmp(&other.hash);
-        
+
         // Safety check in debug builds
         #[cfg(debug_assertions)]
         if ordering == std::cmp::Ordering::Equal {
@@ -205,7 +205,7 @@ impl Ord for RegionKey {
                  Two different RegionKeys have the same hash."
             );
         }
-        
+
         ordering
     }
 }
@@ -390,7 +390,7 @@ mod tests {
     fn given_vec_when_from_vec_then_creates_region_key() {
         let vec = vec![1, 2, 3];
         let key = RegionKey::from(vec.clone());
-        
+
         assert_eq!(key.values(), &vec[..]);
     }
 
@@ -398,7 +398,7 @@ mod tests {
     fn given_slice_when_from_slice_then_creates_region_key() {
         let slice: &[usize] = &[1, 2, 3];
         let key = RegionKey::from(slice);
-        
+
         assert_eq!(key.values(), slice);
     }
 
@@ -406,7 +406,7 @@ mod tests {
     fn given_region_key_when_into_vec_then_clones_values() {
         let key = RegionKey::new(vec![1, 2, 3]);
         let vec: Vec<usize> = key.clone().into();
-        
+
         assert_eq!(vec, vec![1, 2, 3]);
     }
 
@@ -414,7 +414,7 @@ mod tests {
     fn given_region_key_ref_when_into_vec_then_clones_values() {
         let key = RegionKey::new(vec![1, 2, 3]);
         let vec: Vec<usize> = (&key).into();
-        
+
         assert_eq!(vec, vec![1, 2, 3]);
     }
 
@@ -422,17 +422,17 @@ mod tests {
     fn given_region_key_when_as_ref_then_returns_slice() {
         let key = RegionKey::new(vec![1, 2, 3]);
         let slice: &[usize] = key.as_ref();
-        
+
         assert_eq!(slice, &[1, 2, 3]);
     }
 
     #[test]
     fn given_region_key_when_borrow_then_returns_slice() {
         use std::borrow::Borrow;
-        
+
         let key = RegionKey::new(vec![1, 2, 3]);
         let slice: &[usize] = key.borrow();
-        
+
         assert_eq!(slice, &[1, 2, 3]);
     }
 
