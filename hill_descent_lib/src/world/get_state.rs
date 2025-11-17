@@ -3,7 +3,7 @@ use serde_json;
 
 use super::dimensions::dimension::Dimension;
 use super::organisms::organism::Organism;
-use super::regions::region::Region;
+use super::regions::region::{Region, region_key::RegionKey};
 
 // Helper structs purely for serialisation of the World state -----------------
 #[derive(Serialize)]
@@ -72,9 +72,9 @@ impl OrganismState {
 }
 
 impl RegionState {
-    fn from_region(key: &[usize], r: &Region) -> Self {
+    fn from_region(key: &RegionKey, r: &Region) -> Self {
         Self {
-            key: key.to_vec(),
+            key: Vec::<usize>::from(key),
             min_score: r.min_score(),
             carrying_capacity: r.carrying_capacity(),
             organism_count: r.organism_count(),

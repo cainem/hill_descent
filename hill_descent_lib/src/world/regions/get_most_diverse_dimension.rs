@@ -1,4 +1,4 @@
-use super::{calculate_dimension_stats, find_most_diverse_index};
+use super::{calculate_dimension_stats, find_most_diverse_index, region::region_key::RegionKey};
 
 impl super::Regions {
     // This function is designed to identify the most diverse dimension among organisms
@@ -15,7 +15,7 @@ impl super::Regions {
     // - In case of a tie in the number of unique values, the standard deviation is used as a tie-breaker; the dimension with the higher standard deviation is chosen.
     // - If all dimensions have only one unique value, it indicates no diversity, and the function returns `None`.
     // - Otherwise, it returns the index of the most diverse dimension.
-    pub fn get_most_diverse_dimension(&self, key: &[usize]) -> Option<usize> {
+    pub fn get_most_diverse_dimension(&self, key: &RegionKey) -> Option<usize> {
         let region = self.regions.get(key)?;
         let organisms = region.organisms();
 
@@ -59,7 +59,7 @@ mod tests {
     use crate::phenotype::Phenotype;
     use crate::world::organisms::organism::Organism;
     use crate::world::regions::Regions;
-    use crate::world::regions::region::Region;
+    use crate::world::regions::region::{Region, region_key::RegionKey};
     use std::sync::Arc;
 
     // Helper to create a valid phenotype for testing.
@@ -75,11 +75,15 @@ mod tests {
         Arc::new(Organism::new(Arc::new(phenotype), 0, (None, None)))
     }
 
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
+    }
+
     #[test]
     fn given_region_with_one_organism_when_get_most_diverse_dimension_then_returns_none() {
         let constants = GlobalConstants::new(10, 2);
         let mut regions = Regions::new(&constants);
-        let key = vec![0];
+        let key = rk(&[0]);
         let mut region = Region::new();
         let organism = create_test_organism(create_test_phenotype(vec![1.0, 2.0]));
         region.add_organism(organism);
@@ -93,7 +97,7 @@ mod tests {
      {
         let constants = GlobalConstants::new(10, 2);
         let mut regions = Regions::new(&constants);
-        let key = vec![0];
+        let key = rk(&[0]);
         let mut region = Region::new();
 
         // Problem dimension 0: no diversity
@@ -112,7 +116,7 @@ mod tests {
     fn given_tie_in_uniqueness_when_get_most_diverse_dimension_then_std_dev_breaks_tie() {
         let constants = GlobalConstants::new(10, 2);
         let mut regions = Regions::new(&constants);
-        let key = vec![0];
+        let key = rk(&[0]);
         let mut region = Region::new();
 
         // Problem dimension 0: 2 unique, std dev low
@@ -130,7 +134,7 @@ mod tests {
     fn given_no_diversity_when_get_most_diverse_dimension_then_returns_none() {
         let constants = GlobalConstants::new(10, 2);
         let mut regions = Regions::new(&constants);
-        let key = vec![0];
+        let key = rk(&[0]);
         let mut region = Region::new();
         let org1 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
         let org2 = create_test_organism(create_test_phenotype(vec![1.0, 1.0]));
@@ -145,7 +149,7 @@ mod tests {
     fn given_non_existent_key_when_get_most_diverse_dimension_then_returns_none() {
         let constants = GlobalConstants::new(10, 2);
         let regions = Regions::new(&constants);
-        let key = vec![0];
+        let key = rk(&[0]);
 
         assert_eq!(regions.get_most_diverse_dimension(&key), None);
     }

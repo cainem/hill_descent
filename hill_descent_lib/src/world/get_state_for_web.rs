@@ -1,4 +1,5 @@
 use crate::locus::locus_adjustment::DirectionOfTravel;
+use crate::world::regions::region::region_key::RegionKey;
 use serde::Serialize;
 use serde_json;
 
@@ -350,7 +351,7 @@ impl super::World {
         let mut max_score_global = f64::MIN;
 
         // Also capture the region keys so we can validate organism membership precisely.
-        let mut region_keys: Vec<Vec<usize>> = Vec::new();
+        let mut region_keys: Vec<RegionKey> = Vec::new();
 
         let regions: Vec<RegionState> = self
             .regions
@@ -365,7 +366,7 @@ impl super::World {
                 let mut bounds_x = (0.0, 0.0);
                 let mut bounds_y = (0.0, 0.0);
 
-                for (i, &dim_idx) in key.iter().enumerate() {
+                for (i, &dim_idx) in key.values().iter().enumerate() {
                     let (start, end) = dims[i]
                         .interval_bounds(dim_idx)
                         .expect("Region key contained an out-of-range interval index");
@@ -405,9 +406,10 @@ impl super::World {
                 .get_interval(org.params.y)
                 .expect("Organism y not in any interval despite dimensions");
 
-            let in_region_key = region_keys
-                .iter()
-                .any(|k| k.len() == 2 && k[0] == xi && k[1] == yi);
+            let in_region_key = region_keys.iter().any(|k| {
+                let values = k.values();
+                values.len() == 2 && values[0] == xi && values[1] == yi
+            });
             if !in_region_key {
                 eprintln!("Organism outside any region: {org:?}");
                 eprintln!("Regions: {regions:?}");

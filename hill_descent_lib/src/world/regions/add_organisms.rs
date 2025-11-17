@@ -30,9 +30,8 @@ impl super::Regions {
             let key = organism
                 .region_key()
                 .expect("All organisms must have a region key when adding to regions");
-            let key_vec: Vec<usize> = key.into();
             let organism_rc: Arc<Organism> = Arc::clone(organism);
-            let region = self.regions.entry(key_vec).or_default();
+            let region = self.regions.entry(key).or_default();
             region.add_organism(organism_rc);
         }
 
@@ -54,7 +53,10 @@ mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
         phenotype::Phenotype,
-        world::{organisms::Organisms, regions::Regions},
+        world::{
+            organisms::Organisms,
+            regions::{Regions, region::region_key::RegionKey},
+        },
     };
     use std::sync::Arc;
 
@@ -63,6 +65,10 @@ mod tests {
     fn mock_phenotype() -> Phenotype {
         let expressed_values: Vec<f64> = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // 7 values
         Phenotype::new_for_test(expressed_values)
+    }
+
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
     }
 
     #[test]
@@ -94,7 +100,7 @@ mod tests {
     fn given_one_organism_with_region_key_when_add_phenotypes_then_region_created_with_orgtype() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key1 = vec![1, 2, 3];
+        let region_key1 = rk(&[1, 2, 3]);
 
         let organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let orgtype_rc_from_org = organisms_collection
@@ -106,7 +112,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key1.clone().into()));
+            .set_region_key(Some(region_key1.clone()));
 
         regions.add_organisms(&organisms_collection);
 
@@ -125,18 +131,18 @@ mod tests {
     fn given_multiple_organisms_same_key_when_add_phenotypes_then_region_has_all_orgtypes() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key = vec![1];
+        let region_key = rk(&[1]);
 
         let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut org_iter_mut = organisms_collection.iter();
 
         let org1_mut = org_iter_mut.next().unwrap();
-        org1_mut.set_region_key(Some(region_key.clone().into()));
+        org1_mut.set_region_key(Some(region_key.clone()));
         let org1_rc_from_org = org1_mut.get_phenotype_rc();
 
         let org2_mut = org_iter_mut.next().unwrap();
-        org2_mut.set_region_key(Some(region_key.clone().into()));
+        org2_mut.set_region_key(Some(region_key.clone()));
         let org2_rc_from_org = org2_mut.get_phenotype_rc();
 
         regions.add_organisms(&organisms_collection);
@@ -165,19 +171,19 @@ mod tests {
     {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key1 = vec![1];
-        let region_key2 = vec![2];
+        let region_key1 = rk(&[1]);
+        let region_key2 = rk(&[2]);
 
         let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
         let mut iter_mut = organisms_collection.iter();
 
         let organism1_mut = iter_mut.next().unwrap();
-        organism1_mut.set_region_key(Some(region_key1.clone().into()));
+        organism1_mut.set_region_key(Some(region_key1.clone()));
         let org1_rc_from_org = organism1_mut.get_phenotype_rc();
 
         let organism2_mut = iter_mut.next().unwrap();
-        organism2_mut.set_region_key(Some(region_key2.clone().into()));
+        organism2_mut.set_region_key(Some(region_key2.clone()));
         let org2_rc_from_org = organism2_mut.get_phenotype_rc();
 
         regions.add_organisms(&organisms_collection);
@@ -208,7 +214,7 @@ mod tests {
     {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key = vec![1, 0, 0];
+        let region_key = rk(&[1, 0, 0]);
 
         // First, add one organism to create the region and put one orgtype in it
         let initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
@@ -217,7 +223,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key.clone().into()));
+            .set_region_key(Some(region_key.clone()));
         regions.add_organisms(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
@@ -231,7 +237,7 @@ mod tests {
             .iter()
             .next()
             .unwrap()
-            .set_region_key(Some(region_key.clone().into()));
+            .set_region_key(Some(region_key.clone()));
 
         // Act: add the new organism
         regions.add_organisms(&new_organisms_to_add);

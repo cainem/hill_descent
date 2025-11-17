@@ -102,7 +102,7 @@ mod test_update_carrying_capacities {
     use crate::phenotype::Phenotype;
     use crate::world::dimensions::Dimensions; // Not directly used by update_carrying_capacities tests but by helpers
     use crate::world::organisms::Organisms; // Not directly used by update_carrying_capacities tests but by helpers
-    use crate::world::regions::{Region, Regions};
+    use crate::world::regions::{Region, Regions, region::region_key::RegionKey};
     use std::ops::RangeInclusive;
 
     // HELPER FUNCTIONS (copied from src/world/regions/update.rs test module)
@@ -154,10 +154,14 @@ mod test_update_carrying_capacities {
         region
     }
 
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
+    }
+
     #[test]
     fn given_no_regions_with_min_scores_when_update_capacities_then_all_capacities_zero() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
-        let key1 = vec![1];
+        let key1 = rk(&[1]);
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(None));
 
         regions_struct.update_carrying_capacities();
@@ -173,7 +177,7 @@ mod test_update_carrying_capacities {
     #[test]
     fn given_zero_min_score_when_update_capacities_then_gets_all_capacity() {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, 10);
-        let key1 = vec![1];
+        let key1 = rk(&[1]);
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
         regions_struct.update_carrying_capacities();
         assert_eq!(
@@ -190,7 +194,7 @@ mod test_update_carrying_capacities {
      {
         let population_size = 10;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key1 = vec![1];
+        let key1 = rk(&[1]);
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(5.0)));
 
         regions_struct.update_carrying_capacities();
@@ -208,8 +212,8 @@ mod test_update_carrying_capacities {
     {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key1 = vec![1];
-        let key2 = vec![2];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
 
         // F1 = 10, F2 = 40. Sum(1/F) = 1/10 + 1/40 = 0.1 + 0.025 = 0.125
         // Cap1 = P * (1/F1) / Sum(1/F) = 100 * (0.1 / 0.125) = 100 * 0.8 = 80
@@ -238,8 +242,8 @@ mod test_update_carrying_capacities {
     fn given_region_with_no_min_score_when_update_capacities_then_its_capacity_is_zero() {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key_with_score = vec![1];
-        let key_without_score = vec![2];
+        let key_with_score = rk(&[1]);
+        let key_without_score = rk(&[2]);
 
         regions_struct.insert_region(
             key_with_score.clone(),
@@ -272,8 +276,8 @@ mod test_update_carrying_capacities {
      {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key_infinite = vec![1];
-        let key_finite = vec![2];
+        let key_infinite = rk(&[1]);
+        let key_finite = rk(&[2]);
 
         // Very small min_score leads to infinite inverse fitness
         let very_small = 1e-320; // This will cause 1.0/very_small to be infinite
@@ -308,10 +312,10 @@ mod test_update_carrying_capacities {
      {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
-        let key1 = vec![1];
-        let key2 = vec![2];
-        let key3 = vec![3];
-        let key_finite = vec![4];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
+        let key3 = rk(&[3]);
+        let key_finite = rk(&[4]);
 
         // Three regions with infinite inverse fitness (using very small values that cause overflow to infinity)
         let very_small = 1e-320; // This will cause 1.0/very_small to be infinite
@@ -367,7 +371,7 @@ mod test_update_carrying_capacities {
         // Create 15 regions with very small min_scores that would cause overflow in the old implementation
         let very_small = 1e-320; // This will cause 1.0/very_small to be infinite
         for i in 1..=15 {
-            let key = vec![i];
+            let key = rk(&[i]);
             // This would create infinite inverse fitness, causing overflow in the old implementation
             // With 15 such regions, the sum would overflow
             regions_struct.insert_region(key, setup_region_with_min_score(Some(very_small)));
@@ -379,7 +383,7 @@ mod test_update_carrying_capacities {
         // Verify all infinite regions get equal share of capacity
         let mut total_allocated = 0;
         for i in 1..=15 {
-            let key = vec![i];
+            let key = rk(&[i]);
             let capacity = regions_struct
                 .get_region(&key)
                 .unwrap()
@@ -397,8 +401,8 @@ mod test_update_carrying_capacities {
     fn given_negative_min_score_when_update_capacities_then_panics() {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
-        let key_negative = vec![1];
-        let key_positive = vec![2];
+        let key_negative = rk(&[1]);
+        let key_positive = rk(&[2]);
 
         regions_struct.insert_region(
             key_negative.clone(),
@@ -418,8 +422,8 @@ mod test_update_carrying_capacities {
     fn given_non_finite_min_score_when_update_capacities_then_panics() {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
-        let key_nan = vec![1];
-        let key_positive = vec![2];
+        let key_nan = rk(&[1]);
+        let key_positive = rk(&[2]);
 
         regions_struct.insert_region(key_nan.clone(), setup_region_with_min_score(Some(f64::NAN)));
         regions_struct.insert_region(
@@ -435,9 +439,9 @@ mod test_update_carrying_capacities {
     fn given_zero_and_positive_min_scores_when_update_capacities_then_zero_gets_all_capacity() {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
-        let key_zero = vec![1];
-        let key_positive = vec![2];
-        let key_none = vec![3];
+        let key_zero = rk(&[1]);
+        let key_positive = rk(&[2]);
+        let key_none = rk(&[3]);
 
         regions_struct.insert_region(key_zero.clone(), setup_region_with_min_score(Some(0.0)));
         regions_struct.insert_region(
@@ -479,9 +483,9 @@ mod test_update_carrying_capacities {
         let population_size = 30;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
 
-        let key1 = vec![1];
-        let key2 = vec![2];
-        let key3 = vec![3];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
+        let key3 = rk(&[3]);
 
         // Set up regions with different positive scores
         // inverse fitness: 1.0, 0.5, 0.2; sum = 1.7
@@ -521,7 +525,7 @@ mod test_update_carrying_capacities {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(5, population_size);
 
         for i in 1..=5 {
-            let key = vec![i];
+            let key = rk(&[i]);
             regions_struct.insert_region(key, setup_region_with_min_score(Some(10.0 * i as f64)));
         }
 
@@ -529,7 +533,7 @@ mod test_update_carrying_capacities {
 
         let mut total_capacity = 0;
         for i in 1..=5 {
-            let key = vec![i];
+            let key = rk(&[i]);
             total_capacity += regions_struct
                 .get_region(&key)
                 .unwrap()
@@ -547,7 +551,7 @@ mod test_update_carrying_capacities {
         let (mut regions_struct, _gc) = create_test_regions_and_gc(num_regions, population_size);
 
         for i in 1..=num_regions {
-            let key = vec![i];
+            let key = rk(&[i]);
             regions_struct.insert_region(key, setup_region_with_min_score(Some((i * 2) as f64)));
         }
 
@@ -556,7 +560,7 @@ mod test_update_carrying_capacities {
         let mut total_capacity = 0;
         let mut regions_with_capacity = 0;
         for i in 1..=num_regions {
-            let key = vec![i];
+            let key = rk(&[i]);
             let capacity = regions_struct
                 .get_region(&key)
                 .unwrap()
@@ -577,8 +581,8 @@ mod test_update_carrying_capacities {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
 
-        let key1 = vec![1];
-        let key2 = vec![2];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
 
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(0.0)));
         regions_struct.insert_region(key2.clone(), setup_region_with_min_score(Some(0.0)));
@@ -607,9 +611,9 @@ mod test_update_carrying_capacities {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(3, population_size);
 
-        let key1 = vec![1];
-        let key2 = vec![2];
-        let key3 = vec![3];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
+        let key3 = rk(&[3]);
 
         // Very similar scores
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(10.0)));
@@ -645,8 +649,8 @@ mod test_update_carrying_capacities {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(2, population_size);
 
-        let key_low = vec![1];
-        let key_high = vec![2];
+        let key_low = rk(&[1]);
+        let key_high = rk(&[2]);
 
         regions_struct.insert_region(key_low.clone(), setup_region_with_min_score(Some(1.0)));
         regions_struct.insert_region(key_high.clone(), setup_region_with_min_score(Some(1000.0)));
@@ -674,13 +678,13 @@ mod test_update_carrying_capacities {
         let population_size = 200;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(10, population_size);
 
-        let key_infinite = vec![1];
+        let key_infinite = rk(&[1]);
         // One region with infinite inverse fitness
         regions_struct.insert_region(key_infinite.clone(), setup_region_with_min_score(Some(0.0)));
 
         // Nine regions with finite scores
         for i in 2..=10 {
-            let key = vec![i];
+            let key = rk(&[i]);
             regions_struct.insert_region(key, setup_region_with_min_score(Some((i * 5) as f64)));
         }
 
@@ -697,7 +701,7 @@ mod test_update_carrying_capacities {
 
         // All finite regions get zero
         for i in 2..=10 {
-            let key = vec![i];
+            let key = rk(&[i]);
             assert_eq!(
                 regions_struct.get_region(&key).unwrap().carrying_capacity(),
                 Some(0)
@@ -712,7 +716,7 @@ mod test_update_carrying_capacities {
 
         // Five regions with zero scores (infinite fitness)
         for i in 1..=5 {
-            let key = vec![i];
+            let key = rk(&[i]);
             regions_struct.insert_region(key, setup_region_with_min_score(Some(0.0)));
         }
 
@@ -721,7 +725,7 @@ mod test_update_carrying_capacities {
         let mut total = 0;
         let mut capacities = Vec::new();
         for i in 1..=5 {
-            let key = vec![i];
+            let key = rk(&[i]);
             let cap = regions_struct
                 .get_region(&key)
                 .unwrap()
@@ -743,10 +747,10 @@ mod test_update_carrying_capacities {
         let population_size = 100;
         let (mut regions_struct, _gc) = create_test_regions_and_gc(4, population_size);
 
-        let key1 = vec![1];
-        let key2 = vec![2];
-        let key3 = vec![3];
-        let key4 = vec![4];
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
+        let key3 = rk(&[3]);
+        let key4 = rk(&[4]);
 
         regions_struct.insert_region(key1.clone(), setup_region_with_min_score(Some(5.0)));
         regions_struct.insert_region(key2.clone(), setup_region_with_min_score(None));
