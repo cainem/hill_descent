@@ -125,6 +125,23 @@ impl RegionKey {
         }
     }
 
+    /// Updates a position in-place.
+    ///
+    /// Uses Arc::make_mut to avoid allocation if the RegionKey is uniquely owned.
+    /// If the key is shared, it will clone the data (Copy-On-Write).
+    pub fn update_position(&mut self, position: usize, new_value: usize) {
+        // Get mutable access to values; clones ONLY if ref_count > 1
+        let values = Arc::make_mut(&mut self.values);
+
+        let old_value = values[position];
+        values[position] = new_value;
+
+        // Update hash incrementally (XOR is its own inverse)
+        self.hash = self.hash
+            ^ Self::position_hash(position, old_value)
+            ^ Self::position_hash(position, new_value);
+    }
+
     /// Returns a reference to the underlying values.
     pub fn values(&self) -> &[usize] {
         &self.values
@@ -322,6 +339,16 @@ mod tests {
 
         assert_ne!(key1, key2);
         assert_ne!(key1.hash(), key2.hash());
+    }
+
+    #[test]
+    fn given_region_key_when_update_position_mut_then_updates_correctly() {
+        let mut key = RegionKey::new(vec![1, 2, 3]);
+        key.update_position(1, 5);
+        assert_eq!(key.values(), &[1, 5, 3]);
+
+        let expected = RegionKey::new(vec![1, 5, 3]);
+        assert_eq!(key.hash(), expected.hash());
     }
 
     #[test]

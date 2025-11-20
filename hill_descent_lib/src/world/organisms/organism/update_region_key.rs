@@ -55,20 +55,20 @@ impl Organism {
         } else if let Some(dim_idx) = dimension_changed {
             // Optimized path: only one dimension has changed.
             crate::trace!("update_region_key: optimized path taken for dimension {dim_idx}");
-            let current_key = self
-                .region_key()
+            let mut current_key = self
+                .take_region_key()
                 .expect("Cached region key expected when dimension_changed is provided");
             let dimension = dimensions_container.get_dimension(dim_idx);
             let value = self.phenotype().expression_problem_values()[dim_idx];
 
             match dimension.get_interval(value) {
                 Some(interval) => {
-                    let new_key = current_key.with_updated_position(dim_idx, interval);
-                    self.set_region_key(Some(new_key));
+                    current_key.update_position(dim_idx, interval);
+                    self.set_region_key(Some(current_key));
                     OrganismUpdateRegionKeyResult::Success
                 }
                 None => {
-                    self.set_region_key(None);
+                    // Key is already removed (taken), so just ensure it stays None (which it is)
                     OrganismUpdateRegionKeyResult::OutOfBounds(dim_idx)
                 }
             }

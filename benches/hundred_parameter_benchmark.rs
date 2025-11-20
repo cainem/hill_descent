@@ -28,7 +28,7 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
     // Some reasonable global constants for a higher-dimensional search.
     // These mimic the style used in the existing tests.
-    let global_constants = GlobalConstants::new(2000, 1000);
+    let global_constants = GlobalConstants::new(500, 20);
 
     // Build the world once; during the benchmark we will repeatedly call
     // `training_run` to measure the performance of an epoch.

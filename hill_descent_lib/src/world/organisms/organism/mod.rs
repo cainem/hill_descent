@@ -102,6 +102,11 @@ impl Organism {
         self.region_key.lock().unwrap().clone()
     }
 
+    /// Takes the region key from the organism, leaving None in its place.
+    pub fn take_region_key(&self) -> Option<RegionKey> {
+        self.region_key.lock().unwrap().take()
+    }
+
     /// Sets the region key of the organism.
     pub fn set_region_key(&self, region_key: Option<RegionKey>) {
         *self.region_key.lock().unwrap() = region_key;
