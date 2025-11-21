@@ -188,7 +188,7 @@ mod tests {
         let p_oob = Phenotype::new_for_test(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 5.0]); // problem values: [15.0, 5.0] - 15.0 > 10.0 bound
         let organism_oob =
             crate::world::organisms::organism::Organism::new(Arc::new(p_oob), 0, (None, None));
-        organism_oob.set_region_key(Some(vec![1, 1])); // Set a cached key to trigger fast path
+        organism_oob.set_region_key(Some(vec![1, 1].into())); // Set a cached key to trigger fast path
 
         let mut organisms_with_oob = Organisms::new_from_organisms(vec![organism_oob.clone()]);
 

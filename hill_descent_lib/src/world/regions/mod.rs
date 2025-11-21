@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use rustc_hash::FxBuildHasher;
 
-use region::Region;
+use region::{Region, region_key::RegionKey};
 
 pub mod add_organisms;
 pub mod adjust_regions;
@@ -28,7 +28,7 @@ use crate::parameters::global_constants::GlobalConstants;
 #[derive(Debug, Clone)]
 // Container managing all Region instances and enforcing global constraints such as maximum regions and population size.
 pub struct Regions {
-    regions: IndexMap<Vec<usize>, Region, FxBuildHasher>,
+    regions: IndexMap<RegionKey, Region, FxBuildHasher>,
     // the target "ideal" number of regions
     // the algorithm doesn't strictly enforce it as a maximum number of regions
     // but it won't be more that target_regions * 2
@@ -72,24 +72,24 @@ impl Regions {
 
     /// Returns a reference to the region associated with the given key.
     #[allow(dead_code)]
-    pub fn get_region(&self, key: &[usize]) -> Option<&Region> {
+    pub fn get_region(&self, key: &RegionKey) -> Option<&Region> {
         self.regions.get(key)
     }
 
     /// Returns a mutable reference to the region associated with the given key.
     #[allow(dead_code)]
-    pub fn get_region_mut(&mut self, key: &[usize]) -> Option<&mut Region> {
+    pub fn get_region_mut(&mut self, key: &RegionKey) -> Option<&mut Region> {
         self.regions.get_mut(key)
     }
 
     /// Returns an iterator over (key, region) pairs.
-    pub fn iter_regions(&self) -> impl Iterator<Item = (&Vec<usize>, &Region)> {
+    pub fn iter_regions(&self) -> impl Iterator<Item = (&RegionKey, &Region)> {
         self.regions.iter()
     }
 
     /// Returns a mutable iterator over (key, region) pairs.
     #[allow(dead_code)]
-    pub fn iter_regions_mut(&mut self) -> impl Iterator<Item = (&Vec<usize>, &mut Region)> {
+    pub fn iter_regions_mut(&mut self) -> impl Iterator<Item = (&RegionKey, &mut Region)> {
         self.regions.iter_mut()
     }
 
@@ -106,7 +106,7 @@ impl Regions {
 
     /// Returns an iterator over region keys only.
     #[allow(dead_code)]
-    pub fn iter_region_keys(&self) -> impl Iterator<Item = &Vec<usize>> {
+    pub fn iter_region_keys(&self) -> impl Iterator<Item = &RegionKey> {
         self.regions.keys()
     }
 
@@ -114,27 +114,27 @@ impl Regions {
 
     /// Inserts a region with the given key. Returns the previous region if one existed.
     #[allow(dead_code)]
-    pub fn insert_region(&mut self, key: Vec<usize>, region: Region) -> Option<Region> {
+    pub fn insert_region(&mut self, key: RegionKey, region: Region) -> Option<Region> {
         self.regions.insert(key, region)
     }
 
     /// Removes a region with the given key. Returns the removed region if it existed.
     #[allow(dead_code)]
-    pub fn remove_region(&mut self, key: &[usize]) -> Option<Region> {
+    pub fn remove_region(&mut self, key: &RegionKey) -> Option<Region> {
         self.regions.shift_remove(key)
     }
 
     /// Retains only the regions for which the predicate returns true.
     pub fn retain_regions<F>(&mut self, predicate: F)
     where
-        F: FnMut(&Vec<usize>, &mut Region) -> bool,
+        F: FnMut(&RegionKey, &mut Region) -> bool,
     {
         self.regions.retain(predicate)
     }
 
     /// Returns true if a region with the given key exists.
     #[allow(dead_code)]
-    pub fn contains_region_key(&self, key: &[usize]) -> bool {
+    pub fn contains_region_key(&self, key: &RegionKey) -> bool {
         self.regions.contains_key(key)
     }
 
@@ -142,7 +142,7 @@ impl Regions {
 
     /// Collects all region keys into a vector. Useful for iteration when mutations are needed.
     #[allow(dead_code)]
-    pub fn collect_region_keys(&self) -> Vec<Vec<usize>> {
+    pub fn collect_region_keys(&self) -> Vec<RegionKey> {
         self.regions.keys().cloned().collect()
     }
 
@@ -167,6 +167,10 @@ mod encapsulation_tests {
         Region::new()
     }
 
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
+    }
+
     // len() tests
 
     #[test]
@@ -178,16 +182,16 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_single_region_when_len_then_returns_one() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
         assert_eq!(regions.len(), 1);
     }
 
     #[test]
     fn given_regions_with_multiple_regions_when_len_then_returns_correct_count() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
-        regions.insert_region(vec![2, 3], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
+        regions.insert_region(rk(&[2, 3]), create_test_region());
         assert_eq!(regions.len(), 3);
     }
 
@@ -202,7 +206,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_single_region_when_is_empty_then_returns_false() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
         assert!(!regions.is_empty());
     }
 
@@ -211,13 +215,14 @@ mod encapsulation_tests {
     #[test]
     fn given_empty_regions_when_get_region_then_returns_none() {
         let regions = create_test_regions();
-        assert!(regions.get_region(&[0, 1]).is_none());
+        let key = rk(&[0, 1]);
+        assert!(regions.get_region(&key).is_none());
     }
 
     #[test]
     fn given_regions_with_region_when_get_region_with_existing_key_then_returns_some() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         regions.insert_region(key.clone(), create_test_region());
 
         let result = regions.get_region(&key);
@@ -227,9 +232,10 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_get_region_with_non_existing_key_then_returns_none() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
 
-        let result = regions.get_region(&[1, 2]);
+        let missing_key = rk(&[1, 2]);
+        let result = regions.get_region(&missing_key);
         assert!(result.is_none());
     }
 
@@ -238,13 +244,14 @@ mod encapsulation_tests {
     #[test]
     fn given_empty_regions_when_get_region_mut_then_returns_none() {
         let mut regions = create_test_regions();
-        assert!(regions.get_region_mut(&[0, 1]).is_none());
+        let key = rk(&[0, 1]);
+        assert!(regions.get_region_mut(&key).is_none());
     }
 
     #[test]
     fn given_regions_with_region_when_get_region_mut_with_existing_key_then_returns_some() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         regions.insert_region(key.clone(), create_test_region());
 
         let result = regions.get_region_mut(&key);
@@ -254,16 +261,17 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_get_region_mut_with_non_existing_key_then_returns_none() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
 
-        let result = regions.get_region_mut(&[1, 2]);
+        let missing_key = rk(&[1, 2]);
+        let result = regions.get_region_mut(&missing_key);
         assert!(result.is_none());
     }
 
     #[test]
     fn given_regions_with_region_when_get_region_mut_then_allows_mutation() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut region = create_test_region();
         region.set_min_score(Some(42.0));
         regions.insert_region(key.clone(), region);
@@ -287,7 +295,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_single_region_when_iter_regions_then_yields_one_item() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
 
         let count = regions.iter_regions().count();
         assert_eq!(count, 1);
@@ -296,9 +304,9 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_multiple_regions_when_iter_regions_then_yields_all_items() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
-        regions.insert_region(vec![2, 3], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
+        regions.insert_region(rk(&[2, 3]), create_test_region());
 
         let count = regions.iter_regions().count();
         assert_eq!(count, 3);
@@ -307,7 +315,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_iter_regions_then_yields_correct_key_value_pairs() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut region = create_test_region();
         region.set_min_score(Some(42.0));
         regions.insert_region(key.clone(), region);
@@ -330,7 +338,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_iter_regions_mut_then_allows_mutation() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut region = create_test_region();
         region.set_min_score(Some(42.0));
         regions.insert_region(key.clone(), region);
@@ -354,8 +362,8 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_multiple_regions_when_iter_region_values_then_yields_all_values() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
 
         let count = regions.iter_region_values().count();
         assert_eq!(count, 2);
@@ -373,7 +381,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_iter_region_values_mut_then_allows_mutation() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut region = create_test_region();
         region.set_min_score(Some(42.0));
         regions.insert_region(key.clone(), region);
@@ -397,8 +405,8 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_multiple_regions_when_iter_region_keys_then_yields_all_keys() {
         let mut regions = create_test_regions();
-        let key1 = vec![0, 1];
-        let key2 = vec![1, 2];
+        let key1 = rk(&[0, 1]);
+        let key2 = rk(&[1, 2]);
         regions.insert_region(key1.clone(), create_test_region());
         regions.insert_region(key2.clone(), create_test_region());
 
@@ -413,7 +421,7 @@ mod encapsulation_tests {
     #[test]
     fn given_empty_regions_when_insert_region_then_returns_none_and_adds_region() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let region = create_test_region();
 
         let result = regions.insert_region(key.clone(), region);
@@ -426,7 +434,7 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_existing_key_when_insert_region_then_returns_previous_region() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut old_region = create_test_region();
         old_region.set_min_score(Some(42.0));
         let mut new_region = create_test_region();
@@ -445,7 +453,8 @@ mod encapsulation_tests {
     #[test]
     fn given_empty_regions_when_remove_region_then_returns_none() {
         let mut regions = create_test_regions();
-        let result = regions.remove_region(&[0, 1]);
+        let key = rk(&[0, 1]);
+        let result = regions.remove_region(&key);
         assert!(result.is_none());
     }
 
@@ -453,7 +462,7 @@ mod encapsulation_tests {
     fn given_regions_with_region_when_remove_region_with_existing_key_then_returns_region_and_removes_it()
      {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         let mut region = create_test_region();
         region.set_min_score(Some(42.0));
         regions.insert_region(key.clone(), region);
@@ -469,9 +478,10 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_region_when_remove_region_with_non_existing_key_then_returns_none() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
 
-        let result = regions.remove_region(&[1, 2]);
+        let missing_key = rk(&[1, 2]);
+        let result = regions.remove_region(&missing_key);
         assert!(result.is_none());
         assert_eq!(regions.len(), 1);
     }
@@ -488,8 +498,8 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_when_retain_regions_with_always_true_predicate_then_keeps_all_regions() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
 
         regions.retain_regions(|_, _| true);
         assert_eq!(regions.len(), 2);
@@ -498,8 +508,8 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_when_retain_regions_with_always_false_predicate_then_removes_all_regions() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
 
         regions.retain_regions(|_, _| false);
         assert!(regions.is_empty());
@@ -513,15 +523,18 @@ mod encapsulation_tests {
         let mut region2 = create_test_region();
         region2.set_min_score(Some(50.0));
 
-        regions.insert_region(vec![0, 1], region1);
-        regions.insert_region(vec![1, 2], region2);
+        let key1 = rk(&[0, 1]);
+        let key2 = rk(&[1, 2]);
+
+        regions.insert_region(key1.clone(), region1);
+        regions.insert_region(key2.clone(), region2);
 
         // Keep only regions with min_score > 25.0
         regions.retain_regions(|_, region| region.min_score().is_some_and(|score| score > 25.0));
 
         assert_eq!(regions.len(), 1);
-        assert!(regions.contains_region_key(&[1, 2]));
-        assert!(!regions.contains_region_key(&[0, 1]));
+        assert!(regions.contains_region_key(&key2));
+        assert!(!regions.contains_region_key(&key1));
     }
 
     // contains_region_key() tests
@@ -529,13 +542,14 @@ mod encapsulation_tests {
     #[test]
     fn given_empty_regions_when_contains_region_key_then_returns_false() {
         let regions = create_test_regions();
-        assert!(!regions.contains_region_key(&[0, 1]));
+        let key = rk(&[0, 1]);
+        assert!(!regions.contains_region_key(&key));
     }
 
     #[test]
     fn given_regions_with_region_when_contains_region_key_with_existing_key_then_returns_true() {
         let mut regions = create_test_regions();
-        let key = vec![0, 1];
+        let key = rk(&[0, 1]);
         regions.insert_region(key.clone(), create_test_region());
 
         assert!(regions.contains_region_key(&key));
@@ -545,9 +559,10 @@ mod encapsulation_tests {
     fn given_regions_with_region_when_contains_region_key_with_non_existing_key_then_returns_false()
     {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
 
-        assert!(!regions.contains_region_key(&[1, 2]));
+        let missing_key = rk(&[1, 2]);
+        assert!(!regions.contains_region_key(&missing_key));
     }
 
     // collect_region_keys() tests
@@ -562,9 +577,9 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_multiple_regions_when_collect_region_keys_then_returns_all_keys() {
         let mut regions = create_test_regions();
-        let key1 = vec![0, 1];
-        let key2 = vec![1, 2];
-        let key3 = vec![2, 3];
+        let key1 = rk(&[0, 1]);
+        let key2 = rk(&[1, 2]);
+        let key3 = rk(&[2, 3]);
 
         regions.insert_region(key1.clone(), create_test_region());
         regions.insert_region(key2.clone(), create_test_region());
@@ -589,9 +604,9 @@ mod encapsulation_tests {
     #[test]
     fn given_regions_with_multiple_regions_when_clear_regions_then_becomes_empty() {
         let mut regions = create_test_regions();
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
-        regions.insert_region(vec![2, 3], create_test_region());
+        regions.insert_region(rk(&[0, 1]), create_test_region());
+        regions.insert_region(rk(&[1, 2]), create_test_region());
+        regions.insert_region(rk(&[2, 3]), create_test_region());
 
         regions.clear_regions();
         assert!(regions.is_empty());
@@ -605,22 +620,25 @@ mod encapsulation_tests {
         let mut regions = create_test_regions();
 
         // Insert some regions
-        regions.insert_region(vec![0, 1], create_test_region());
-        regions.insert_region(vec![1, 2], create_test_region());
-        regions.insert_region(vec![2, 3], create_test_region());
+        let key1 = rk(&[0, 1]);
+        let key2 = rk(&[1, 2]);
+        let key3 = rk(&[2, 3]);
+        regions.insert_region(key1.clone(), create_test_region());
+        regions.insert_region(key2.clone(), create_test_region());
+        regions.insert_region(key3.clone(), create_test_region());
         assert_eq!(regions.len(), 3);
 
         // Remove one
-        let removed = regions.remove_region(&[1, 2]);
+        let removed = regions.remove_region(&key2);
         assert!(removed.is_some());
         assert_eq!(regions.len(), 2);
 
         // Check remaining keys
         let keys = regions.collect_region_keys();
         assert_eq!(keys.len(), 2);
-        assert!(keys.contains(&vec![0, 1]));
-        assert!(keys.contains(&vec![2, 3]));
-        assert!(!keys.contains(&vec![1, 2]));
+        assert!(keys.contains(&key1));
+        assert!(keys.contains(&key3));
+        assert!(!keys.contains(&key2));
 
         // Clear all
         regions.clear_regions();

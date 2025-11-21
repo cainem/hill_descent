@@ -48,14 +48,17 @@ mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
         phenotype::Phenotype,
-        world::{organisms::organism::Organism, regions::Regions},
+        world::{
+            organisms::organism::Organism,
+            regions::{Regions, region::region_key::RegionKey},
+        },
     };
     use std::sync::Arc;
 
     // Helper to create a test organism with a given score and region key
     fn create_test_organism_with_score_and_key(
         score: Option<f64>,
-        region_key: Option<Vec<usize>>,
+        region_key: Option<RegionKey>,
     ) -> Organism {
         let expressed_values = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // System params
         let phenotype = Arc::new(Phenotype::new_for_test(expressed_values));
@@ -63,6 +66,10 @@ mod tests {
         organism.set_score(score);
         organism.set_region_key(region_key);
         organism
+    }
+
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
     }
 
     #[test]
@@ -77,8 +84,8 @@ mod tests {
         let mut region2 = crate::world::regions::region::Region::new();
         region2.set_min_score(Some(3.0));
 
-        regions.regions.insert(vec![0, 0], region1);
-        regions.regions.insert(vec![1, 1], region2);
+        regions.regions.insert(rk(&[0, 0]), region1);
+        regions.regions.insert(rk(&[1, 1]), region2);
 
         assert_eq!(regions.len(), 2);
 
@@ -104,11 +111,11 @@ mod tests {
         // Start with some regions with old min_scores
         let mut region1 = crate::world::regions::region::Region::new();
         region1.set_min_score(Some(100.0)); // Old high score
-        regions.regions.insert(vec![0, 0], region1);
+        regions.regions.insert(rk(&[0, 0]), region1);
 
         // Create organisms with better scores
-        let organism1 = create_test_organism_with_score_and_key(Some(5.0), Some(vec![0, 0]));
-        let organism2 = create_test_organism_with_score_and_key(Some(3.0), Some(vec![0, 0]));
+        let organism1 = create_test_organism_with_score_and_key(Some(5.0), Some(rk(&[0, 0])));
+        let organism2 = create_test_organism_with_score_and_key(Some(3.0), Some(rk(&[0, 0])));
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
@@ -120,7 +127,8 @@ mod tests {
 
         // Assert
         assert_eq!(regions.len(), 1);
-        let region = regions.get_region(&[0, 0]).unwrap();
+        let key = rk(&[0, 0]);
+        let region = regions.get_region(&key).unwrap();
         assert_eq!(region.organism_count(), 2);
         assert_eq!(
             region.min_score(),
@@ -136,8 +144,8 @@ mod tests {
         let mut regions = Regions::new(&gc);
 
         // Create organisms without scores
-        let organism1 = create_test_organism_with_score_and_key(None, Some(vec![0, 0]));
-        let organism2 = create_test_organism_with_score_and_key(None, Some(vec![1, 1]));
+        let organism1 = create_test_organism_with_score_and_key(None, Some(rk(&[0, 0])));
+        let organism2 = create_test_organism_with_score_and_key(None, Some(rk(&[1, 1])));
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
@@ -146,8 +154,10 @@ mod tests {
 
         // Assert
         assert_eq!(regions.len(), 2);
-        let region1 = regions.get_region(&[0, 0]).unwrap();
-        let region2 = regions.get_region(&[1, 1]).unwrap();
+        let key1 = rk(&[0, 0]);
+        let key2 = rk(&[1, 1]);
+        let region1 = regions.get_region(&key1).unwrap();
+        let region2 = regions.get_region(&key2).unwrap();
         assert_eq!(region1.min_score(), None);
         assert_eq!(region2.min_score(), None);
     }
@@ -163,13 +173,13 @@ mod tests {
         let region2 = crate::world::regions::region::Region::new();
         let region3 = crate::world::regions::region::Region::new();
 
-        regions.regions.insert(vec![0, 0], region1);
-        regions.regions.insert(vec![1, 1], region2);
-        regions.regions.insert(vec![2, 2], region3);
+        regions.regions.insert(rk(&[0, 0]), region1);
+        regions.regions.insert(rk(&[1, 1]), region2);
+        regions.regions.insert(rk(&[2, 2]), region3);
 
         // Create organisms that only populate some regions
-        let organism1 = create_test_organism_with_score_and_key(Some(5.0), Some(vec![0, 0]));
-        let organism2 = create_test_organism_with_score_and_key(Some(3.0), Some(vec![2, 2]));
+        let organism1 = create_test_organism_with_score_and_key(Some(5.0), Some(rk(&[0, 0])));
+        let organism2 = create_test_organism_with_score_and_key(Some(3.0), Some(rk(&[2, 2])));
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2]);
 
@@ -178,12 +188,15 @@ mod tests {
 
         // Assert
         assert_eq!(regions.len(), 2, "Only populated regions should remain");
-        assert!(regions.get_region(&[0, 0]).is_some());
+        let key0 = rk(&[0, 0]);
+        let key1 = rk(&[1, 1]);
+        let key2 = rk(&[2, 2]);
+        assert!(regions.get_region(&key0).is_some());
         assert!(
-            regions.get_region(&[1, 1]).is_none(),
+            regions.get_region(&key1).is_none(),
             "Empty region should be pruned"
         );
-        assert!(regions.get_region(&[2, 2]).is_some());
+        assert!(regions.get_region(&key2).is_some());
     }
 
     #[test]
@@ -193,9 +206,9 @@ mod tests {
         let mut regions = Regions::new(&gc);
 
         // Create organisms with zero/negative scores
-        let organism1 = create_test_organism_with_score_and_key(Some(0.0), Some(vec![0, 0]));
-        let organism2 = create_test_organism_with_score_and_key(Some(-1.0), Some(vec![0, 0]));
-        let organism3 = create_test_organism_with_score_and_key(Some(5.0), Some(vec![0, 0])); // Higher score
+        let organism1 = create_test_organism_with_score_and_key(Some(0.0), Some(rk(&[0, 0])));
+        let organism2 = create_test_organism_with_score_and_key(Some(-1.0), Some(rk(&[0, 0])));
+        let organism3 = create_test_organism_with_score_and_key(Some(5.0), Some(rk(&[0, 0]))); // Higher score
 
         let mut organisms = Organisms::new_from_organisms(vec![organism1, organism2, organism3]);
 
@@ -203,7 +216,8 @@ mod tests {
         regions.refill(&mut organisms);
 
         // Assert
-        let region = regions.get_region(&[0, 0]).unwrap();
+        let key = rk(&[0, 0]);
+        let region = regions.get_region(&key).unwrap();
         assert_eq!(region.organism_count(), 3);
         assert_eq!(
             region.min_score(),

@@ -73,7 +73,7 @@ mod tests {
         let adj = create_test_adjustment(1.0, DirectionOfTravel::Add, false);
         let flag = true;
 
-        let locus = Locus::new(param_val.clone(), adj.clone(), flag);
+        let locus = Locus::new(param_val, adj.clone(), flag);
 
         assert_eq!(locus.value(), &param_val);
         assert_eq!(locus.adjustment(), &adj);
@@ -85,7 +85,7 @@ mod tests {
         let param_val = create_test_parameter(-5.0);
         let adj = create_test_adjustment(0.5, DirectionOfTravel::Subtract, true);
         let flag = false;
-        let locus = Locus::new(param_val.clone(), adj.clone(), flag);
+        let locus = Locus::new(param_val, adj.clone(), flag);
 
         assert_eq!(locus.value(), &param_val);
     }
@@ -95,7 +95,7 @@ mod tests {
         let param_val = create_test_parameter(20.0);
         let adj = create_test_adjustment(2.0, DirectionOfTravel::Add, false);
         let flag = true;
-        let locus = Locus::new(param_val.clone(), adj.clone(), flag);
+        let locus = Locus::new(param_val, adj.clone(), flag);
 
         assert_eq!(locus.adjustment(), &adj);
     }
@@ -106,11 +106,11 @@ mod tests {
         let adj = create_test_adjustment(0.0, DirectionOfTravel::Subtract, false);
 
         let flag_true = true;
-        let locus_true = Locus::new(param_val.clone(), adj.clone(), flag_true);
+        let locus_true = Locus::new(param_val, adj.clone(), flag_true);
         assert_eq!(locus_true.apply_adjustment_flag(), flag_true);
 
         let flag_false = false;
-        let locus_false = Locus::new(param_val.clone(), adj.clone(), flag_false);
+        let locus_false = Locus::new(param_val, adj.clone(), flag_false);
         assert_eq!(locus_false.apply_adjustment_flag(), flag_false);
     }
 }

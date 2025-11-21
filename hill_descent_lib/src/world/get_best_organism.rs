@@ -1,3 +1,4 @@
+use crate::TrainingData;
 use crate::world::{World, organisms::Organism};
 use std::sync::Arc;
 
@@ -14,13 +15,9 @@ impl World {
     ///
     /// # Parameters
     ///
-    /// For [`SingleValuedFunction`](crate::SingleValuedFunction) optimization:
-    /// * `training_data` - Pass `&[&[]]` (slice containing empty slice)
-    /// * `known_outputs` - Pass `&[&[]]` (slice containing empty slice)
-    ///
-    /// For advanced [`WorldFunction`](crate::WorldFunction) usage:
-    /// * `training_data` - Multiple input examples: `&[&[input1], &[input2], ...]`
-    /// * `known_outputs` - Corresponding target outputs: `&[&[target1], &[target2], ...]`
+    /// * `data` - Training data specification:
+    ///   - `TrainingData::None { floor_value }` for standard optimization
+    ///   - `TrainingData::Supervised { inputs, outputs }` for advanced supervised learning
     ///
     /// # Returns
     ///
@@ -33,7 +30,7 @@ impl World {
     /// ## Extract Best Solution After Optimization
     ///
     /// ```no_run
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct Sphere;
@@ -50,11 +47,11 @@ impl World {
     ///
     /// // Run optimization
     /// for _ in 0..500 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
     /// // Extract best solution (with one final epoch)
-    /// let best = world.get_best_organism(&[&[]], &[&[]]);
+    /// let best = world.get_best_organism(TrainingData::None { floor_value: 0.0 });
     /// let params = best.phenotype().expression_problem_values();
     ///
     /// println!("Best parameters: {:?}", params);
@@ -67,7 +64,7 @@ impl World {
     /// ## Get Final Solution with Score
     ///
     /// ```no_run
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct Rosenbrock;
@@ -85,10 +82,10 @@ impl World {
     /// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
     ///
     /// for _ in 0..1000 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
-    /// let best = world.get_best_organism(&[&[]], &[&[]]);
+    /// let best = world.get_best_organism(TrainingData::None { floor_value: 0.0 });
     /// let params = best.phenotype().expression_problem_values();
     /// let score = best.score().unwrap();
     ///
@@ -101,7 +98,7 @@ impl World {
     /// ## Multiple Dimensions
     ///
     /// ```no_run
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct HighDimension;
@@ -122,10 +119,10 @@ impl World {
     /// let mut world = setup_world(&param_range, constants, Box::new(HighDimension));
     ///
     /// for _ in 0..2000 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
-    /// let best = world.get_best_organism(&[&[]], &[&[]]);
+    /// let best = world.get_best_organism(TrainingData::None { floor_value: 0.0 });
     /// let params = best.phenotype().expression_problem_values();
     ///
     /// println!("10D solution: {:?}", params);
@@ -135,7 +132,7 @@ impl World {
     /// # Panics
     ///
     /// Panics if:
-    /// - The training data arrays are malformed (mismatched lengths)
+    /// - The training data is malformed (see [`TrainingData`] for requirements)
     /// - The population has no scored organisms (should not occur in normal usage)
     ///
     /// # Performance
@@ -148,18 +145,11 @@ impl World {
     /// - [`training_run`](World::training_run) - Run epochs without extracting results
     /// - [`get_best_score`](World::get_best_score) - Get just the fitness value
     /// - [`get_state`](World::get_state) - Full population snapshot
-    pub fn get_best_organism(
-        &mut self,
-        training_data: &[&[f64]],
-        known_outputs: &[&[f64]],
-    ) -> Arc<Organism> {
-        // 1. Validate inputs.
-        crate::world::validate_training_sets::validate_training_sets(training_data, known_outputs);
+    pub fn get_best_organism(&mut self, data: TrainingData) -> Arc<Organism> {
+        // Run one training epoch
+        self.training_run(data);
 
-        // 2. Run one epoch across the entire dataset.
-        self.run_epoch(training_data, known_outputs);
-
-        // 3. Return the fittest organism as Rc.
+        // Return the fittest organism
         self.organisms
             .best()
             .expect("Population contains no scored organisms")
@@ -190,23 +180,27 @@ mod tests {
         let mut world = World::new(&bounds, gc, Box::new(MockFn));
 
         // Single-example dataset
-        let inputs = [vec![1.0]];
-        let outputs = [vec![1.0]]; // Floor value
-        let input_refs: Vec<&[f64]> = inputs.iter().map(|v| v.as_slice()).collect();
-        let output_refs: Vec<&[f64]> = outputs.iter().map(|v| v.as_slice()).collect();
+        let inputs = vec![vec![1.0]];
+        let outputs = vec![vec![1.0]]; // Floor value
 
-        let best = world.get_best_organism(&input_refs, &output_refs);
+        let best = world.get_best_organism(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &outputs,
+        });
         assert!(best.score().is_some());
     }
 
     #[test]
-    #[should_panic(expected = "Training data cannot be empty")]
+    #[should_panic(expected = "Supervised training data cannot be empty")]
     fn given_empty_data_when_get_best_then_panics() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(15, 10);
         let mut world = World::new(&bounds, gc, Box::new(MockFn));
-        let inputs: Vec<&[f64]> = Vec::new();
-        let outputs: Vec<&[f64]> = Vec::new();
-        world.get_best_organism(&inputs, &outputs);
+        let inputs: Vec<Vec<f64>> = Vec::new();
+        let outputs: Vec<Vec<f64>> = Vec::new();
+        world.get_best_organism(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &outputs,
+        });
     }
 }

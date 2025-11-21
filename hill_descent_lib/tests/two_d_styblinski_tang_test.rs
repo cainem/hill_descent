@@ -1,5 +1,5 @@
 use hill_descent_lib::{
-    GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    GlobalConstants, TrainingData, setup_world, world::single_valued_function::SingleValuedFunction,
 };
 use std::ops::RangeInclusive;
 
@@ -59,8 +59,10 @@ pub fn execute() {
 
     // Run for a number of epochs to allow the system to find the minimum.
     for i in 0..3000 {
-        // Objective-function mode: pass function floor
-        let at_resolution_limit = world.training_run(&[], &[StyblinskiTang.function_floor()]);
+        // Objective-function mode: use TrainingData::None with function floor
+        let at_resolution_limit = world.training_run(TrainingData::None {
+            floor_value: StyblinskiTang.function_floor(),
+        });
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();

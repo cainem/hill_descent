@@ -61,7 +61,7 @@ impl Regions {
 mod tests {
     use super::*;
     use crate::phenotype::Phenotype;
-    use crate::world::regions::region::Region;
+    use crate::world::regions::region::{Region, region_key::RegionKey};
 
     #[derive(Debug)]
     struct MockFunction;
@@ -77,6 +77,10 @@ mod tests {
         Arc::new(Organism::new(phenotype, 0, (None, None)))
     }
 
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
+    }
+
     #[test]
     fn given_multiple_regions_when_parallel_process_then_all_processed() {
         let mut regions = Regions::new(&crate::parameters::global_constants::GlobalConstants::new(
@@ -88,7 +92,7 @@ mod tests {
             for _ in 0..5 {
                 region.add_organism(create_test_organism());
             }
-            regions.insert_region(vec![i], region);
+            regions.insert_region(rk(&[i]), region);
         }
 
         let all_organisms = regions.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
@@ -114,8 +118,8 @@ mod tests {
                 r1.add_organism(create_test_organism());
                 r2.add_organism(create_test_organism());
             }
-            regions1.insert_region(vec![i], r1);
-            regions2.insert_region(vec![i], r2);
+            regions1.insert_region(rk(&[i]), r1);
+            regions2.insert_region(rk(&[i]), r2);
         }
 
         let all_organisms1 = regions1.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);
@@ -136,7 +140,7 @@ mod tests {
         for _ in 0..2 {
             region_small.add_organism(create_test_organism());
         }
-        regions.insert_region(vec![0], region_small);
+        regions.insert_region(rk(&[0]), region_small);
 
         // Region 1: 8 organisms (largest)
         let mut region_large = Region::new();
@@ -144,7 +148,7 @@ mod tests {
         for _ in 0..8 {
             region_large.add_organism(create_test_organism());
         }
-        regions.insert_region(vec![1], region_large);
+        regions.insert_region(rk(&[1]), region_large);
 
         // Region 2: 5 organisms (medium)
         let mut region_medium = Region::new();
@@ -152,7 +156,7 @@ mod tests {
         for _ in 0..5 {
             region_medium.add_organism(create_test_organism());
         }
-        regions.insert_region(vec![2], region_medium);
+        regions.insert_region(rk(&[2]), region_medium);
 
         // Process regions - should be sorted by size (largest first)
         let all_organisms = regions.parallel_process_regions(&MockFunction, &[], &[1.0], 12345);

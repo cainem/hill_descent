@@ -25,12 +25,13 @@
 //! }
 //!
 //! // Set up and run optimization
+//! use hill_descent_lib::TrainingData;
 //! let bounds = vec![-10.0..=10.0, -10.0..=10.0];
 //! let constants = GlobalConstants::new(100, 10);
 //! let mut world = setup_world(&bounds, constants, Box::new(Quadratic));
 //!
 //! for _ in 0..100 {
-//!     world.training_run(&[], &[0.0]);
+//!     world.training_run(TrainingData::None { floor_value: 0.0 });
 //! }
 //!
 //! println!("Best score: {}", world.get_best_score());
@@ -64,10 +65,11 @@
 //! and search space expansion.
 
 // Use mimalloc as the global allocator for better performance on Windows
-use mimalloc::MiMalloc;
+// Temporarily disabled for testing
+// use mimalloc::MiMalloc;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+// #[global_allocator]
+// static GLOBAL: MiMalloc = MiMalloc;
 
 // Internal modules - not exposed in public API
 mod gamete;
@@ -77,6 +79,7 @@ mod phenotype;
 
 // Public modules containing public types and traits
 pub mod parameters;
+pub mod training_data;
 pub mod world;
 
 #[cfg(test)]
@@ -131,7 +134,9 @@ use std::ops::RangeInclusive;
 
 // Re-export core public types for convenient imports
 pub use parameters::GlobalConstants;
+pub use training_data::TrainingData;
 pub use world::World;
+pub use world::format_score;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
 

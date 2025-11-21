@@ -1,5 +1,5 @@
 use crate::algorithms::BenchmarkAlgorithm;
-use hill_descent_lib::{setup_world, GlobalConstants};
+use hill_descent_lib::{setup_world, GlobalConstants, TrainingData};
 use std::time::Instant;
 
 // Configuration constants
@@ -167,7 +167,7 @@ fn run_single_benchmark(
         }
 
         // Run training and count resolution limit hits
-        if world.training_run(&[], &[floor]) {
+        if world.training_run(TrainingData::None { floor_value: floor }) {
             resolution_limit_count += 1;
         }
     }

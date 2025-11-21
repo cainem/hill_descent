@@ -1,4 +1,5 @@
 use crate::locus::locus_adjustment::DirectionOfTravel;
+use crate::world::regions::region::region_key::RegionKey;
 use serde::Serialize;
 use serde_json;
 
@@ -242,12 +243,13 @@ impl super::World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// // Must be 2D
     /// let param_range = vec![-5.0..=5.0, -5.0..=5.0];
     /// let constants = GlobalConstants::new(200, 20);
     /// let mut world = setup_world(&param_range, constants, Box::new(Himmelblau));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     ///
     /// // Get web-optimized JSON
     /// let json = world.get_state_for_web();
@@ -287,12 +289,13 @@ impl super::World {
     ///     fn single_run(&self, p: &[f64]) -> f64 { p.iter().sum() }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// // 3D world - will panic!
     /// let param_range = vec![-1.0..=1.0; 3];
     /// let constants = GlobalConstants::new(10, 2);
     /// let mut world = setup_world(&param_range, constants, Box::new(F));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     /// world.get_state_for_web(); // PANICS: not 2D
     /// ```
     ///
@@ -335,7 +338,7 @@ impl super::World {
                     age: o.age(),
                     max_age: rounded_max_age,
                     score: o.score(),
-                    region_key: o.region_key(),
+                    region_key: o.region_key().map(Vec::<usize>::from),
                     is_dead: o.is_dead(),
                     parent_id_1,
                     parent_id_2,
@@ -348,7 +351,7 @@ impl super::World {
         let mut max_score_global = f64::MIN;
 
         // Also capture the region keys so we can validate organism membership precisely.
-        let mut region_keys: Vec<Vec<usize>> = Vec::new();
+        let mut region_keys: Vec<RegionKey> = Vec::new();
 
         let regions: Vec<RegionState> = self
             .regions
@@ -363,7 +366,7 @@ impl super::World {
                 let mut bounds_x = (0.0, 0.0);
                 let mut bounds_y = (0.0, 0.0);
 
-                for (i, &dim_idx) in key.iter().enumerate() {
+                for (i, &dim_idx) in key.values().iter().enumerate() {
                     let (start, end) = dims[i]
                         .interval_bounds(dim_idx)
                         .expect("Region key contained an out-of-range interval index");
@@ -403,9 +406,10 @@ impl super::World {
                 .get_interval(org.params.y)
                 .expect("Organism y not in any interval despite dimensions");
 
-            let in_region_key = region_keys
-                .iter()
-                .any(|k| k.len() == 2 && k[0] == xi && k[1] == yi);
+            let in_region_key = region_keys.iter().any(|k| {
+                let values = k.values();
+                values.len() == 2 && values[0] == xi && values[1] == yi
+            });
             if !in_region_key {
                 eprintln!("Organism outside any region: {org:?}");
                 eprintln!("Regions: {regions:?}");
@@ -440,6 +444,7 @@ impl super::World {
 
 #[cfg(test)]
 mod tests {
+    use crate::TrainingData;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
@@ -460,7 +465,7 @@ mod tests {
         let world_fn: Box<dyn WorldFunction> = Box::new(DummyFn);
         let mut world = super::super::World::new(&bounds, gc, world_fn);
         // Manually run a round to populate regions and organisms with some data
-        world.training_run(&[], &[0.0]);
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         let json = world.get_state_for_web();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();

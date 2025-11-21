@@ -3,6 +3,7 @@ mod execute_single_reproduction_pass;
 mod pair_organisms_for_reproduction;
 mod perform_sexual_reproduction;
 mod process_region;
+pub mod region_key;
 mod reproduce;
 
 use std::sync::Arc;

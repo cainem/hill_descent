@@ -1,9 +1,10 @@
 use super::World;
+use crate::TrainingData;
 
 impl World {
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "debug", skip(self, inputs, known_outputs))
+        tracing::instrument(level = "debug", skip(self, data))
     )]
     /// Runs a single epoch of genetic algorithm evolution.
     ///
@@ -16,20 +17,19 @@ impl World {
     /// Call this method repeatedly (typically hundreds to thousands of times)
     /// to evolve toward optimal parameter values.
     ///
-    /// # Parameters for SingleValuedFunction (Most Common)
+    /// # Parameters
     ///
-    /// For standard optimization problems using [`SingleValuedFunction`](crate::SingleValuedFunction):
+    /// * `data` - Training data configuration. See [`TrainingData`] for details.
     ///
-    /// * `inputs` - Pass an empty slice `&[]`
-    /// * `known_outputs` - Pass a single-element slice containing your function's floor
-    ///   (minimum possible value): `&[function.function_floor()]`
+    /// For standard optimization (most common), use:
+    /// ```ignore
+    /// TrainingData::None { floor_value: 0.0 }
+    /// ```
     ///
-    /// # Parameters for WorldFunction (Advanced)
-    ///
-    /// For multi-output functions with external inputs:
-    ///
-    /// * `inputs` - External input data for function evaluation
-    /// * `known_outputs` - Target outputs for supervised learning or reference values
+    /// For supervised learning with external data (advanced), use:
+    /// ```ignore
+    /// TrainingData::Supervised { inputs: &input_data, outputs: &target_data }
+    /// ```
     ///
     /// # Returns
     ///
@@ -44,7 +44,7 @@ impl World {
     /// ## Standard Optimization Loop
     ///
     /// ```
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct Sphere;
@@ -61,7 +61,7 @@ impl World {
     ///
     /// // Run 500 epochs
     /// for epoch in 0..500 {
-    ///     let converged = world.training_run(&[], &[0.0]);  // Floor is 0.0 for sphere
+    ///     let converged = world.training_run(TrainingData::None { floor_value: 0.0 });
     ///     if converged {
     ///         println!("Converged after {} epochs", epoch + 1);
     ///         break;
@@ -74,7 +74,7 @@ impl World {
     /// ## With Progress Monitoring
     ///
     /// ```
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct Rosenbrock;
@@ -92,7 +92,7 @@ impl World {
     /// let mut world = setup_world(&param_range, constants, Box::new(Rosenbrock));
     ///
     /// for epoch in 0..1000 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     ///     
     ///     if epoch % 100 == 0 {
     ///         println!("Epoch {}: Best = {}", epoch, world.get_best_score());
@@ -107,7 +107,7 @@ impl World {
     /// ## Function with Custom Floor
     ///
     /// ```no_run
-    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction};
+    /// use hill_descent_lib::{setup_world, GlobalConstants, SingleValuedFunction, TrainingData};
     ///
     /// #[derive(Debug)]
     /// struct ShiftedParabola;
@@ -127,18 +127,47 @@ impl World {
     /// let mut world = setup_world(&param_range, constants, Box::new(ShiftedParabola));
     ///
     /// for _ in 0..500 {
-    ///     world.training_run(&[], &[ShiftedParabola.function_floor()]);
+    ///     world.training_run(TrainingData::None { floor_value: -5.0 });
     /// }
     ///
     /// // Should find value close to theoretical minimum
     /// assert!(world.get_best_score() < -4.0);
     /// ```
     ///
+    /// ## Supervised Learning (Advanced)
+    ///
+    /// ```no_run
+    /// use hill_descent_lib::{setup_world, GlobalConstants, WorldFunction, TrainingData};
+    ///
+    /// # #[derive(Debug)]
+    /// # struct CustomFunction;
+    /// # impl WorldFunction for CustomFunction {
+    /// #     fn run(&self, params: &[f64], inputs: &[f64]) -> Vec<f64> {
+    /// #         vec![0.0]
+    /// #     }
+    /// # }
+    /// #
+    /// let param_range = vec![-5.0..=5.0; 3];
+    /// let constants = GlobalConstants::new(200, 20);
+    /// let mut world = setup_world(&param_range, constants, Box::new(CustomFunction));
+    ///
+    /// // External training data
+    /// let inputs = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
+    /// let targets = vec![vec![10.0], vec![20.0]];
+    ///
+    /// for _ in 0..100 {
+    ///     world.training_run(TrainingData::Supervised {
+    ///         inputs: &inputs,
+    ///         outputs: &targets,
+    ///     });
+    /// }
+    /// ```
+    ///
     /// # Panics
     ///
     /// This function will panic if:
-    /// - `known_outputs` is empty
-    /// - Any value in `known_outputs` is NaN or infinite
+    /// - For `TrainingData::None`: `floor_value` is NaN or infinite
+    /// - For `TrainingData::Supervised`: inputs/outputs are empty, mismatched lengths, or contain NaN/infinite values
     ///
     /// # Performance
     ///
@@ -153,24 +182,74 @@ impl World {
     /// # See Also
     ///
     /// - [`get_best_score`](World::get_best_score) - Retrieve current best fitness
-    /// - [`get_best_organism`](World::get_best_organism) - Get optimal parameters found
+    /// - [`get_best_params`](World::get_best_params) - Get optimal parameters found
+    /// - [`get_best_organism`](World::get_best_organism) - Get detailed organism information
     /// - [`get_state`](World::get_state) - Full system state for analysis
-    pub fn training_run(&mut self, inputs: &[f64], known_outputs: &[f64]) -> bool {
-        // Validate known_outputs
-        assert!(!known_outputs.is_empty(), "known_outputs must not be empty");
-        assert!(
-            known_outputs.iter().all(|&x| x.is_finite()),
-            "known_outputs must only contain finite numbers"
-        );
-
-        // PARALLEL PHASE: Process all regions independently
+    pub fn training_run(&mut self, data: TrainingData) -> bool {
+        // Process training data and run the algorithm
         let world_seed = self.global_constants.world_seed();
-        self.organisms = self.regions.parallel_process_regions(
-            self.world_function.as_ref(),
-            inputs,
-            known_outputs,
-            world_seed,
-        );
+
+        match data {
+            TrainingData::None { floor_value } => {
+                // Validate floor_value
+                assert!(
+                    floor_value.is_finite(),
+                    "floor_value must be a finite number"
+                );
+
+                // For standard optimization, use empty inputs and floor as single output
+                // Use stack array to avoid heap allocation
+                let known_outputs = [floor_value];
+                self.organisms = self.regions.parallel_process_regions(
+                    self.world_function.as_ref(),
+                    &[],
+                    &known_outputs,
+                    world_seed,
+                );
+            }
+            TrainingData::Supervised { inputs, outputs } => {
+                // Validate supervised data
+                assert!(
+                    !inputs.is_empty(),
+                    "Supervised training data cannot be empty"
+                );
+                assert!(
+                    !outputs.is_empty(),
+                    "Supervised training outputs cannot be empty"
+                );
+                assert_eq!(
+                    inputs.len(),
+                    outputs.len(),
+                    "Inputs and outputs must have matching lengths"
+                );
+
+                // Flatten and validate inputs
+                let flat_inputs: Vec<f64> = inputs.iter().flatten().copied().collect();
+                assert!(
+                    flat_inputs.iter().all(|&x| x.is_finite()),
+                    "All input values must be finite numbers"
+                );
+
+                // Flatten and validate outputs
+                let flat_outputs: Vec<f64> = outputs.iter().flatten().copied().collect();
+                assert!(
+                    !flat_outputs.is_empty(),
+                    "Outputs must contain at least one value"
+                );
+                assert!(
+                    flat_outputs.iter().all(|&x| x.is_finite()),
+                    "All output values must be finite numbers"
+                );
+
+                // Process with flattened data
+                self.organisms = self.regions.parallel_process_regions(
+                    self.world_function.as_ref(),
+                    &flat_inputs,
+                    &flat_outputs,
+                    world_seed,
+                );
+            }
+        }
 
         // SYNC PHASE: Global coordination
         self.regions
@@ -181,11 +260,12 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::TrainingData;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
 
-    // Mock WorldFunction that returns a single constant value (0.5) for deterministic tests.
+    // Mock WorldFunction that returns a single constant value (1.5) for deterministic tests.
     #[derive(Debug)]
     struct IdentityFn;
     impl WorldFunction for IdentityFn {
@@ -194,7 +274,6 @@ mod tests {
         }
     }
 
-    // given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment
     #[test]
     fn given_valid_inputs_when_training_run_then_scores_positive_and_ages_increment() {
         // Arrange
@@ -202,11 +281,9 @@ mod tests {
         // Use very large population to ensure some organisms survive the new aging flow
         let gc = GlobalConstants::new(1000, 1); // Use only 1 region for simplicity
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
-        let inputs = vec![0.0];
-        let known_outputs = vec![1.0]; // Floor value
 
         // Act
-        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
+        let _at_resolution_limit = world.training_run(TrainingData::None { floor_value: 1.0 });
 
         // Assert
         // Note: With the new flow, organisms may die from aging but some should survive.
@@ -223,7 +300,6 @@ mod tests {
         );
     }
 
-    // given_perfect_match_when_training_run_then_resolution_limit_not_reached
     #[test]
     fn given_perfect_match_when_training_run_then_resolution_limit_not_reached() {
         // Arrange
@@ -239,12 +315,10 @@ mod tests {
         // Use larger population and fewer regions to avoid aggressive truncation
         let gc = GlobalConstants::new(200, 4); // Much larger population, fewer regions
         let mut world = World::new(&bounds, gc, Box::new(PerfectFn));
-        let inputs = vec![0.0];
-        let known_outputs = vec![1.0];
 
         // Act
         println!("Initial organism count: {}", world.organisms.len());
-        let _at_resolution_limit = world.training_run(&inputs, &known_outputs);
+        let _at_resolution_limit = world.training_run(TrainingData::None { floor_value: 1.0 });
         println!("Final organism count: {}", world.organisms.len());
 
         // Assert
@@ -271,38 +345,86 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "known_outputs must not be empty")]
-    fn given_empty_known_outputs_when_training_run_then_panics() {
+    #[should_panic(expected = "Supervised training outputs cannot be empty")]
+    fn given_empty_outputs_when_training_run_supervised_then_panics() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(10, 1);
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
-        let inputs = vec![0.0];
-        let empty_outputs: &[f64] = &[];
+        let inputs = vec![vec![0.0]];
+        let empty_outputs: Vec<Vec<f64>> = vec![];
 
-        world.training_run(&inputs, empty_outputs);
+        world.training_run(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &empty_outputs,
+        });
     }
 
     #[test]
-    #[should_panic(expected = "known_outputs must only contain finite numbers")]
-    fn given_infinite_known_outputs_when_training_run_then_panics() {
+    #[should_panic(expected = "All output values must be finite numbers")]
+    fn given_infinite_outputs_when_training_run_supervised_then_panics() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(10, 1);
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
-        let inputs = vec![0.0];
-        let infinite_outputs = vec![1.0, f64::INFINITY];
+        let inputs = vec![vec![0.0]];
+        let infinite_outputs = vec![vec![1.0, f64::INFINITY]];
 
-        world.training_run(&inputs, &infinite_outputs);
+        world.training_run(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &infinite_outputs,
+        });
     }
 
     #[test]
-    #[should_panic(expected = "known_outputs must only contain finite numbers")]
-    fn given_nan_known_outputs_when_training_run_then_panics() {
+    #[should_panic(expected = "All output values must be finite numbers")]
+    fn given_nan_outputs_when_training_run_supervised_then_panics() {
         let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
         let gc = GlobalConstants::new(10, 1);
         let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
-        let inputs = vec![0.0];
-        let nan_outputs = vec![f64::NAN];
+        let inputs = vec![vec![0.0]];
+        let nan_outputs = vec![vec![f64::NAN]];
 
-        world.training_run(&inputs, &nan_outputs);
+        world.training_run(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &nan_outputs,
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "floor_value must be a finite number")]
+    fn given_infinite_floor_when_training_run_none_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+
+        world.training_run(TrainingData::None {
+            floor_value: f64::INFINITY,
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "floor_value must be a finite number")]
+    fn given_nan_floor_when_training_run_none_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+
+        world.training_run(TrainingData::None {
+            floor_value: f64::NAN,
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "Inputs and outputs must have matching lengths")]
+    fn given_mismatched_lengths_when_training_run_supervised_then_panics() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=1.0];
+        let gc = GlobalConstants::new(10, 1);
+        let mut world = World::new(&bounds, gc, Box::new(IdentityFn));
+        let inputs = vec![vec![0.0], vec![1.0]];
+        let outputs = vec![vec![0.5]]; // Mismatch: 2 inputs, 1 output
+
+        world.training_run(TrainingData::Supervised {
+            inputs: &inputs,
+            outputs: &outputs,
+        });
     }
 }

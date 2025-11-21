@@ -8,7 +8,7 @@
 //! cargo run --example simple_optimization
 //! ```
 
-use hill_descent_lib::{GlobalConstants, SingleValuedFunction, setup_world};
+use hill_descent_lib::{GlobalConstants, SingleValuedFunction, TrainingData, setup_world};
 
 /// Sphere function: f(x, y) = x² + y²
 ///
@@ -49,8 +49,8 @@ fn main() {
     let epochs = 100;
 
     for epoch in 0..epochs {
-        // For SingleValuedFunction, pass empty arrays
-        world.training_run(&[], &[0.0]);
+        // For SingleValuedFunction, use TrainingData::None
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         // Print progress every 20 epochs
         if (epoch + 1) % 20 == 0 {

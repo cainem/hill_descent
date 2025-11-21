@@ -39,14 +39,14 @@ use std::fmt::Debug;
 /// }
 ///
 /// // Use with setup_world:
-/// use hill_descent_lib::{setup_world, GlobalConstants};
+/// use hill_descent_lib::{setup_world, GlobalConstants, TrainingData};
 ///
 /// let param_range = vec![-10.0..=10.0, -10.0..=10.0];
 /// let constants = GlobalConstants::new(100, 10);
 /// let mut world = setup_world(&param_range, constants, Box::new(Quadratic));
 ///
 /// for _ in 0..100 {
-///     world.training_run(&[], &[0.0]);
+///     world.training_run(TrainingData::None { floor_value: 0.0 });
 /// }
 /// assert!(world.get_best_score() < 0.01);  // Should find near-zero minimum
 /// ```

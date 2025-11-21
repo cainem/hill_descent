@@ -8,7 +8,7 @@
 //! cargo run --example custom_function
 //! ```
 
-use hill_descent_lib::{GlobalConstants, SingleValuedFunction, setup_world};
+use hill_descent_lib::{GlobalConstants, SingleValuedFunction, TrainingData, setup_world};
 
 /// Rosenbrock function: f(x, y) = (1 - x)² + 100(y - x²)²
 ///
@@ -65,7 +65,7 @@ fn run_rosenbrock_example() {
     println!("Running {} epochs...", epochs);
 
     for epoch in 0..epochs {
-        world.training_run(&[], &[0.0]);
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         // Print progress every 200 epochs
         if (epoch + 1) % 200 == 0 || epoch == 0 {
@@ -103,7 +103,7 @@ fn run_himmelblau_example() {
     println!("Running {} epochs...", epochs);
 
     for epoch in 0..epochs {
-        world.training_run(&[], &[0.0]);
+        world.training_run(TrainingData::None { floor_value: 0.0 });
 
         if (epoch + 1) % 200 == 0 || epoch == 0 {
             let best_score = world.get_best_score();

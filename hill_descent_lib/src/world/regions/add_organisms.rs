@@ -19,14 +19,31 @@ impl super::Regions {
     ///
     /// Panics if any organism does not have a region key, as this indicates
     /// a serious bug in the system.
+    ///
+    /// # Performance Warning
+    ///
+    /// Logs a warning if the number of unique regions exceeds 1000. RegionKey uses
+    /// hash-only equality, which has negligible collision risk (<0.0000000003%) for
+    /// <1000 keys but increases to ~0.000003% for 10,000 keys.
     pub fn add_organisms(&mut self, organisms: &Organisms) {
         for organism in organisms.iter() {
             let key = organism
                 .region_key()
                 .expect("All organisms must have a region key when adding to regions");
             let organism_rc: Arc<Organism> = Arc::clone(organism);
-            let region = self.regions.entry(key.clone()).or_default();
+            let region = self.regions.entry(key).or_default();
             region.add_organism(organism_rc);
+        }
+
+        // Warn if we have too many regions for hash-only equality to be safe
+        let region_count = self.regions.len();
+        if region_count > 1000 {
+            eprintln!(
+                "WARNING: {} regions detected (>1000). RegionKey uses hash-only equality \
+                 which has increased collision risk at this scale (~0.000003% for 10k keys). \
+                 Consider reducing target_regions or switching to value-based equality.",
+                region_count
+            );
         }
     }
 }
@@ -36,7 +53,10 @@ mod tests {
     use crate::{
         parameters::global_constants::GlobalConstants,
         phenotype::Phenotype,
-        world::{organisms::Organisms, regions::Regions},
+        world::{
+            organisms::Organisms,
+            regions::{Regions, region::region_key::RegionKey},
+        },
     };
     use std::sync::Arc;
 
@@ -45,6 +65,10 @@ mod tests {
     fn mock_phenotype() -> Phenotype {
         let expressed_values: Vec<f64> = vec![0.1, 0.5, 0.001, 0.001, 0.001, 100.0, 2.0]; // 7 values
         Phenotype::new_for_test(expressed_values)
+    }
+
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
     }
 
     #[test]
@@ -76,7 +100,7 @@ mod tests {
     fn given_one_organism_with_region_key_when_add_phenotypes_then_region_created_with_orgtype() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key1 = vec![1, 2, 3];
+        let region_key1 = rk(&[1, 2, 3]);
 
         let organisms_collection = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
         let orgtype_rc_from_org = organisms_collection
@@ -107,7 +131,7 @@ mod tests {
     fn given_multiple_organisms_same_key_when_add_phenotypes_then_region_has_all_orgtypes() {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key = vec![1];
+        let region_key = rk(&[1]);
 
         let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
@@ -147,8 +171,8 @@ mod tests {
     {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key1 = vec![1];
-        let region_key2 = vec![2];
+        let region_key1 = rk(&[1]);
+        let region_key2 = rk(&[2]);
 
         let organisms_collection =
             Organisms::new_from_phenotypes(vec![mock_phenotype(), mock_phenotype()]);
@@ -190,7 +214,7 @@ mod tests {
     {
         let global_constants = GlobalConstants::new(10, 10);
         let mut regions = Regions::new(&global_constants);
-        let region_key = vec![1, 0, 0];
+        let region_key = rk(&[1, 0, 0]);
 
         // First, add one organism to create the region and put one orgtype in it
         let initial_organisms = Organisms::new_from_phenotypes(vec![mock_phenotype()]);

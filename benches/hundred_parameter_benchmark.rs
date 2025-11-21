@@ -1,6 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use hill_descent::{
     parameters::GlobalConstants, setup_world, world::single_valued_function::SingleValuedFunction,
+    TrainingData,
 };
 use std::ops::RangeInclusive;
 
@@ -27,7 +28,7 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
     // Some reasonable global constants for a higher-dimensional search.
     // These mimic the style used in the existing tests.
-    let global_constants = GlobalConstants::new(2000, 1000);
+    let global_constants = GlobalConstants::new(500, 20);
 
     // Build the world once; during the benchmark we will repeatedly call
     // `training_run` to measure the performance of an epoch.
@@ -35,8 +36,8 @@ fn hill_descent_100d_benchmark(c: &mut Criterion) {
 
     c.bench_function("hill_descent_train_epoch_100d", |b| {
         b.iter(|| {
-            // Objective-function mode: no known inputs/outputs.
-            world.training_run(&[], None);
+            // Objective-function mode: no external data needed
+            world.training_run(TrainingData::None { floor_value: 0.0 });
         })
     });
 }

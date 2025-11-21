@@ -14,7 +14,7 @@ mod tests {
     use crate::phenotype::Phenotype;
     use crate::world::organisms::organism::Organism;
     use crate::world::regions::Regions;
-    use crate::world::regions::region::Region;
+    use crate::world::regions::region::{Region, region_key::RegionKey};
 
     // Helper to create a test organism (with phenotype) using Phenotype::new_for_test
     fn create_test_organism() -> Arc<Organism> {
@@ -33,6 +33,10 @@ mod tests {
         Arc::new(Organism::new(Arc::clone(&phenotype), 0, (None, None)))
     }
 
+    fn rk(values: &[usize]) -> RegionKey {
+        RegionKey::from(values)
+    }
+
     #[test]
     fn given_regions_with_some_empty_when_prune_empty_regions_then_empty_regions_are_removed() {
         let gc = GlobalConstants::new(100, 10); // population_size, target_regions
@@ -47,15 +51,21 @@ mod tests {
         let mut region3 = Region::new();
         region3.add_organism(Arc::clone(&organism_rc));
 
-        regions.regions =
-            IndexMap::from_iter([(vec![0], region1), (vec![1], region2), (vec![2], region3)]);
+        regions.regions = IndexMap::from_iter([
+            (rk(&[0]), region1),
+            (rk(&[1]), region2),
+            (rk(&[2]), region3),
+        ]);
 
         assert_eq!(regions.regions.len(), 3);
         regions.prune_empty_regions();
         assert_eq!(regions.regions.len(), 2);
-        assert!(regions.regions.contains_key(&vec![0]));
-        assert!(!regions.regions.contains_key(&vec![1])); // region2 should be removed
-        assert!(regions.regions.contains_key(&vec![2]));
+        let key0 = rk(&[0]);
+        let key1 = rk(&[1]);
+        let key2 = rk(&[2]);
+        assert!(regions.regions.contains_key(&key0));
+        assert!(!regions.regions.contains_key(&key1)); // region2 should be removed
+        assert!(regions.regions.contains_key(&key2));
     }
 
     #[test]
@@ -69,7 +79,7 @@ mod tests {
         let mut region2 = Region::new();
         region2.add_organism(Arc::clone(&organism_rc));
 
-        regions.regions = IndexMap::from_iter([(vec![0], region1), (vec![1], region2)]);
+        regions.regions = IndexMap::from_iter([(rk(&[0]), region1), (rk(&[1]), region2)]);
 
         assert_eq!(regions.regions.len(), 2);
         regions.prune_empty_regions();
@@ -84,7 +94,7 @@ mod tests {
         let region1 = Region::new(); // Empty
         let region2 = Region::new(); // Empty
 
-        regions.regions = IndexMap::from_iter([(vec![0], region1), (vec![1], region2)]);
+        regions.regions = IndexMap::from_iter([(rk(&[0]), region1), (rk(&[1]), region2)]);
 
         assert_eq!(regions.regions.len(), 2);
         regions.prune_empty_regions();

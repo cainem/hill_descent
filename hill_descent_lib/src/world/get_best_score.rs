@@ -29,15 +29,16 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-10.0..=10.0; 2];
     /// let constants = GlobalConstants::new(100, 10);
     /// let mut world = setup_world(&param_range, constants, Box::new(Sphere));
     ///
-    /// world.training_run(&[], &[0.0]);
+    /// world.training_run(TrainingData::None { floor_value: 0.0 });
     /// let initial_score = world.get_best_score();
     ///
     /// for _ in 0..100 {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     /// }
     ///
     /// let final_score = world.get_best_score();
@@ -59,6 +60,7 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-10.0..=10.0];
     /// let constants = GlobalConstants::new(50, 5);
     /// let mut world = setup_world(&param_range, constants, Box::new(Quadratic));
@@ -67,7 +69,7 @@ impl World {
     /// let max_epochs = 500;
     ///
     /// for epoch in 0..max_epochs {
-    ///     world.training_run(&[], &[0.0]);
+    ///     world.training_run(TrainingData::None { floor_value: 0.0 });
     ///     
     ///     if world.get_best_score() < target_fitness {
     ///         println!("Target fitness reached after {} epochs", epoch + 1);
@@ -90,6 +92,7 @@ impl World {
     ///     }
     /// }
     ///
+    /// use hill_descent_lib::TrainingData;
     /// let param_range = vec![-5.0..=5.0; 3];
     /// let epochs = 200;
     ///
@@ -99,7 +102,7 @@ impl World {
     ///     let mut world = setup_world(&param_range, constants, Box::new(TestFunction));
     ///     
     ///     for _ in 0..epochs {
-    ///         world.training_run(&[], &[0.0]);
+    ///         world.training_run(TrainingData::None { floor_value: 0.0 });
     ///     }
     ///     
     ///     println!("Pop size {}: Final score = {}", pop_size, world.get_best_score());
@@ -128,6 +131,7 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::TrainingData;
     use crate::parameters::global_constants::GlobalConstants;
     use crate::world::world_function::WorldFunction;
     use std::ops::RangeInclusive;
@@ -147,7 +151,7 @@ mod tests {
         let mut world = World::new(&bounds, gc, Box::new(TestFn));
 
         // Run training to score organisms, floor = 1.0
-        world.training_run(&[0.5], &[1.0]);
+        world.training_run(TrainingData::None { floor_value: 1.0 });
 
         let best_score = world.get_best_score();
         assert!(best_score < f64::MAX, "Should have a valid score");
