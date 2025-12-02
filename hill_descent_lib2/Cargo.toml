@@ -1,0 +1,46 @@
+[package]
+name = "hill_descent_lib2"
+version = "0.1.0"
+edition = "2024"
+authors = ["Mick Caine <mick.caine@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Re-architected genetic algorithm library using message-passing concurrency"
+repository = "https://github.com/cainem/hill_descent"
+readme = "README.md"
+keywords = [
+    "optimization",
+    "genetic-algorithm",
+    "hill-descent",
+    "evolution",
+    "fitness",
+]
+categories = ["algorithms", "science"]
+
+[dependencies]
+# Thread pool with message passing
+messaging_thread_pool = "5.0"
+
+# Shared with hill_descent_lib
+xxhash-rust = { workspace = true }
+rand = { workspace = true }
+getrandom = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+indexmap = { version = "2.11", features = ["serde", "rayon"] }
+rustc-hash = "2.1"
+rayon = "1.10"
+
+# Optional tracing support
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+tracing-log = { workspace = true, optional = true }
+log = { version = "0.4", optional = true }
+
+[features]
+enable-tracing = ["tracing", "tracing-subscriber", "tracing-log", "log"]
+
+[lib]
+crate-type = ["rlib"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
