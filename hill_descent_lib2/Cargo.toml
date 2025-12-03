@@ -18,7 +18,7 @@ categories = ["algorithms", "science"]
 
 [dependencies]
 # Thread pool with message passing
-messaging_thread_pool = "5.0"
+messaging_thread_pool = "5.0.2"
 
 # Shared with hill_descent_lib
 xxhash-rust = { workspace = true }

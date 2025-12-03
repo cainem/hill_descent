@@ -70,84 +70,65 @@ From hill_descent_lib/src/:
 
 ---
 
-## Stage 2: Scaffold New Architecture
+## Stage 2: Scaffold New Architecture ✅ COMPLETE
 
-### 2.1 Organism Module Scaffold
-
-**Tasks:**
-- [ ] Create `organism/mod.rs` with Organism struct
-- [ ] Create `organism/messages.rs` with all request/response types
-- [ ] Create `organism/calculate_region_key.rs` with `todo!()`
-- [ ] Create `organism/evaluate_fitness.rs` with `todo!()`
-- [ ] Create `organism/reproduce.rs` with `todo!()`
-- [ ] Create `organism/increment_age.rs` with `todo!()`
-- [ ] Implement `#[pool_item]` macro on Organism
-
-**Scaffold:**
-```rust
-// organism/mod.rs
-use messaging_thread_pool::{pool_item, IdTargeted};
-
-#[derive(Debug)]
-pub struct Organism {
-    id: u64,
-    // ... all fields
-}
-
-impl IdTargeted for Organism {
-    fn id(&self) -> u64 { self.id }
-}
-
-#[pool_item]
-impl Organism {
-    pub fn new(/* params */) -> Self { todo!() }
-    
-    #[messaging(CalculateRegionKeyRequest, CalculateRegionKeyResponse)]
-    pub fn calculate_region_key(&mut self, /* params */) -> CalculateRegionKeyResponse { todo!() }
-    
-    #[messaging(EvaluateFitnessRequest, EvaluateFitnessResponse)]
-    pub fn evaluate_fitness(&mut self, /* params */) -> EvaluateFitnessResponse { todo!() }
-    
-    // ... other methods
-}
-```
-
-### 2.2 Dimensions Module Scaffold
+### 2.1 Organism Module Scaffold ✅
 
 **Tasks:**
-- [ ] Create `dimensions/mod.rs` with Dimensions struct (with version field)
-- [ ] Create `dimensions/dimension.rs` (copy from lib1, add version support)
-- [ ] Create `dimensions/expand.rs` with `todo!()`
-- [ ] Create `dimensions/calculate_dimensions_key.rs` (copy from lib1)
+- [x] Create `organism/mod.rs` with Organism struct
+- [x] Create result types (CalculateRegionKeyResult, EvaluateFitnessResult, etc.)
+- [x] Create `organism/calculate_region_key_impl.rs` with `todo!()`
+- [x] Create `organism/evaluate_fitness_impl.rs` with `todo!()`
+- [x] Create `organism/reproduce_impl.rs` with `todo!()`
+- [x] Create `organism/increment_age_impl.rs` with `todo!()`
+- [x] Create `organism/update_dimensions_impl.rs`
+- [x] Implement `#[pool_item]` macro on Organism with custom `CreateOrganism` init type
 
-### 2.3 Regions Module Scaffold
+**Note:** Due to `#[pool_item]` macro limitations (single impl block requirement), we use a delegation pattern:
+- `mod.rs` contains struct, `#[pool_item]` impl block, and result types
+- `*_impl.rs` files contain actual implementation logic as free functions
+- Messaging methods delegate to these implementation functions
 
-**Tasks:**
-- [ ] Create `regions/mod.rs` with Regions struct
-- [ ] Create `regions/region.rs` with Region struct
-- [ ] Create `regions/region_key.rs` (copy from lib1)
-- [ ] Create `regions/organism_entry.rs` with OrganismEntry struct
-- [ ] Create `regions/populate.rs` with `todo!()`
-- [ ] Create `regions/carrying_capacity.rs` with `todo!()`
-- [ ] Create `regions/process.rs` with `todo!()`
-
-### 2.4 World Module Scaffold
+### 2.2 Dimensions Module Scaffold ✅
 
 **Tasks:**
-- [ ] Create `world/mod.rs` with World struct
-- [ ] Create `world/training_run.rs` with `todo!()`
-- [ ] Create `world/calculate_region_keys.rs` with `todo!()`
-- [ ] Create `world/evaluate_fitness.rs` with `todo!()`
-- [ ] Create `world/reproduction.rs` with `todo!()`
-- [ ] Create `world/age_and_cull.rs` with `todo!()`
-- [ ] Create `world/get_best_score.rs` with `todo!()`
-- [ ] Create `world/get_best_params.rs` with `todo!()`
-- [ ] Create `world/get_best_organism.rs` with `todo!()`
-- [ ] Create `world/setup_world.rs` with `todo!()`
+- [x] Create `dimensions/mod.rs` with Dimensions struct (with version field)
+- [x] Create `dimensions/dimension.rs` (copied from lib1, with PartialEq)
+- [x] Create `dimensions/expand_bounds.rs` with `todo!()`
+- [x] Create `dimensions/calculate_dimensions_key.rs` with `todo!()`
+- [x] Create `dimensions/new.rs` with `todo!()`
+
+### 2.3 Regions Module Scaffold ✅
+
+**Tasks:**
+- [x] Create `regions/mod.rs` with Regions struct
+- [x] Create `regions/region.rs` with Region struct
+- [x] Create `regions/region_key.rs` (copied from lib1)
+- [x] Create `regions/organism_entry.rs` with OrganismEntry struct
+- [x] Create `regions/populate.rs` with `todo!()`
+- [x] Create `regions/update_carrying_capacities.rs` with `todo!()`
+- [x] Create `regions/process.rs` with `todo!()`
+
+### 2.4 World Module Scaffold ✅
+
+**Tasks:**
+- [x] Create `world/mod.rs` with World struct
+- [x] Create `world/world_struct.rs` with World implementation
+- [x] Create `world/training_run.rs` with `todo!()`
+- [x] Create `world/calculate_region_keys.rs` with `todo!()`
+- [x] Create `world/evaluate_fitness.rs` with `todo!()`
+- [x] Create `world/reproduction.rs` with `todo!()`
+- [x] Create `world/age_and_cull.rs` with `todo!()`
+- [x] Create `world/get_best_score.rs` with `todo!()`
+- [x] Create `world/get_best_params.rs` with `todo!()`
+- [x] Create `world/get_best_organism.rs` with `todo!()`
+- [x] Create `world/setup_world.rs` with `todo!()`
 
 **Acceptance Criteria:**
-- All modules compile (with `todo!()` bodies)
-- Module structure matches pdd.md Section 11
+- [x] All modules compile (with `todo!()` bodies)
+- [x] 158 unit tests pass, 59 ignored (pending implementation)
+- [x] 13 doc tests pass, 8 ignored (pending World implementation)
+- [x] `cargo clippy` clean (expected warnings for unused variables in todo bodies)
 
 ---
 

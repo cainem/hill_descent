@@ -66,14 +66,14 @@ pub mod phenotype;
 pub mod training_data;
 pub mod world;
 
-// TODO: Stage 2 - New architecture
-// pub mod organism;
-// pub mod dimensions;
-// pub mod regions;
+// Stage 2 - New architecture
+pub mod organism;
 
 // Public API re-exports
 pub use parameters::GlobalConstants;
 pub use training_data::TrainingData;
+pub use world::World;
+pub use world::setup_world::setup_world;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
 

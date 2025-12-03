@@ -1339,9 +1339,9 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
 name = "messaging-thread-pool-macros"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "250b9bb96095129b74f7c26efccc1a0aa7fe6acaf07a58b6fac8d0d97b80239d"
+checksum = "8200af6de61455b8fbe77e0b886320fdec1830e139d9cacfc50989f4bc8de501"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1350,9 +1350,9 @@ dependencies = [
 
 [[package]]
 name = "messaging_thread_pool"
-version = "5.0.1"
+version = "5.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de2aff75400d99ce77b4afe981c4207efe094781bf7f4400d2d01b9d2cfcee62"
+checksum = "b9df64295d42701cb0da05d37fa6c2d5eb4dda49193ff1f18684aeaab2abc5e0"
 dependencies = [
  "crossbeam-channel",
  "messaging-thread-pool-macros",
@@ -1417,7 +1417,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

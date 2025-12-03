@@ -3,6 +3,9 @@
 //! This module provides:
 //! - [`SingleValuedFunction`] - The primary trait for optimization functions
 //! - [`WorldFunction`] - Advanced trait for multi-output functions
+//! - [`World`] - The coordinator that orchestrates training runs
+//! - [`Dimensions`] - Spatial bounds with versioning
+//! - [`Regions`] - Spatial partitions for organism management
 //!
 //! # Usage
 //!
@@ -21,8 +24,25 @@
 //! }
 //! ```
 
+pub mod dimensions;
+pub mod regions;
 pub mod single_valued_function;
 pub mod world_function;
+pub mod world_struct;
 
+// Training run steps
+pub mod age_and_cull;
+pub mod calculate_region_keys;
+pub mod evaluate_fitness;
+pub mod get_best_organism;
+pub mod get_best_params;
+pub mod get_best_score;
+pub mod reproduction;
+pub mod setup_world;
+pub mod training_run;
+
+pub use dimensions::Dimensions;
+pub use regions::Regions;
 pub use single_valued_function::SingleValuedFunction;
 pub use world_function::WorldFunction;
+pub use world_struct::World;
