@@ -10,8 +10,6 @@ pub mod new;
 
 pub use dimension::Dimension;
 
-use std::ops::RangeInclusive;
-
 /// Spatial dimensions of the optimization problem.
 ///
 /// Each dimension represents one axis of the search space with its bounds
