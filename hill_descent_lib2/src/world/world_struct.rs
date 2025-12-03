@@ -89,6 +89,7 @@ impl std::fmt::Debug for World {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn given_world_module_when_compiled_then_succeeds() {
         // Placeholder test - actual tests in submodules
         assert!(true);

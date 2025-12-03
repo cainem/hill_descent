@@ -221,8 +221,7 @@ impl Organism {
     /// Increments the organism's age and checks if it should die.
     #[messaging(IncrementAgeRequest, IncrementAgeResponse)]
     pub fn increment_age(&mut self) -> IncrementAgeResult {
-        // TODO: Get max_age from system parameters (needs to be passed in or stored)
-        let max_age = 10; // Placeholder - will be configurable
+        let max_age = self.phenotype.system_parameters().max_age();
 
         let (result, new_age, is_dead) = increment_age_impl::increment_age(self.age, max_age);
 
@@ -316,6 +315,7 @@ impl Organism {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn given_organism_module_when_compiled_then_succeeds() {
         // Placeholder test - actual tests are in *_impl.rs files
         assert!(true);

@@ -192,23 +192,23 @@ These have no dependencies on other new components.
 
 ---
 
-## Stage 4: Implement Organism Pool Item
+## Stage 4: Implement Organism Pool Item ✅
 
 ### 4.1 Organism Core
 
 **Tasks:**
-- [ ] Implement `Organism::new()` 
-- [ ] Implement all getters
-- [ ] Implement `IdTargeted` trait
-- [ ] Write tests
+- [x] Implement `Organism::new()` 
+- [x] Implement all getters
+- [x] Implement `IdTargeted` trait
+- [x] Write tests
 
 ### 4.2 Organism::calculate_region_key
 
 **Tasks:**
-- [ ] Implement incremental key calculation logic
-- [ ] Handle out-of-bounds detection
-- [ ] Return appropriate response variant
-- [ ] Write tests for:
+- [x] Implement incremental key calculation logic
+- [x] Handle out-of-bounds detection
+- [x] Return appropriate response variant
+- [x] Write tests for:
   - Fresh calculation (no existing key)
   - Incremental update (existing key, some dimensions changed)
   - Out-of-bounds detection (single dimension)
@@ -218,39 +218,39 @@ These have no dependencies on other new components.
 ### 4.3 Organism::evaluate_fitness
 
 **Tasks:**
-- [ ] Implement fitness evaluation using world_function
-- [ ] Store score on organism
-- [ ] Return response with score, age, region_key
-- [ ] Write tests
+- [x] Implement fitness evaluation using world_function
+- [x] Store score on organism
+- [x] Return response with score, age, region_key
+- [x] Write tests
 
 ### 4.4 Organism::reproduce
 
 **Tasks:**
-- [ ] Implement reproduction using partner phenotype
-- [ ] Use provided reproduction_seed for RNG
-- [ ] Return two offspring phenotypes
-- [ ] Write tests for determinism
+- [x] Implement reproduction using partner phenotype
+- [x] Use provided reproduction_seed for RNG
+- [x] Return two offspring phenotypes
+- [x] Write tests for determinism
 
 ### 4.5 Organism::increment_age
 
 **Tasks:**
-- [ ] Implement age increment
-- [ ] Check against max_age from phenotype's system parameters
-- [ ] Set is_dead if max age exceeded
-- [ ] Return should_remove flag
-- [ ] Write tests
+- [x] Implement age increment
+- [x] Check against max_age from phenotype's system parameters
+- [x] Set is_dead if max age exceeded
+- [x] Return should_remove flag
+- [x] Write tests
 
 ### 4.6 Organism::update_dimensions
 
 **Tasks:**
-- [ ] Implement dimensions reference update
-- [ ] Clear cached region_key
-- [ ] Write tests
+- [x] Implement dimensions reference update
+- [x] Clear cached region_key
+- [x] Write tests
 
 **Acceptance Criteria:**
-- All organism methods implemented
-- 100% test coverage on organism module
-- `#[pool_item]` macro generates correct message types
+- [x] All organism methods implemented
+- [x] 100% test coverage on organism module
+- [x] `#[pool_item]` macro generates correct message types
 
 ---
 

@@ -87,6 +87,7 @@ pub(crate) const E0: f64 = f64::MIN_POSITIVE;
 #[cfg(test)]
 mod tests {
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn given_crate_when_built_then_compiles_successfully() {
         // Placeholder test to verify crate compiles
         assert!(true);
