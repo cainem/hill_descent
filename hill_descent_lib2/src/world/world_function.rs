@@ -94,14 +94,14 @@ use std::fmt::Debug;
 ///
 /// # Thread Safety
 ///
-/// Implementations must be `Sync` as they are called concurrently during
+/// Implementations must be `Send + Sync` as they are called concurrently during
 /// fitness evaluation across multiple threads.
 ///
 /// # See Also
 ///
 /// - [`SingleValuedFunction`](crate::SingleValuedFunction) - Simpler trait for most optimization problems
 /// - [`setup_world`](crate::setup_world) - Accepts both function types
-pub trait WorldFunction: Debug + Sync {
+pub trait WorldFunction: Debug + Send + Sync {
     /// Evaluates the function with given parameters and inputs.
     ///
     /// # Parameters

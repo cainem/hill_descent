@@ -1,0 +1,248 @@
+//! World constructor - creates a new World with initial population.
+
+use std::sync::Arc;
+
+use messaging_thread_pool::ThreadPool;
+use rand::{SeedableRng, rngs::StdRng};
+
+use super::{Dimensions, Regions, World, WorldFunction};
+use crate::{
+    organism::{CreateOrganism, Organism},
+    parameters::GlobalConstants,
+    phenotype::Phenotype,
+};
+
+impl World {
+    /// Creates a new World with an initial random population.
+    ///
+    /// This method:
+    /// 1. Creates a thread pool for organisms
+    /// 2. Generates initial random phenotypes
+    /// 3. Creates organisms in the pool
+    /// 4. Sets up dimensions and regions
+    ///
+    /// # Arguments
+    ///
+    /// * `param_range` - Bounds for each parameter dimension (extended for system parameters)
+    /// * `global_constants` - Configuration (population size, target regions, seed)
+    /// * `world_function` - The fitness function to optimize
+    ///
+    /// # Returns
+    ///
+    /// A new World ready for training.
+    ///
+    /// # Panics
+    ///
+    /// Panics if population_size or target_regions is 0.
+    pub fn new(
+        param_range: &[std::ops::RangeInclusive<f64>],
+        global_constants: GlobalConstants,
+        world_function: Box<dyn WorldFunction + Send + Sync>,
+    ) -> Self {
+        let world_seed = global_constants.world_seed();
+        let mut rng = StdRng::seed_from_u64(world_seed);
+
+        // Create extended parameter bounds (problem params + system params)
+        let extended_bounds = create_extended_bounds(param_range);
+
+        // Create dimensions from the user-provided bounds (problem space only)
+        let dimensions = Arc::new(Dimensions::new(param_range));
+
+        // Convert Box to Arc
+        let world_function: Arc<dyn WorldFunction + Send + Sync> = Arc::from(world_function);
+
+        // Create thread pool with number of available CPUs
+        let thread_count = std::thread::available_parallelism()
+            .map(|p| p.get())
+            .unwrap_or(4) as u64;
+        let organism_pool = ThreadPool::<Organism>::new(thread_count);
+
+        // Generate initial organisms
+        let population_size = global_constants.population_size();
+        let mut organism_ids = Vec::with_capacity(population_size);
+
+        for organism_id in 0..population_size as u64 {
+            // Generate random phenotype
+            let phenotype = Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
+
+            // Create the organism in the pool
+            let create_request = CreateOrganism {
+                id: organism_id,
+                parent_ids: (None, None), // Initial organisms have no parents
+                phenotype,
+                dimensions: Arc::clone(&dimensions),
+                world_function: Arc::clone(&world_function),
+            };
+
+            // Add to pool - we ignore the AddResponse since we're just initializing
+            organism_pool
+                .send_and_receive_once(create_request)
+                .expect("Thread pool should be available during initialization");
+
+            organism_ids.push(organism_id);
+        }
+
+        // Create regions
+        let regions = Regions::new(&global_constants);
+
+        World {
+            organism_pool,
+            dimensions,
+            dimension_version: 0,
+            regions,
+            world_function,
+            global_constants,
+            best_score: f64::MAX,
+            best_organism_id: None,
+            organism_ids,
+            next_organism_id: population_size as u64,
+            world_seed,
+        }
+    }
+}
+
+/// Creates extended parameter bounds by prepending system parameter bounds.
+///
+/// The system parameters are at the BEGINNING of expressed values:
+/// [m1, m2, m3, m4, m5, max_age, crossover_points, ...problem_params...]
+///
+/// System parameter bounds:
+/// - m1-m5: mutation rates in 0.0..=1.0
+/// - max_age: organism lifespan in 2.0..=10.0
+/// - crossover_points: for reproduction in 1.0..=10.0
+fn create_extended_bounds(
+    param_range: &[std::ops::RangeInclusive<f64>],
+) -> Vec<std::ops::RangeInclusive<f64>> {
+    // System parameter bounds (prepended to user bounds)
+    let system_bounds: Vec<std::ops::RangeInclusive<f64>> = vec![
+        0.0..=1.0,  // m1_prob_false_to_true
+        0.0..=1.0,  // m2_prob_true_to_false
+        0.0..=1.0,  // m3_prob_adj_double_halve_flag
+        0.0..=1.0,  // m4_prob_adj_direction_flag
+        0.0..=1.0,  // m5_prob_locus_value_mutation
+        2.0..=10.0, // max_age
+        1.0..=10.0, // crossover_points
+    ];
+
+    let mut extended = system_bounds;
+    extended.extend_from_slice(param_range);
+    extended
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world::single_valued_function::SingleValuedFunction;
+    use std::ops::RangeInclusive;
+
+    // Mock WorldFunction for testing
+    #[derive(Debug)]
+    struct TestFunction;
+
+    impl SingleValuedFunction for TestFunction {
+        fn single_run(&self, _params: &[f64]) -> f64 {
+            0.0
+        }
+    }
+
+    #[test]
+    fn given_valid_params_when_world_new_then_population_created() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![-10.0..=10.0, -10.0..=10.0];
+        let constants = GlobalConstants::new(50, 5);
+
+        let world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.organism_count(), 50);
+        assert_eq!(world.organism_ids.len(), 50);
+        assert_eq!(world.next_organism_id, 50);
+    }
+
+    #[test]
+    fn given_world_new_when_created_then_organism_ids_sequential() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![-5.0..=5.0];
+        let constants = GlobalConstants::new(10, 2);
+
+        let world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        // IDs should be 0..9
+        for (idx, &id) in world.organism_ids.iter().enumerate() {
+            assert_eq!(id, idx as u64);
+        }
+    }
+
+    #[test]
+    fn given_world_new_when_created_then_best_score_is_max() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=100.0, 0.0..=100.0];
+        let constants = GlobalConstants::new(20, 4);
+
+        let world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.best_score, f64::MAX);
+        assert!(world.best_organism_id.is_none());
+    }
+
+    #[test]
+    fn given_world_new_when_created_then_dimensions_version_zero() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![-1.0..=1.0, -1.0..=1.0, -1.0..=1.0];
+        let constants = GlobalConstants::new(30, 3);
+
+        let world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.dimension_version(), 0);
+        assert_eq!(world.dimensions().num_dimensions(), 3);
+    }
+
+    #[test]
+    fn given_world_new_when_created_then_regions_initialized() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=10.0, 0.0..=10.0];
+        let constants = GlobalConstants::new(100, 10);
+
+        let world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        // Regions are empty initially until calculate_region_keys is called
+        assert!(world.regions.is_empty());
+    }
+
+    #[test]
+    fn given_world_new_when_same_seed_then_deterministic() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![-10.0..=10.0, -10.0..=10.0];
+        let constants = GlobalConstants::new_with_seed(20, 4, 42);
+
+        let world1 = World::new(&bounds, constants, Box::new(TestFunction));
+        let world2 = World::new(&bounds, constants, Box::new(TestFunction));
+
+        // Both worlds should have the same organism IDs
+        assert_eq!(world1.organism_ids, world2.organism_ids);
+        assert_eq!(world1.world_seed(), world2.world_seed());
+    }
+
+    #[test]
+    fn given_extended_bounds_when_created_then_includes_system_params() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=10.0, 0.0..=20.0];
+
+        let extended = create_extended_bounds(&bounds);
+
+        // Should have NUM_SYSTEM_PARAMETERS + original 2
+        assert_eq!(extended.len(), crate::NUM_SYSTEM_PARAMETERS + 2);
+
+        // First 5 should be system param bounds (m1-m5: 0.0..=1.0)
+        for i in 0..5 {
+            assert_eq!(
+                extended[i],
+                0.0..=1.0,
+                "m{} bounds should be 0.0..=1.0",
+                i + 1
+            );
+        }
+
+        // max_age: 2.0..=10.0
+        assert_eq!(extended[5], 2.0..=10.0);
+
+        // crossover_points: 1.0..=10.0
+        assert_eq!(extended[6], 1.0..=10.0);
+
+        // User bounds should be after system params
+        assert_eq!(extended[7], 0.0..=10.0);
+        assert_eq!(extended[8], 0.0..=20.0);
+    }
+}

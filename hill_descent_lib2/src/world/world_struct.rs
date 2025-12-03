@@ -24,8 +24,8 @@ pub struct World {
     /// Region management (not in thread pool)
     pub(super) regions: Regions,
 
-    /// Fitness function shared by all organisms
-    pub(super) world_function: Arc<dyn WorldFunction>,
+    /// Fitness function shared by all organisms (Send + Sync for thread pool)
+    pub(super) world_function: Arc<dyn WorldFunction + Send + Sync>,
 
     /// Global configuration
     pub(super) global_constants: GlobalConstants,

@@ -182,7 +182,7 @@ pub trait SingleValuedFunction: Debug + Sync {
 
 impl<T> WorldFunction for T
 where
-    T: SingleValuedFunction + Debug,
+    T: SingleValuedFunction + Debug + Send + Sync,
 {
     /// Adapts the `single_run` interface to the `WorldFunction` interface by wrapping the
     /// single scalar result in a `Vec`.

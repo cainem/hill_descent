@@ -1,7 +1,6 @@
 //! Setup world - creates a new World with initial population.
 
 use std::ops::RangeInclusive;
-use std::sync::Arc;
 
 use super::{World, WorldFunction};
 use crate::parameters::GlobalConstants;
@@ -40,26 +39,51 @@ pub fn setup_world(
     global_constants: GlobalConstants,
     world_function: Box<dyn WorldFunction>,
 ) -> World {
-    todo!("Implement setup_world")
+    World::new(param_range, global_constants, world_function)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::world::single_valued_function::SingleValuedFunction;
+
+    // Mock WorldFunction for testing
+    #[derive(Debug)]
+    struct TestFunction;
+
+    impl SingleValuedFunction for TestFunction {
+        fn single_run(&self, _params: &[f64]) -> f64 {
+            0.0
+        }
+    }
+
     #[test]
-    #[ignore = "Implementation pending"]
     fn given_valid_params_when_setup_world_then_world_created() {
-        todo!()
+        let bounds = vec![-10.0..=10.0, -10.0..=10.0];
+        let constants = GlobalConstants::new(50, 5);
+
+        let world = setup_world(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.organism_count(), 50);
     }
 
     #[test]
-    #[ignore = "Implementation pending"]
     fn given_setup_world_when_organism_count_then_equals_population_size() {
-        todo!()
+        let bounds = vec![0.0..=100.0];
+        let constants = GlobalConstants::new(100, 10);
+
+        let world = setup_world(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.organism_count(), constants.population_size());
     }
 
     #[test]
-    #[ignore = "Implementation pending"]
     fn given_setup_world_when_dimension_version_then_is_zero() {
-        todo!()
+        let bounds = vec![-5.0..=5.0, -5.0..=5.0, -5.0..=5.0];
+        let constants = GlobalConstants::new(30, 3);
+
+        let world = setup_world(&bounds, constants, Box::new(TestFunction));
+
+        assert_eq!(world.dimension_version(), 0);
     }
 }

@@ -25,6 +25,7 @@
 //! ```
 
 pub mod dimensions;
+pub mod new;
 pub mod regions;
 pub mod single_valued_function;
 pub mod world_function;
