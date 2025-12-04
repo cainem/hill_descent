@@ -1,7 +1,6 @@
 //! Get best parameters from the world.
 
 use super::World;
-use crate::organism::GetPhenotypeRequest;
 
 impl World {
     /// Returns the expressed parameter values of the best organism.
@@ -14,30 +13,19 @@ impl World {
     /// The parameter values of the organism with the best fitness score,
     /// or an empty vector if no evaluations have occurred yet.
     ///
-    /// # Panics
-    ///
-    /// Panics if the best organism is no longer in the pool (should not happen
-    /// under normal operation).
+    /// Note: These parameters are cached when the best score is updated,
+    /// so they remain available even if the best organism later dies.
     pub fn get_best_params(&self) -> Vec<f64> {
-        let Some(best_id) = self.best_organism_id else {
-            return Vec::new();
-        };
-
-        // Request phenotype from the best organism
-        let response = self
-            .organism_pool
-            .send_and_receive_once(GetPhenotypeRequest(best_id))
-            .expect("Thread pool should be available");
-
-        // Return problem parameters (excluding system parameters)
-        response.result.expression_problem_values().to_vec()
+        self.best_params.clone()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{GlobalConstants, TrainingData, world::single_valued_function::SingleValuedFunction};
+    use crate::{
+        GlobalConstants, TrainingData, world::single_valued_function::SingleValuedFunction,
+    };
     use std::ops::RangeInclusive;
 
     #[derive(Debug)]
@@ -78,7 +66,11 @@ mod tests {
 
         // Params should be within bounds
         for &p in &params {
-            assert!(p >= -10.0 && p <= 10.0, "Param {} should be within bounds", p);
+            assert!(
+                (-10.0..=10.0).contains(&p),
+                "Param {} should be within bounds",
+                p
+            );
         }
     }
 

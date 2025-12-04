@@ -94,6 +94,7 @@ impl World {
             global_constants,
             best_score: f64::MAX,
             best_organism_id: None,
+            best_params: Vec::new(),
             organism_ids,
             next_organism_id: population_size as u64,
             world_seed,
@@ -226,13 +227,8 @@ mod tests {
         assert_eq!(extended.len(), crate::NUM_SYSTEM_PARAMETERS + 2);
 
         // First 5 should be system param bounds (m1-m5: 0.0..=1.0)
-        for i in 0..5 {
-            assert_eq!(
-                extended[i],
-                0.0..=1.0,
-                "m{} bounds should be 0.0..=1.0",
-                i + 1
-            );
+        for (i, bound) in extended.iter().enumerate().take(5) {
+            assert_eq!(*bound, 0.0..=1.0, "m{} bounds should be 0.0..=1.0", i + 1);
         }
 
         // max_age: 2.0..=10.0

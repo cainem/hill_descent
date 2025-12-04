@@ -37,6 +37,7 @@ impl World {
 
         // Process responses and build region entries
         let mut entries: Vec<(RegionKey, OrganismEntry)> = Vec::with_capacity(responses.len());
+        let mut new_best_id: Option<u64> = None;
 
         for response in responses {
             let id = response.id;
@@ -46,11 +47,24 @@ impl World {
             if result.score < self.best_score {
                 self.best_score = result.score;
                 self.best_organism_id = Some(id);
+                new_best_id = Some(id);
             }
 
             // Create entry for region population
             let entry = OrganismEntry::new(id, result.age, Some(result.score));
             entries.push((result.region_key, entry));
+        }
+
+        // If we have a new best organism, cache its params
+        if let Some(best_id) = new_best_id {
+            let phenotype_response = self
+                .organism_pool
+                .send_and_receive_once(crate::organism::GetPhenotypeRequest(best_id))
+                .expect("Thread pool should be available");
+            self.best_params = phenotype_response
+                .result
+                .expression_problem_values()
+                .to_vec();
         }
 
         // Populate regions with organism entries

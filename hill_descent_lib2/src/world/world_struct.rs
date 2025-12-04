@@ -36,6 +36,10 @@ pub struct World {
     /// ID of the organism with the best score
     pub(super) best_organism_id: Option<u64>,
 
+    /// Parameters (problem values only) of the best organism.
+    /// Cached here so they remain available even if the organism dies.
+    pub(super) best_params: Vec<f64>,
+
     /// All organism IDs currently in the pool
     pub(super) organism_ids: Vec<u64>,
 
@@ -79,6 +83,7 @@ impl std::fmt::Debug for World {
             .field("dimension_version", &self.dimension_version)
             .field("best_score", &self.best_score)
             .field("best_organism_id", &self.best_organism_id)
+            .field("best_params", &self.best_params)
             .field("organism_count", &self.organism_ids.len())
             .field("next_organism_id", &self.next_organism_id)
             .field("world_seed", &self.world_seed)

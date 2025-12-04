@@ -174,11 +174,11 @@ mod tests {
 
         let training_data = TrainingData::None { floor_value: 0.0 };
 
-        // First run may or may not need dimension expansion
+        // First run returns a boolean indicating whether resolution limit was reached
         let result = world.training_run(training_data);
 
-        // Result should be a boolean
-        assert!(result == true || result == false);
+        // Use the result to verify it's a valid boolean (this always passes but silences warning)
+        let _ = result;
     }
 
     #[test]

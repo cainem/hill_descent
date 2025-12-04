@@ -19,7 +19,9 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{GlobalConstants, TrainingData, world::single_valued_function::SingleValuedFunction};
+    use crate::{
+        GlobalConstants, TrainingData, world::single_valued_function::SingleValuedFunction,
+    };
     use std::ops::RangeInclusive;
 
     #[derive(Debug)]
