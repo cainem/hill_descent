@@ -23,7 +23,7 @@ impl SystemParameters {
     /// 7. `crossover_points`: Number of crossover points for sexual reproduction.
     ///
     /// This order must strictly match the order in which system parameters are prepended
-    /// by the `parameter_enhancement::enhance_parameters` function.
+    /// to the problem parameters when creating phenotypes.
     ///
     /// Panics if the provided slice does not contain exactly 7 elements.
     pub fn new(values: &[f64]) -> Self {

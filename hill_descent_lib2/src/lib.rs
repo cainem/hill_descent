@@ -79,6 +79,7 @@ pub use parameters::GlobalConstants;
 pub use tracing_init::init as init_tracing;
 pub use training_data::TrainingData;
 pub use world::World;
+pub use world::get_best_organism::BestOrganism;
 pub use world::setup_world::setup_world;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
