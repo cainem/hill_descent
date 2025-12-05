@@ -59,28 +59,31 @@ impl World {
 
         // Generate initial organisms
         let population_size = global_constants.population_size();
-        let mut organism_ids = Vec::with_capacity(population_size);
+        let organism_ids: Vec<u64> = (0..population_size as u64).collect();
 
-        for organism_id in 0..population_size as u64 {
-            // Generate random phenotype
-            let phenotype = Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
+        // Build batch of create requests for all organisms
+        let create_requests: Vec<CreateOrganism> = organism_ids
+            .iter()
+            .map(|&organism_id| {
+                // Generate random phenotype
+                let phenotype =
+                    Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
 
-            // Create the organism in the pool
-            let create_request = CreateOrganism {
-                id: organism_id,
-                parent_ids: (None, None), // Initial organisms have no parents
-                phenotype,
-                dimensions: Arc::clone(&dimensions),
-                world_function: Arc::clone(&world_function),
-            };
+                CreateOrganism {
+                    id: organism_id,
+                    parent_ids: (None, None), // Initial organisms have no parents
+                    phenotype,
+                    dimensions: Arc::clone(&dimensions),
+                    world_function: Arc::clone(&world_function),
+                }
+            })
+            .collect();
 
-            // Add to pool - we ignore the AddResponse since we're just initializing
-            organism_pool
-                .send_and_receive_once(create_request)
-                .expect("Thread pool should be available during initialization");
-
-            organism_ids.push(organism_id);
-        }
+        // Add all organisms to pool in a batch
+        let _: Vec<_> = organism_pool
+            .send_and_receive(create_requests.into_iter())
+            .expect("Thread pool should be available during initialization")
+            .collect();
 
         // Create regions
         let regions = Regions::new(&global_constants);

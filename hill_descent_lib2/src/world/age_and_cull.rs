@@ -36,11 +36,14 @@ impl World {
 
         let removed_count = to_remove.len();
 
-        // Remove dead organisms from the pool
-        for id in &to_remove {
-            self.organism_pool
-                .send_and_receive_once(RemovePoolItemRequest(*id))
-                .expect("Thread pool should be available");
+        // Remove dead organisms from the pool in a batch
+        if !to_remove.is_empty() {
+            let remove_requests = to_remove.iter().map(|&id| RemovePoolItemRequest(id));
+            let _: Vec<_> = self
+                .organism_pool
+                .send_and_receive(remove_requests)
+                .expect("Thread pool should be available")
+                .collect();
         }
 
         // Update organism_ids to exclude removed ones
@@ -64,10 +67,14 @@ impl World {
     pub fn remove_organisms(&mut self, ids_to_remove: &[u64]) -> usize {
         let removed_count = ids_to_remove.len();
 
-        for &id in ids_to_remove {
-            self.organism_pool
-                .send_and_receive_once(RemovePoolItemRequest(id))
-                .expect("Thread pool should be available");
+        // Remove organisms from the pool in a batch
+        if !ids_to_remove.is_empty() {
+            let remove_requests = ids_to_remove.iter().map(|&id| RemovePoolItemRequest(id));
+            let _: Vec<_> = self
+                .organism_pool
+                .send_and_receive(remove_requests)
+                .expect("Thread pool should be available")
+                .collect();
         }
 
         // Update organism_ids to exclude removed ones

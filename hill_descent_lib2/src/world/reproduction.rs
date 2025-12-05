@@ -78,52 +78,54 @@ impl World {
             .expect("Thread pool should be available")
             .collect();
 
-        // Step 3: Create new organisms from offspring phenotypes
-        let mut offspring_count = 0;
+        // Step 3: Build batch of CreateOrganism requests for all offspring
+        let mut create_requests: Vec<CreateOrganism> =
+            Vec::with_capacity(reproduce_responses.len() * 2);
+        let mut new_ids: Vec<u64> = Vec::with_capacity(reproduce_responses.len() * 2);
 
         for response in reproduce_responses {
             let result = response.result;
             let (phenotype1, phenotype2) = result.offspring_phenotypes;
             let parent_ids = result.parent_ids;
 
-            // Create first offspring
+            // First offspring
             let id1 = self.next_organism_id;
             self.next_organism_id += 1;
+            new_ids.push(id1);
 
-            let create1 = CreateOrganism {
+            create_requests.push(CreateOrganism {
                 id: id1,
                 parent_ids: (Some(parent_ids.0), Some(parent_ids.1)),
                 phenotype: phenotype1,
                 dimensions: Arc::clone(&self.dimensions),
                 world_function: Arc::clone(&self.world_function),
-            };
+            });
 
-            self.organism_pool
-                .send_and_receive_once(create1)
-                .expect("Thread pool should be available");
-
-            self.organism_ids.push(id1);
-            offspring_count += 1;
-
-            // Create second offspring
+            // Second offspring
             let id2 = self.next_organism_id;
             self.next_organism_id += 1;
+            new_ids.push(id2);
 
-            let create2 = CreateOrganism {
+            create_requests.push(CreateOrganism {
                 id: id2,
                 parent_ids: (Some(parent_ids.0), Some(parent_ids.1)),
                 phenotype: phenotype2,
                 dimensions: Arc::clone(&self.dimensions),
                 world_function: Arc::clone(&self.world_function),
-            };
-
-            self.organism_pool
-                .send_and_receive_once(create2)
-                .expect("Thread pool should be available");
-
-            self.organism_ids.push(id2);
-            offspring_count += 1;
+            });
         }
+
+        let offspring_count = create_requests.len();
+
+        // Send all create requests as a batch
+        let _: Vec<_> = self
+            .organism_pool
+            .send_and_receive(create_requests.into_iter())
+            .expect("Thread pool should be available")
+            .collect();
+
+        // Update organism_ids with all new IDs
+        self.organism_ids.extend(new_ids);
 
         offspring_count
     }
