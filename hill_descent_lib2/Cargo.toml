@@ -42,5 +42,12 @@ enable-tracing = ["tracing", "tracing-subscriber", "tracing-log", "log"]
 [lib]
 crate-type = ["rlib"]
 
+[[bench]]
+name = "hundred_parameter_benchmark"
+harness = false
+
+[dev-dependencies]
+criterion = "0.5"
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

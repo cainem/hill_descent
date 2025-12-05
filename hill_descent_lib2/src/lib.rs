@@ -69,13 +69,23 @@ pub mod world;
 // Stage 2 - New architecture
 pub mod organism;
 
+// Utility modules
+mod format_score;
+mod tracing_init;
+
 // Public API re-exports
+pub use format_score::format_score;
 pub use parameters::GlobalConstants;
+pub use tracing_init::init as init_tracing;
 pub use training_data::TrainingData;
 pub use world::World;
 pub use world::setup_world::setup_world;
 pub use world::single_valued_function::SingleValuedFunction;
 pub use world::world_function::WorldFunction;
+
+// Re-export log macros when tracing is enabled (for compatibility with lib1)
+#[cfg(feature = "enable-tracing")]
+pub use log::{debug, error, info, trace, warn};
 
 /// Number of system parameters used by the genetic algorithm.
 /// These are the first 7 expressed values from a phenotype.

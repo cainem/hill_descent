@@ -921,6 +921,7 @@ dependencies = [
 name = "hill_descent_lib2"
 version = "0.1.0"
 dependencies = [
+ "criterion",
  "getrandom",
  "indexmap",
  "log",
