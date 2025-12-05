@@ -944,7 +944,7 @@ dependencies = [
  "actix-files",
  "actix-web",
  "env_logger",
- "hill_descent_lib",
+ "hill_descent_lib2",
  "serde",
  "serde_json",
 ]

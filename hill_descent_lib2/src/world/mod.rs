@@ -38,6 +38,7 @@ pub mod evaluate_fitness;
 pub mod get_best_organism;
 pub mod get_best_params;
 pub mod get_best_score;
+pub mod get_state_for_web;
 pub mod reproduction;
 pub mod setup_world;
 pub mod training_run;

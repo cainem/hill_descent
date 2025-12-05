@@ -237,6 +237,27 @@ impl Organism {
     pub fn update_dimensions(&mut self, new_dimensions: Arc<Dimensions>) {
         self.dimensions = update_dimensions_impl::update_dimensions(new_dimensions);
     }
+
+    /// Returns organism state for web visualization.
+    ///
+    /// This provides a snapshot of the organism's current state including
+    /// position, score, age, and other data needed for 2D visualization.
+    #[messaging(GetWebStateRequest, GetWebStateResponse)]
+    pub fn get_web_state(&self) -> GetWebStateResult {
+        let expressed = self.phenotype.expressed_values();
+        // Extract position params (after NUM_SYSTEM_PARAMETERS)
+        let params = expressed[crate::NUM_SYSTEM_PARAMETERS..].to_vec();
+        let max_age = self.phenotype.system_parameters().max_age();
+
+        GetWebStateResult {
+            params,
+            age: self.age,
+            max_age: max_age.round() as usize,
+            score: self.score,
+            region_key: self.region_key.clone(),
+            is_dead: self.is_dead,
+        }
+    }
 }
 
 // ============================================================================
@@ -279,6 +300,23 @@ pub struct IncrementAgeResult {
     pub should_remove: bool,
     /// The organism's new age
     pub new_age: usize,
+}
+
+/// Result of get_web_state - data needed for web visualization.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GetWebStateResult {
+    /// Position parameters (problem space coordinates)
+    pub params: Vec<f64>,
+    /// Current age in training runs
+    pub age: usize,
+    /// Maximum age before death
+    pub max_age: usize,
+    /// Fitness score (None if not evaluated)
+    pub score: Option<f64>,
+    /// Current region key
+    pub region_key: Option<RegionKey>,
+    /// Whether organism has exceeded max age
+    pub is_dead: bool,
 }
 
 // ============================================================================

@@ -143,6 +143,46 @@ impl Dimension {
 
         Some(interval)
     }
+
+    /// Returns the bounds (start, end) for a given interval index.
+    ///
+    /// This is the inverse of `get_interval` - given an interval index,
+    /// returns the range of values that would fall into that interval.
+    ///
+    /// # Arguments
+    ///
+    /// * `interval` - The 0-based interval index
+    ///
+    /// # Returns
+    ///
+    /// * `Some((start, end))` - The bounds of the interval
+    /// * `None` - If the interval index is out of range
+    pub fn interval_bounds(&self, interval: usize) -> Option<(f64, f64)> {
+        let num_intervals = self.num_intervals() as usize;
+
+        // Check if interval is out of range
+        if interval >= num_intervals {
+            return None;
+        }
+
+        let start = *self.range.start();
+        let end = *self.range.end();
+
+        // Handle special case: single interval (no doublings or single point)
+        if num_intervals == 1 || start == end {
+            return Some((start, end));
+        }
+
+        let interval_size = (end - start) / num_intervals as f64;
+        let interval_start = start + interval as f64 * interval_size;
+        let interval_end = if interval == num_intervals - 1 {
+            end // Last interval ends exactly at range end
+        } else {
+            interval_start + interval_size
+        };
+
+        Some((interval_start, interval_end))
+    }
 }
 
 #[cfg(test)]
