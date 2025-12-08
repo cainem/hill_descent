@@ -1,5 +1,7 @@
 //! Training run - the main optimization loop.
 
+use messaging_thread_pool::RemovePoolItemRequest;
+
 use super::World;
 use crate::training_data::TrainingData;
 
@@ -16,13 +18,12 @@ impl World {
     ///
     /// # Algorithm
     ///
-    /// 1. Calculate region keys (may loop if dimensions expand)
-    /// 2. Evaluate fitness for all organisms
-    /// 3. Update carrying capacities based on region fitness
-    /// 4. Process regions (sort, cull, select reproduction pairs)
-    /// 5. Remove organisms that exceeded carrying capacity
-    /// 6. Perform reproduction for selected pairs
-    /// 7. Age organisms and remove dead ones
+    /// 1. Process epoch for all organisms (combined region key + fitness + age)
+    /// 2. Update carrying capacities based on region fitness
+    /// 3. Process regions (sort, cull, select reproduction pairs)
+    /// 4. Remove organisms that exceeded carrying capacity
+    /// 5. Perform reproduction for selected pairs (dead-from-age can still participate)
+    /// 6. Remove organisms that died from age
     pub fn training_run(&mut self, training_data: TrainingData) -> bool {
         // Get training data index (0 for function optimization)
         let training_data_index = match training_data {
@@ -30,39 +31,58 @@ impl World {
             TrainingData::Supervised { .. } => 0, // For now, use index 0
         };
 
-        // Step 1: Calculate region keys (may expand dimensions)
-        let changed_dimensions = self.calculate_region_keys();
-        let at_resolution_limit = changed_dimensions.is_empty();
+        // Step 1: Combined epoch processing (region key + fitness + age increment)
+        // This replaces separate calculate_region_keys, evaluate_fitness, and age_and_cull calls
+        let (at_resolution_limit, dead_organisms) = self.process_epoch_all(training_data_index);
 
-        // Step 2: Evaluate fitness for all organisms
-        self.evaluate_fitness(training_data_index);
-
-        // Step 3: Update carrying capacities based on region fitness
+        // Step 2: Update carrying capacities based on region fitness
         self.regions.update_carrying_capacities();
 
-        // Step 4: Process regions (sort, cull, select reproduction pairs)
+        // Step 3: Process regions (sort, cull, select reproduction pairs)
         let process_results = self.regions.process_all(self.world_seed);
 
-        // Step 5: Collect organisms to remove (exceeded carrying capacity)
-        let organisms_to_remove: Vec<u64> = process_results
+        // Step 4: Collect organisms to remove (exceeded carrying capacity only)
+        let capacity_exceeded: Vec<u64> = process_results
             .iter()
             .flat_map(|result| result.organisms_to_remove.iter().copied())
             .collect();
 
-        // Step 6: Collect all reproduction pairs
+        // Step 5: Collect all reproduction pairs
         let reproduction_pairs: Vec<(u64, u64)> = process_results
             .into_iter()
             .flat_map(|result| result.reproduction_pairs)
             .collect();
 
-        // Step 7: Remove organisms that exceeded carrying capacity
-        self.remove_organisms(&organisms_to_remove);
+        // Step 6: Remove organisms that exceeded carrying capacity
+        // (Done BEFORE reproduction - these organisms cannot participate)
+        if !capacity_exceeded.is_empty() {
+            let remove_requests = capacity_exceeded
+                .iter()
+                .map(|&id| RemovePoolItemRequest(id));
+            let _: Vec<_> = self
+                .organism_pool
+                .send_and_receive(remove_requests)
+                .expect("Thread pool should be available")
+                .collect();
+            self.organism_ids
+                .retain(|id| !capacity_exceeded.contains(id));
+        }
 
-        // Step 8: Perform reproduction for selected pairs
+        // Step 7: Perform reproduction for selected pairs
+        // NOTE: Dead-from-age organisms can still participate in reproduction
+        // to prevent guaranteed extinction in low-population scenarios
         self.perform_reproduction(reproduction_pairs);
 
-        // Step 9: Age organisms and remove dead ones
-        self.age_and_cull();
+        // Step 8: Remove organisms that died from age (AFTER reproduction)
+        if !dead_organisms.is_empty() {
+            let remove_requests = dead_organisms.iter().map(|&id| RemovePoolItemRequest(id));
+            let _: Vec<_> = self
+                .organism_pool
+                .send_and_receive(remove_requests)
+                .expect("Thread pool should be available")
+                .collect();
+            self.organism_ids.retain(|id| !dead_organisms.contains(id));
+        }
 
         at_resolution_limit
     }

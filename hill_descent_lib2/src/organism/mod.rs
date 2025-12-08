@@ -23,6 +23,7 @@
 mod calculate_region_key_impl;
 mod evaluate_fitness_impl;
 mod increment_age_impl;
+mod process_epoch_impl;
 mod reproduce_impl;
 mod update_dimensions_impl;
 
@@ -232,6 +233,44 @@ impl Organism {
         result
     }
 
+    /// Processes an organism's epoch: calculates region key, evaluates fitness, and increments age.
+    ///
+    /// This combined operation reduces synchronization barriers by performing three
+    /// operations in a single message instead of three separate messages.
+    ///
+    /// # Arguments
+    /// * `training_data_index` - Index into shared training data (0 for function optimization)
+    #[messaging(ProcessEpochRequest, ProcessEpochResponse)]
+    pub fn process_epoch(&mut self, training_data_index: usize) -> ProcessEpochResult {
+        let result = process_epoch_impl::process_epoch(
+            &self.phenotype,
+            &self.dimensions,
+            &self.world_function,
+            self.age,
+            training_data_index,
+        );
+
+        // Update cached state based on result
+        match &result {
+            ProcessEpochResult::Ok {
+                region_key,
+                score,
+                new_age,
+                should_remove,
+            } => {
+                self.region_key = Some(region_key.clone());
+                self.score = Some(*score);
+                self.age = *new_age;
+                self.is_dead = *should_remove;
+            }
+            ProcessEpochResult::OutOfBounds { .. } => {
+                // Don't update state if out of bounds - will need dimension expansion
+            }
+        }
+
+        result
+    }
+
     /// Updates the organism's dimensions reference when bounds expand.
     #[messaging(UpdateDimensionsRequest, UpdateDimensionsResponse)]
     pub fn update_dimensions(&mut self, new_dimensions: Arc<Dimensions>) {
@@ -300,6 +339,30 @@ pub struct IncrementAgeResult {
     pub should_remove: bool,
     /// The organism's new age
     pub new_age: usize,
+}
+
+/// Result of combined epoch processing (region key + fitness + age).
+///
+/// This combines the results of calculate_region_key, evaluate_fitness, and increment_age
+/// into a single response to reduce synchronization barriers.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProcessEpochResult {
+    /// Epoch processed successfully - organism was in bounds.
+    Ok {
+        /// The calculated region key
+        region_key: RegionKey,
+        /// The fitness score
+        score: f64,
+        /// The organism's new age after incrementing
+        new_age: usize,
+        /// Whether the organism should be removed (exceeded max age)
+        should_remove: bool,
+    },
+    /// Organism is outside dimension bounds - needs dimension expansion.
+    OutOfBounds {
+        /// Indices of dimensions where the organism exceeds bounds
+        dimensions_exceeded: Vec<usize>,
+    },
 }
 
 /// Result of get_web_state - data needed for web visualization.
