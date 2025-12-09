@@ -80,10 +80,10 @@ impl World {
             .collect();
 
         // Add all organisms to pool in a batch
-        let _: Vec<_> = organism_pool
+        organism_pool
             .send_and_receive(create_requests.into_iter())
             .expect("Thread pool should be available during initialization")
-            .collect();
+            .for_each(drop);
 
         // Create regions
         let regions = Regions::new(&global_constants);

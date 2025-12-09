@@ -34,7 +34,6 @@ pub mod world_struct;
 // Training run steps
 pub mod age_and_cull;
 pub mod calculate_region_keys;
-pub mod evaluate_fitness;
 pub mod get_best_organism;
 pub mod get_best_params;
 pub mod get_best_score;

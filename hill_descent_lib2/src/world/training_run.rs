@@ -59,11 +59,10 @@ impl World {
             let remove_requests = capacity_exceeded
                 .iter()
                 .map(|&id| RemovePoolItemRequest(id));
-            let _: Vec<_> = self
-                .organism_pool
+            self.organism_pool
                 .send_and_receive(remove_requests)
                 .expect("Thread pool should be available")
-                .collect();
+                .for_each(drop);
             self.organism_ids
                 .retain(|id| !capacity_exceeded.contains(id));
         }
@@ -76,11 +75,10 @@ impl World {
         // Step 8: Remove organisms that died from age (AFTER reproduction)
         if !dead_organisms.is_empty() {
             let remove_requests = dead_organisms.iter().map(|&id| RemovePoolItemRequest(id));
-            let _: Vec<_> = self
-                .organism_pool
+            self.organism_pool
                 .send_and_receive(remove_requests)
                 .expect("Thread pool should be available")
-                .collect();
+                .for_each(drop);
             self.organism_ids.retain(|id| !dead_organisms.contains(id));
         }
 

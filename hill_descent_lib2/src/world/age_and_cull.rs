@@ -39,11 +39,10 @@ impl World {
         // Remove dead organisms from the pool in a batch
         if !to_remove.is_empty() {
             let remove_requests = to_remove.iter().map(|&id| RemovePoolItemRequest(id));
-            let _: Vec<_> = self
-                .organism_pool
+            self.organism_pool
                 .send_and_receive(remove_requests)
                 .expect("Thread pool should be available")
-                .collect();
+                .for_each(drop);
         }
 
         // Update organism_ids to exclude removed ones
@@ -70,11 +69,10 @@ impl World {
         // Remove organisms from the pool in a batch
         if !ids_to_remove.is_empty() {
             let remove_requests = ids_to_remove.iter().map(|&id| RemovePoolItemRequest(id));
-            let _: Vec<_> = self
-                .organism_pool
+            self.organism_pool
                 .send_and_receive(remove_requests)
                 .expect("Thread pool should be available")
-                .collect();
+                .for_each(drop);
         }
 
         // Update organism_ids to exclude removed ones

@@ -89,11 +89,10 @@ impl World {
             });
 
             // Collect responses to ensure all organisms are updated
-            let _: Vec<_> = self
-                .organism_pool
+            self.organism_pool
                 .send_and_receive(update_requests)
                 .expect("Thread pool should be available")
-                .collect();
+                .for_each(drop);
 
             // Retry with only the out-of-bounds organisms
             pending_ids = out_of_bounds_ids;

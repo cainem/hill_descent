@@ -118,11 +118,10 @@ impl World {
         let offspring_count = create_requests.len();
 
         // Send all create requests as a batch
-        let _: Vec<_> = self
-            .organism_pool
+        self.organism_pool
             .send_and_receive(create_requests.into_iter())
             .expect("Thread pool should be available")
-            .collect();
+            .for_each(drop);
 
         // Update organism_ids with all new IDs
         self.organism_ids.extend(new_ids);
