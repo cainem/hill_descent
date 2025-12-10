@@ -46,6 +46,14 @@ crate-type = ["rlib"]
 name = "hundred_parameter_benchmark"
 harness = false
 
+[[bench]]
+name = "thread_count_benchmark"
+harness = false
+
+[[bench]]
+name = "thread_count_fine_benchmark"
+harness = false
+
 [dev-dependencies]
 criterion = "0.5"
 

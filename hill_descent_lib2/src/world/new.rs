@@ -51,10 +51,14 @@ impl World {
         // Convert Box to Arc
         let world_function: Arc<dyn WorldFunction + Send + Sync> = Arc::from(world_function);
 
-        // Create thread pool with number of available CPUs
-        let thread_count = std::thread::available_parallelism()
+        // Create thread pool with optimal thread count.
+        // Benchmarking shows 6-8 threads is optimal for the messaging architecture.
+        // Beyond this, coordination overhead exceeds parallelism benefits.
+        // We use min(available_cpus, 8) to balance performance across systems.
+        let available_cpus = std::thread::available_parallelism()
             .map(|p| p.get())
-            .unwrap_or(4) as u64;
+            .unwrap_or(4);
+        let thread_count = available_cpus.min(8) as u64;
         let organism_pool = ThreadPool::<Organism>::new(thread_count);
 
         // Generate initial organisms
@@ -86,6 +90,80 @@ impl World {
             .for_each(drop);
 
         // Create regions
+        let regions = Regions::new(&global_constants);
+
+        World {
+            organism_pool,
+            dimensions,
+            dimension_version: 0,
+            regions,
+            world_function,
+            global_constants,
+            best_score: f64::MAX,
+            best_organism_id: None,
+            best_params: Vec::new(),
+            organism_ids,
+            next_organism_id: population_size as u64,
+            world_seed,
+        }
+    }
+
+    /// Creates a new World with a specific thread count.
+    ///
+    /// This is primarily for benchmarking and testing different thread configurations.
+    /// For normal use, prefer [`World::new`] which uses the optimal thread count.
+    ///
+    /// # Arguments
+    ///
+    /// * `param_range` - Bounds for each parameter dimension
+    /// * `global_constants` - Configuration (population size, target regions, seed)
+    /// * `world_function` - The fitness function to optimize
+    /// * `thread_count` - Number of threads for the organism pool
+    ///
+    /// # Panics
+    ///
+    /// Panics if thread_count is 0.
+    #[doc(hidden)]
+    pub fn new_with_thread_count(
+        param_range: &[std::ops::RangeInclusive<f64>],
+        global_constants: GlobalConstants,
+        world_function: Box<dyn WorldFunction + Send + Sync>,
+        thread_count: u64,
+    ) -> Self {
+        assert!(thread_count > 0, "thread_count must be greater than 0");
+
+        let world_seed = global_constants.world_seed();
+        let mut rng = StdRng::seed_from_u64(world_seed);
+
+        let extended_bounds = create_extended_bounds(param_range);
+        let dimensions = Arc::new(Dimensions::new(param_range));
+        let world_function: Arc<dyn WorldFunction + Send + Sync> = Arc::from(world_function);
+
+        let organism_pool = ThreadPool::<Organism>::new(thread_count);
+
+        let population_size = global_constants.population_size();
+        let organism_ids: Vec<u64> = (0..population_size as u64).collect();
+
+        let create_requests: Vec<CreateOrganism> = organism_ids
+            .iter()
+            .map(|&organism_id| {
+                let phenotype =
+                    Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
+                CreateOrganism {
+                    id: organism_id,
+                    parent_ids: (None, None),
+                    phenotype,
+                    dimensions: Arc::clone(&dimensions),
+                    world_function: Arc::clone(&world_function),
+                }
+            })
+            .collect();
+
+        organism_pool
+            .send_and_receive(create_requests.into_iter())
+            .expect("Thread pool should be available during initialization")
+            .for_each(drop);
+
         let regions = Regions::new(&global_constants);
 
         World {
