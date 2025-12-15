@@ -926,6 +926,7 @@ dependencies = [
  "indexmap",
  "log",
  "messaging_thread_pool",
+ "mimalloc",
  "rand",
  "rayon",
  "rustc-hash",

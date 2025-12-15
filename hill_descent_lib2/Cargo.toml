@@ -20,6 +20,9 @@ categories = ["algorithms", "science"]
 # Thread pool with message passing
 messaging_thread_pool = "5.0.2"
 
+# Memory allocator - mimalloc provides better multi-threaded performance
+mimalloc = { workspace = true }
+
 # Shared with hill_descent_lib
 xxhash-rust = { workspace = true }
 rand = { workspace = true }
