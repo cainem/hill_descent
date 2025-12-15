@@ -57,6 +57,10 @@ harness = false
 name = "thread_count_fine_benchmark"
 harness = false
 
+[[bench]]
+name = "expensive_fitness_benchmark"
+harness = false
+
 [dev-dependencies]
 criterion = "0.5"
 
