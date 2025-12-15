@@ -51,14 +51,11 @@ impl World {
         // Convert Box to Arc
         let world_function: Arc<dyn WorldFunction + Send + Sync> = Arc::from(world_function);
 
-        // Create thread pool with optimal thread count.
-        // Benchmarking shows 6-8 threads is optimal for the messaging architecture.
-        // Beyond this, coordination overhead exceeds parallelism benefits.
-        // We use min(available_cpus, 8) to balance performance across systems.
-        let available_cpus = std::thread::available_parallelism()
+        // Create thread pool using available logical CPUs.
+        // Use new_with_thread_count() to override if a different count is needed.
+        let thread_count = std::thread::available_parallelism()
             .map(|p| p.get())
-            .unwrap_or(4);
-        let thread_count = available_cpus.min(8) as u64;
+            .unwrap_or(4) as u64;
         let organism_pool = ThreadPool::<Organism>::new(thread_count);
 
         // Generate initial organisms
