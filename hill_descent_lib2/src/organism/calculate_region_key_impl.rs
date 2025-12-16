@@ -53,8 +53,12 @@ pub fn calculate_region_key(
         if changed_dimensions.is_empty() {
             return (CalculateRegionKeyResult::Ok(key), request_dimension_version);
         }
-        if changed_dimensions.len() == 1 {
-            let dim_idx = changed_dimensions[0];
+
+        // Handle incremental updates for any number of changed dimensions
+        let mut oob_dims = Vec::new();
+        let mut update_success = true;
+
+        for &dim_idx in changed_dimensions {
             let expressed_values = phenotype.expression_problem_values();
 
             // Ensure dim_idx is valid for expressed_values
@@ -64,18 +68,26 @@ pub fn calculate_region_key(
 
                 if let Some(interval) = dimension.get_interval(value) {
                     key.update_position(dim_idx, interval);
-                    return (CalculateRegionKeyResult::Ok(key), request_dimension_version);
                 } else {
-                    // Out of bounds on this dimension
-                    return (
-                        CalculateRegionKeyResult::OutOfBounds(vec![dim_idx]),
-                        request_dimension_version,
-                    );
+                    oob_dims.push(dim_idx);
                 }
+            } else {
+                // Dimension index mismatch - fall back to full recalc
+                update_success = false;
+                break;
             }
         }
-        // If we can't do incremental update, we fall through to full recalculation.
-        // Note: We dropped the old key here.
+
+        if update_success {
+            if !oob_dims.is_empty() {
+                return (
+                    CalculateRegionKeyResult::OutOfBounds(oob_dims),
+                    request_dimension_version,
+                );
+            }
+            return (CalculateRegionKeyResult::Ok(key), request_dimension_version);
+        }
+        // If update failed (e.g. invalid index), fall through to full recalculation
     }
 
     let expressed_values = phenotype.expression_problem_values();
@@ -270,18 +282,26 @@ mod tests {
     }
 
     #[test]
-    fn given_cached_key_and_multiple_changes_when_calculate_then_full_recalculation() {
-        let dimensions = create_test_dimensions(vec![0.0..=10.0, 0.0..=10.0]);
-        let phenotype = create_test_phenotype(vec![5.0, 5.0]);
-        let cached_key = RegionKey::new(vec![99, 99]); // Wrong values
+    fn given_cached_key_and_multiple_changes_when_calculate_then_incremental_update() {
+        // Setup: 3 dimensions
+        let dimensions = create_test_dimensions(vec![0.0..=10.0, 0.0..=10.0, 0.0..=10.0]);
+        let phenotype = create_test_phenotype(vec![5.0, 5.0, 5.0]);
+        
+        // Cached key has wrong values for all dimensions
+        // Dim 0: 99 (unchanged, should be preserved by incremental update)
+        // Dim 1: 99 (changed, should be updated)
+        // Dim 2: 99 (changed, should be updated)
+        let cached_key = RegionKey::new(vec![99, 99, 99]); 
 
-        // Two dimensions changed -> fallback to full calc
+        // Two dimensions changed (1 and 2)
         let (result, _) =
-            calculate_region_key(&phenotype, &dimensions, Some(cached_key), 0, 1, &[0, 1]);
+            calculate_region_key(&phenotype, &dimensions, Some(cached_key), 0, 1, &[1, 2]);
 
         match result {
             CalculateRegionKeyResult::Ok(key) => {
-                assert_eq!(key.values(), &[0, 0]); // Correct values
+                // If incremental: [99, 0, 0] (Dim 0 preserved, Dims 1&2 updated)
+                // If full recalc: [0, 0, 0] (All calculated from scratch)
+                assert_eq!(key.values(), &[99, 0, 0]); 
             }
             _ => panic!("Expected Ok result"),
         }

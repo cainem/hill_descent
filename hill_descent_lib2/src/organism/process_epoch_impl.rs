@@ -62,9 +62,12 @@ pub fn process_epoch(
             if changed_dimensions.is_empty() {
                 break 'calc CalculateDimensionsKeyResult::Ok(key);
             }
-            if changed_dimensions.len() == 1 {
-                let dim_idx = changed_dimensions[0];
 
+            // Handle incremental updates for any number of changed dimensions
+            let mut oob_dims = Vec::new();
+            let mut update_success = true;
+
+            for &dim_idx in changed_dimensions {
                 // Ensure dim_idx is valid for expressed_values
                 if dim_idx < expressed_values.len() {
                     let value = expressed_values[dim_idx];
@@ -72,17 +75,25 @@ pub fn process_epoch(
 
                     if let Some(interval) = dimension.get_interval(value) {
                         key.update_position(dim_idx, interval);
-                        break 'calc CalculateDimensionsKeyResult::Ok(key);
                     } else {
-                        // Out of bounds on this dimension
-                        break 'calc CalculateDimensionsKeyResult::OutOfBounds {
-                            dimensions_exceeded: vec![dim_idx],
-                        };
+                        oob_dims.push(dim_idx);
                     }
+                } else {
+                    // Dimension index mismatch - fall back to full recalc
+                    update_success = false;
+                    break;
                 }
             }
-            // If we can't do incremental update, we fall through to full recalculation.
-            // Note: We dropped the old key here.
+
+            if update_success {
+                if !oob_dims.is_empty() {
+                    break 'calc CalculateDimensionsKeyResult::OutOfBounds {
+                        dimensions_exceeded: oob_dims,
+                    };
+                }
+                break 'calc CalculateDimensionsKeyResult::Ok(key);
+            }
+            // If update failed (e.g. invalid index), fall through to full recalculation
         }
 
         calculate_dimensions_key(expressed_values, dimensions)
@@ -282,6 +293,40 @@ mod tests {
                 assert_eq!(dimensions_exceeded, vec![0]);
             }
             _ => panic!("Expected OutOfBounds result"),
+        }
+    }
+
+    #[test]
+    fn given_cached_key_and_multiple_changes_when_process_epoch_then_incremental_update() {
+        // Setup: 3 dimensions
+        let dimensions = create_test_dimensions(vec![0.0..=10.0, 0.0..=10.0, 0.0..=10.0]);
+        let phenotype = create_test_phenotype(vec![5.0, 5.0, 5.0], 10.0);
+        let world_function: Arc<dyn WorldFunction + Send + Sync> = Arc::new(SumOfSquares);
+
+        // Cached key has wrong values for all dimensions
+        // Dim 0: 99 (unchanged, should be preserved by incremental update)
+        // Dim 1: 99 (changed, should be updated)
+        // Dim 2: 99 (changed, should be updated)
+        let cached_key = RegionKey::new(vec![99, 99, 99]);
+
+        // Two dimensions changed (1 and 2)
+        let result = process_epoch(
+            &phenotype,
+            &dimensions,
+            &world_function,
+            0,
+            0,
+            Some(cached_key),
+            &[1, 2],
+        );
+
+        match result {
+            ProcessEpochResult::Ok { region_key, .. } => {
+                // If incremental: [99, 0, 0] (Dim 0 preserved, Dims 1&2 updated)
+                // If full recalc: [0, 0, 0] (All calculated from scratch)
+                assert_eq!(region_key.values(), &[99, 0, 0]);
+            }
+            _ => panic!("Expected Ok result"),
         }
     }
 }
