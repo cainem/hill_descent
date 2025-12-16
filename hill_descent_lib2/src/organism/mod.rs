@@ -148,13 +148,22 @@ impl Organism {
     #[messaging(CalculateRegionKeyRequest, CalculateRegionKeyResponse)]
     pub fn calculate_region_key(
         &mut self,
+        dimensions: Option<Arc<Dimensions>>,
         dimension_version: u64,
         changed_dimensions: Vec<usize>,
     ) -> CalculateRegionKeyResult {
+        // Update dimensions if provided
+        if let Some(dims) = dimensions {
+            self.dimensions = dims;
+        }
+
+        // Take ownership of the current key to allow in-place updates
+        let current_key = self.region_key.take();
+
         let (result, new_version) = calculate_region_key_impl::calculate_region_key(
             &self.phenotype,
             &self.dimensions,
-            self.region_key.as_ref(),
+            current_key,
             self.dimension_version,
             dimension_version,
             &changed_dimensions,
@@ -241,16 +250,33 @@ impl Organism {
     /// # Arguments
     /// * `training_data_index` - Index into shared training data (0 for function optimization)
     #[messaging(ProcessEpochRequest, ProcessEpochResponse)]
-    pub fn process_epoch(&mut self, training_data_index: usize) -> ProcessEpochResult {
+    pub fn process_epoch(
+        &mut self,
+        dimensions: Option<Arc<Dimensions>>,
+        dimension_version: u64,
+        changed_dimensions: Vec<usize>,
+        training_data_index: usize,
+    ) -> ProcessEpochResult {
+        // Update dimensions if provided
+        if let Some(dims) = dimensions {
+            self.dimensions = dims;
+        }
+
+        // Take ownership of the current key
+        let current_key = self.region_key.take();
+
         let result = process_epoch_impl::process_epoch(
             &self.phenotype,
             &self.dimensions,
             &self.world_function,
             self.age,
             training_data_index,
+            current_key,
+            &changed_dimensions,
         );
 
         // Update cached state based on result
+        self.dimension_version = dimension_version;
         match &result {
             ProcessEpochResult::Ok {
                 region_key,
@@ -275,6 +301,8 @@ impl Organism {
     #[messaging(UpdateDimensionsRequest, UpdateDimensionsResponse)]
     pub fn update_dimensions(&mut self, new_dimensions: Arc<Dimensions>) {
         self.dimensions = update_dimensions_impl::update_dimensions(new_dimensions);
+        // Invalidate cached key as dimensions have changed
+        self.region_key = None;
     }
 
     /// Returns organism state for web visualization.
@@ -415,10 +443,212 @@ impl Organism {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::world::single_valued_function::SingleValuedFunction;
+    use rand::SeedableRng;
+    use rand::rngs::StdRng;
+
+    #[derive(Debug)]
+    struct TestFunction;
+    impl SingleValuedFunction for TestFunction {
+        fn single_run(&self, _params: &[f64]) -> f64 {
+            0.0
+        }
+    }
+
+    fn create_test_organism() -> Organism {
+        let mut rng = StdRng::seed_from_u64(42);
+
+        // 3 spatial dimensions
+        let spatial_bounds = vec![-10.0..=10.0; 3];
+        let dimensions = Arc::new(Dimensions::new(&spatial_bounds));
+
+        // Create extended bounds: 7 system params + 3 spatial params
+        let mut extended_bounds = Vec::with_capacity(10);
+        // m1-m5 (mutation probabilities)
+        for _ in 0..5 {
+            extended_bounds.push(0.0..=1.0);
+        }
+        // max_age
+        extended_bounds.push(2.0..=10.0);
+        // crossover_points
+        extended_bounds.push(1.0..=10.0);
+
+        // Add spatial bounds
+        extended_bounds.extend_from_slice(&spatial_bounds);
+
+        let phenotype = Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
+        let world_function = Arc::new(TestFunction);
+
+        let init = CreateOrganism {
+            id: 1,
+            parent_ids: (None, None),
+            phenotype,
+            dimensions,
+            world_function,
+        };
+
+        Organism::new(init)
+    }
+
     #[test]
-    #[allow(clippy::assertions_on_constants)]
-    fn given_organism_module_when_compiled_then_succeeds() {
-        // Placeholder test - actual tests are in *_impl.rs files
-        assert!(true);
+    fn given_init_data_when_new_then_organism_created_correctly() {
+        let organism = create_test_organism();
+        assert_eq!(organism.id, 1);
+        assert_eq!(organism.age, 0);
+        assert!(!organism.is_dead);
+        assert!(organism.score.is_none());
+        assert!(organism.region_key.is_none());
+        assert_eq!(organism.dimension_version, 0);
+    }
+
+    #[test]
+    fn given_organism_when_calculate_region_key_then_state_updated() {
+        let mut organism = create_test_organism();
+        let result = organism.calculate_region_key(None, 1, vec![]);
+
+        match result {
+            CalculateRegionKeyResult::Ok(key) => {
+                assert!(organism.region_key.is_some());
+                assert_eq!(organism.region_key.as_ref().unwrap(), &key);
+                assert_eq!(organism.dimension_version, 1);
+            }
+            _ => panic!("Should be Ok"),
+        }
+    }
+
+    #[test]
+    fn given_organism_with_new_dimensions_when_calculate_region_key_then_dimensions_updated() {
+        let mut organism = create_test_organism();
+        let new_bounds = vec![-20.0..=20.0; 3];
+        let new_dims = Arc::new(Dimensions::new(&new_bounds));
+
+        let _result = organism.calculate_region_key(Some(new_dims.clone()), 2, vec![]);
+
+        // Check if dimensions were updated.
+        // We can check the range of the first dimension to verify.
+        assert_eq!(
+            organism.dimensions.get_dimensions()[0].range(),
+            new_dims.get_dimensions()[0].range()
+        );
+        assert_eq!(organism.dimension_version, 2);
+    }
+
+    #[test]
+    fn given_organism_with_key_when_evaluate_fitness_then_score_updated() {
+        let mut organism = create_test_organism();
+        let _ = organism.calculate_region_key(None, 1, vec![]);
+
+        let result = organism.evaluate_fitness(0);
+
+        assert!(organism.score.is_some());
+        assert_eq!(organism.score.unwrap(), result.score);
+    }
+
+    #[test]
+    #[should_panic(expected = "Region key must be calculated before fitness evaluation")]
+    fn given_organism_without_key_when_evaluate_fitness_then_panics() {
+        let mut organism = create_test_organism();
+        organism.evaluate_fitness(0);
+    }
+
+    #[test]
+    fn given_organism_when_increment_age_then_age_updated() {
+        let mut organism = create_test_organism();
+        let initial_age = organism.age;
+
+        let result = organism.increment_age();
+
+        assert_eq!(organism.age, initial_age + 1);
+        assert_eq!(result.new_age, initial_age + 1);
+    }
+
+    #[test]
+    fn given_organism_when_process_epoch_then_all_state_updated() {
+        let mut organism = create_test_organism();
+
+        let result = organism.process_epoch(None, 5, vec![], 0);
+
+        match result {
+            ProcessEpochResult::Ok {
+                region_key,
+                score,
+                new_age,
+                should_remove,
+            } => {
+                assert!(organism.region_key.is_some());
+                assert_eq!(organism.region_key.as_ref().unwrap(), &region_key);
+                assert_eq!(organism.score.unwrap(), score);
+                assert_eq!(organism.age, new_age);
+                assert_eq!(organism.is_dead, should_remove);
+                assert_eq!(organism.dimension_version, 5);
+            }
+            _ => panic!("Should be Ok"),
+        }
+    }
+
+    #[test]
+    fn given_organism_when_update_dimensions_then_key_invalidated() {
+        let mut organism = create_test_organism();
+        let _ = organism.calculate_region_key(None, 1, vec![]);
+        assert!(organism.region_key.is_some());
+
+        let new_bounds = vec![-20.0..=20.0; 10];
+        let new_dims = Arc::new(Dimensions::new(&new_bounds));
+
+        organism.update_dimensions(new_dims);
+
+        assert!(organism.region_key.is_none());
+    }
+
+    #[test]
+    fn given_organism_when_get_web_state_then_returns_correct_data() {
+        let mut organism = create_test_organism();
+        let _ = organism.calculate_region_key(None, 1, vec![]);
+        organism.evaluate_fitness(0);
+
+        let state = organism.get_web_state();
+
+        assert_eq!(state.age, organism.age);
+        assert_eq!(state.score, organism.score);
+        assert_eq!(state.region_key, organism.region_key);
+        assert_eq!(state.is_dead, organism.is_dead);
+        assert!(!state.params.is_empty());
+    }
+
+    #[test]
+    fn given_organism_when_get_phenotype_then_returns_clone() {
+        let organism = create_test_organism();
+        let phenotype = organism.get_phenotype();
+        assert_eq!(
+            phenotype.expressed_values().len(),
+            organism.phenotype.expressed_values().len()
+        );
+    }
+
+    #[test]
+    fn given_organism_when_reproduce_then_returns_offspring() {
+        let organism = create_test_organism();
+        let partner = create_test_organism();
+
+        let result = organism.reproduce(partner.phenotype, 123);
+
+        assert_eq!(result.parent_ids.0, organism.id);
+    }
+
+    #[test]
+    fn given_organism_when_accessors_called_then_return_correct_values() {
+        let mut organism = create_test_organism();
+        let _ = organism.calculate_region_key(None, 1, vec![]);
+        organism.evaluate_fitness(0);
+
+        assert_eq!(organism.is_dead(), organism.is_dead);
+        assert_eq!(organism.age(), organism.age);
+        assert_eq!(organism.score(), organism.score);
+        assert_eq!(organism.region_key(), organism.region_key.as_ref());
+        assert_eq!(
+            organism.phenotype().expressed_values().len(),
+            organism.phenotype.expressed_values().len()
+        );
     }
 }

@@ -11,6 +11,7 @@ use super::{
     regions::{OrganismEntry, RegionKey},
 };
 use crate::organism::{ProcessEpochRequest, ProcessEpochResponse, ProcessEpochResult};
+use crate::world::dimensions::Dimensions;
 
 impl World {
     /// Processes an epoch for all organisms using combined messages.
@@ -36,12 +37,20 @@ impl World {
         let mut dimensions_changed = false;
         let mut pending_ids = self.organism_ids.clone();
         let mut all_results: Vec<(u64, ProcessEpochResult)> = Vec::new();
+        let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
+        let mut changed_since_last_attempt = Vec::new();
 
         loop {
             // Send ProcessEpochRequest to all pending organisms
-            let requests = pending_ids
-                .iter()
-                .map(|&id| ProcessEpochRequest(id, training_data_index));
+            let requests = pending_ids.iter().map(|&id| {
+                ProcessEpochRequest(
+                    id,
+                    dimensions_to_send.clone(),
+                    self.dimension_version,
+                    changed_since_last_attempt.clone(),
+                    training_data_index,
+                )
+            });
 
             let responses: Vec<ProcessEpochResponse> = self
                 .organism_pool
@@ -83,19 +92,16 @@ impl World {
             self.dimensions = Arc::new(new_dimensions);
             self.dimension_version += 1;
 
-            // Send UpdateDimensions to ALL organisms so they have the new dimensions
-            let update_requests = self.organism_ids.iter().map(|&id| {
-                crate::organism::UpdateDimensionsRequest(id, Arc::clone(&self.dimensions))
-            });
+            // Track changed dimensions
+            changed_since_last_attempt = out_of_bounds_dims;
 
-            // Collect responses to ensure all organisms are updated
-            self.organism_pool
-                .send_and_receive(update_requests)
-                .expect("Thread pool should be available")
-                .for_each(drop);
+            // Since dimensions changed, we must update EVERYONE and recalculate EVERYONE.
+            // This ensures all organisms have the new dimensions and valid keys.
+            pending_ids = self.organism_ids.clone();
+            dimensions_to_send = Some(self.dimensions.clone());
 
-            // Retry with only the out-of-bounds organisms
-            pending_ids = out_of_bounds_ids;
+            // Clear previous results as they might be invalid (based on old dimensions)
+            all_results.clear();
         }
 
         // Now process all the successful results
@@ -203,5 +209,68 @@ mod tests {
             total_organisms > 0,
             "At least one region should have organisms"
         );
+    }
+
+    #[test]
+    fn given_out_of_bounds_organism_when_process_epoch_all_then_dimensions_expanded() {
+        // Create organisms far from zero
+        let bounds: Vec<RangeInclusive<f64>> = vec![100.0..=101.0, 100.0..=101.0];
+        let constants = GlobalConstants::new_with_seed(50, 5, 42);
+        let mut world = World::new(&bounds, constants, Box::new(SumOfSquares));
+
+        // Manually change dimensions to be near zero (disjoint from organisms)
+        let shrunk_bounds = vec![0.0..=1.0, 0.0..=1.0];
+        let new_dims = Arc::new(Dimensions::new(&shrunk_bounds));
+
+        // Force update organisms to use new dimensions
+        let requests = world
+            .organism_ids
+            .iter()
+            .map(|&id| crate::organism::UpdateDimensionsRequest(id, new_dims.clone()));
+        world
+            .organism_pool
+            .send_and_receive(requests)
+            .expect("Pool should work")
+            .for_each(drop);
+
+        // Update world dimensions
+        world.dimensions = new_dims;
+        let initial_version = world.dimension_version;
+
+        // Process epoch - should trigger expansion
+        let (at_resolution_limit, _) = world.process_epoch_all(0);
+
+        assert!(
+            !at_resolution_limit,
+            "Dimensions should have changed due to out-of-bounds organisms"
+        );
+        assert!(
+            world.dimension_version > initial_version,
+            "Dimension version should increment"
+        );
+
+        // Verify dimensions expanded to include the organisms (at least > 100)
+        let dim = world.dimensions.get_dimension(0);
+        assert!(
+            *dim.range().end() >= 100.0,
+            "Dimensions should have expanded to include organisms"
+        );
+    }
+
+    #[test]
+    fn given_new_best_score_when_process_epoch_all_then_best_params_updated() {
+        let bounds: Vec<RangeInclusive<f64>> = vec![-10.0..=10.0];
+        let constants = GlobalConstants::new_with_seed(50, 5, 42);
+        let mut world = World::new(&bounds, constants, Box::new(SumOfSquares));
+
+        // Initial state
+        assert!(world.best_params.is_empty());
+
+        // Process epoch
+        world.process_epoch_all(0);
+
+        // Best params should be updated
+        assert!(!world.best_params.is_empty());
+        assert_eq!(world.best_params.len(), 1);
     }
 }

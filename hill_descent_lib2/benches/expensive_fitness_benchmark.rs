@@ -1,6 +1,6 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use hill_descent_lib2::world::World;
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData};
 use std::ops::RangeInclusive;
 
 /// An expensive fitness function that simulates real-world computation.
@@ -21,8 +21,8 @@ impl SingleValuedFunction for ExpensiveFitness {
     fn single_run(&self, phenotype_expressed_values: &[f64]) -> f64 {
         // Base fitness: sum of squares
         let mut result: f64 = phenotype_expressed_values.iter().map(|v| v * v).sum();
-        
-        // Simulate expensive computation (e.g., neural network forward pass, 
+
+        // Simulate expensive computation (e.g., neural network forward pass,
         // physics simulation, etc.)
         for i in 0..self.iterations {
             for val in phenotype_expressed_values {
@@ -32,7 +32,7 @@ impl SingleValuedFunction for ExpensiveFitness {
                 result += (result * 0.0000001).tanh();
             }
         }
-        
+
         result
     }
 }
@@ -43,7 +43,7 @@ fn expensive_thread_count_benchmark(c: &mut Criterion) {
     // 10 dimensions, 50 organisms
     let param_range = vec![RangeInclusive::new(-10.0, 10.0); 10];
     let global_constants = GlobalConstants::new(50, 10);
-    
+
     // Calibrate iterations to get ~50-100ms per organism evaluation
     // With 50 organisms, we want the epoch to take a few seconds total
     // so we can measure thread scaling
@@ -52,7 +52,7 @@ fn expensive_thread_count_benchmark(c: &mut Criterion) {
     let thread_counts = [12, 24, 50, 75, 100];
 
     let mut group = c.benchmark_group("expensive_fitness");
-    
+
     // More samples for better accuracy
     group.sample_size(20);
     group.measurement_time(std::time::Duration::from_secs(30));

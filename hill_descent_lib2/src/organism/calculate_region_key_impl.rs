@@ -38,19 +38,46 @@ use super::CalculateRegionKeyResult;
 ///
 /// # Algorithm
 ///
-/// For simplicity in lib2, we always perform a full recalculation using the
-/// `calculate_dimensions_key` function. The incremental update logic from lib1
-/// is not needed because:
-/// 1. We use message passing, so each organism handles its own state
-/// 2. The overhead of full calculation is minimal compared to message passing
+/// Uses incremental updates when possible to avoid full recalculation and allocation.
+/// If only one dimension changed and we have a cached key, we update it in-place.
 pub fn calculate_region_key(
     phenotype: &Arc<Phenotype>,
     dimensions: &Arc<Dimensions>,
-    _cached_region_key: Option<&RegionKey>,
+    cached_region_key: Option<RegionKey>,
     _cached_dimension_version: u64,
     request_dimension_version: u64,
-    _changed_dimensions: &[usize],
+    changed_dimensions: &[usize],
 ) -> (CalculateRegionKeyResult, u64) {
+    // Try incremental update if possible
+    if let Some(mut key) = cached_region_key {
+        if changed_dimensions.is_empty() {
+            return (CalculateRegionKeyResult::Ok(key), request_dimension_version);
+        }
+        if changed_dimensions.len() == 1 {
+            let dim_idx = changed_dimensions[0];
+            let expressed_values = phenotype.expression_problem_values();
+
+            // Ensure dim_idx is valid for expressed_values
+            if dim_idx < expressed_values.len() {
+                let value = expressed_values[dim_idx];
+                let dimension = dimensions.get_dimension(dim_idx);
+
+                if let Some(interval) = dimension.get_interval(value) {
+                    key.update_position(dim_idx, interval);
+                    return (CalculateRegionKeyResult::Ok(key), request_dimension_version);
+                } else {
+                    // Out of bounds on this dimension
+                    return (
+                        CalculateRegionKeyResult::OutOfBounds(vec![dim_idx]),
+                        request_dimension_version,
+                    );
+                }
+            }
+        }
+        // If we can't do incremental update, we fall through to full recalculation.
+        // Note: We dropped the old key here.
+    }
+
     let expressed_values = phenotype.expression_problem_values();
 
     match calculate_dimensions_key(expressed_values, dimensions) {
@@ -164,19 +191,97 @@ mod tests {
     }
 
     #[test]
-    fn given_cached_region_key_when_calculate_then_still_recalculates() {
-        // This test verifies that we always recalculate (simplified implementation)
+    fn given_cached_region_key_when_calculate_then_returns_cached() {
+        // This test verifies that we return the cached key if no dimensions changed
         let dimensions = create_test_dimensions(vec![0.0..=10.0]);
         let phenotype = create_test_phenotype(vec![5.0]);
-        let cached_key = RegionKey::new(vec![99]); // Wrong value
+        let cached_key = RegionKey::new(vec![99]); // "Wrong" value, but cached
 
         let (result, _) =
-            calculate_region_key(&phenotype, &dimensions, Some(&cached_key), 0, 1, &[]);
+            calculate_region_key(&phenotype, &dimensions, Some(cached_key), 0, 1, &[]);
 
-        // Should return correct value, not cached
+        // Should return cached value because changed_dimensions is empty
         match result {
             CalculateRegionKeyResult::Ok(key) => {
-                assert_eq!(key.values(), &[0]); // Correct value, not 99
+                assert_eq!(key.values(), &[99]); // Returns cached key
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn given_cached_key_and_single_change_when_calculate_then_incremental_update() {
+        // Setup: 2 dimensions.
+        // Dim 0: [0, 10] (1 doubling -> [0,5), [5,10])
+        // Dim 1: [0, 10] (0 doublings -> [0,10])
+        let mut dim0 = Dimension::new(0.0..=10.0);
+        dim0.set_number_of_doublings(1);
+        let dim1 = Dimension::new(0.0..=10.0);
+
+        let dimensions = Arc::new(Dimensions::new_for_test(vec![dim0, dim1]));
+
+        // Phenotype: [2.5, 5.0] -> Region [0, 0]
+        let phenotype = create_test_phenotype(vec![2.5, 5.0]);
+
+        // Cached key says [1, 0] (incorrect for current value, but simulates old state)
+        let cached_key = RegionKey::new(vec![1, 0]);
+
+        // We say dimension 0 changed.
+        // Value 2.5 is in interval 0 of dim 0.
+        // So update should change key from [1, 0] to [0, 0].
+
+        let (result, _) = calculate_region_key(
+            &phenotype,
+            &dimensions,
+            Some(cached_key),
+            0,
+            1,
+            &[0], // Only dim 0 changed
+        );
+
+        match result {
+            CalculateRegionKeyResult::Ok(key) => {
+                assert_eq!(key.values(), &[0, 0]);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn given_cached_key_and_single_change_out_of_bounds_when_calculate_then_returns_out_of_bounds()
+    {
+        let mut dim0 = Dimension::new(0.0..=10.0);
+        dim0.set_number_of_doublings(1);
+        let dimensions = Arc::new(Dimensions::new_for_test(vec![dim0]));
+
+        // Phenotype: [15.0] -> Out of bounds
+        let phenotype = create_test_phenotype(vec![15.0]);
+        let cached_key = RegionKey::new(vec![0]);
+
+        let (result, _) =
+            calculate_region_key(&phenotype, &dimensions, Some(cached_key), 0, 1, &[0]);
+
+        match result {
+            CalculateRegionKeyResult::OutOfBounds(dims) => {
+                assert_eq!(dims, vec![0]);
+            }
+            _ => panic!("Expected OutOfBounds result"),
+        }
+    }
+
+    #[test]
+    fn given_cached_key_and_multiple_changes_when_calculate_then_full_recalculation() {
+        let dimensions = create_test_dimensions(vec![0.0..=10.0, 0.0..=10.0]);
+        let phenotype = create_test_phenotype(vec![5.0, 5.0]);
+        let cached_key = RegionKey::new(vec![99, 99]); // Wrong values
+
+        // Two dimensions changed -> fallback to full calc
+        let (result, _) =
+            calculate_region_key(&phenotype, &dimensions, Some(cached_key), 0, 1, &[0, 1]);
+
+        match result {
+            CalculateRegionKeyResult::Ok(key) => {
+                assert_eq!(key.values(), &[0, 0]); // Correct values
             }
             _ => panic!("Expected Ok result"),
         }

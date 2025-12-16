@@ -86,6 +86,23 @@ impl RegionKey {
             hash: new_hash,
         }
     }
+
+    /// Updates a position in-place.
+    ///
+    /// Uses Arc::make_mut to avoid allocation if the RegionKey is uniquely owned.
+    /// If the key is shared, it will clone the data (Copy-On-Write).
+    pub fn update_position(&mut self, position: usize, new_value: usize) {
+        // Get mutable access to values; clones ONLY if ref_count > 1
+        let values = Arc::make_mut(&mut self.values);
+
+        let old_value = values[position];
+        values[position] = new_value;
+
+        // Update hash incrementally (XOR is its own inverse)
+        self.hash = self.hash
+            ^ Self::position_hash(position, old_value)
+            ^ Self::position_hash(position, new_value);
+    }
 }
 
 impl PartialEq for RegionKey {
@@ -159,5 +176,43 @@ mod tests {
         assert_eq!(key.hash(), cloned.hash());
         // Arc pointer should be the same
         assert!(Arc::ptr_eq(&key.values, &cloned.values));
+    }
+
+    #[test]
+    fn given_key_when_update_position_then_value_updated() {
+        let mut key = RegionKey::new(vec![1, 2, 3]);
+        key.update_position(1, 5);
+        assert_eq!(key.values(), &[1, 5, 3]);
+    }
+
+    #[test]
+    fn given_key_when_update_position_then_hash_updated() {
+        let mut key = RegionKey::new(vec![1, 2, 3]);
+        key.update_position(1, 5);
+
+        let expected = RegionKey::new(vec![1, 5, 3]);
+        assert_eq!(key.hash(), expected.hash());
+        assert_eq!(key, expected);
+    }
+
+    #[test]
+    fn given_shared_key_when_update_position_then_copy_on_write() {
+        let mut key1 = RegionKey::new(vec![1, 2, 3]);
+        let key2 = key1.clone(); // key1 and key2 share the underlying Arc
+
+        // Verify they share the same pointer initially
+        assert!(Arc::ptr_eq(&key1.values, &key2.values));
+
+        // Update key1
+        key1.update_position(1, 5);
+
+        // key1 should be updated
+        assert_eq!(key1.values(), &[1, 5, 3]);
+
+        // key2 should remain unchanged
+        assert_eq!(key2.values(), &[1, 2, 3]);
+
+        // They should no longer share the same pointer
+        assert!(!Arc::ptr_eq(&key1.values, &key2.values));
     }
 }

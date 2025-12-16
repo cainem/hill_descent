@@ -6,6 +6,7 @@ use super::World;
 use crate::organism::{
     CalculateRegionKeyRequest, CalculateRegionKeyResponse, CalculateRegionKeyResult,
 };
+use crate::world::dimensions::Dimensions;
 
 impl World {
     /// Calculates region keys for all organisms.
@@ -34,12 +35,14 @@ impl World {
         let mut all_changed_dimensions: Vec<usize> = Vec::new();
         let mut changed_since_last_attempt = Vec::new();
         let mut pending_ids = self.organism_ids.clone();
+        let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
 
         loop {
             // Send CalculateRegionKeyRequest to all pending organisms
             let requests = pending_ids.iter().map(|&id| {
                 CalculateRegionKeyRequest(
                     id,
+                    dimensions_to_send.clone(),
                     self.dimension_version,
                     changed_since_last_attempt.clone(),
                 )
@@ -90,19 +93,10 @@ impl World {
             }
             changed_since_last_attempt = out_of_bounds_dims;
 
-            // Send UpdateDimensions to ALL organisms so they have the new dimensions
-            let update_requests = self.organism_ids.iter().map(|&id| {
-                crate::organism::UpdateDimensionsRequest(id, Arc::clone(&self.dimensions))
-            });
-
-            // Collect responses to ensure all organisms are updated
-            self.organism_pool
-                .send_and_receive(update_requests)
-                .expect("Thread pool should be available")
-                .for_each(drop);
-
-            // Retry with only the out-of-bounds organisms
-            pending_ids = out_of_bounds_ids;
+            // Since dimensions changed, we must update EVERYONE and recalculate EVERYONE.
+            // This ensures all organisms have the new dimensions and valid keys.
+            pending_ids = self.organism_ids.clone();
+            dimensions_to_send = Some(self.dimensions.clone());
         }
 
         all_changed_dimensions
@@ -112,7 +106,11 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{GlobalConstants, world::single_valued_function::SingleValuedFunction};
+    use crate::{
+        GlobalConstants,
+        organism::{CalculateRegionKeyRequest, CalculateRegionKeyResponse},
+        world::single_valued_function::SingleValuedFunction,
+    };
     use std::ops::RangeInclusive;
 
     #[derive(Debug)]
@@ -135,34 +133,104 @@ mod tests {
         // Calculate region keys
         let changed = world.calculate_region_keys();
 
-        // With initial bounds set to the param_range, organisms may or may not
-        // be out of bounds depending on their random phenotypes. We just verify
-        // the method runs without panicking.
-        // The changed dimensions depend on whether any organisms happen to fall
-        // outside the initially set bounds.
-        assert!(changed.len() <= 2); // At most 2 dimensions can change
+        // With initial bounds set to the param_range, organisms are created within bounds.
+        // So no expansion should occur.
+        assert!(
+            changed.is_empty(),
+            "Should be empty as organisms are created within bounds"
+        );
     }
 
     #[test]
-    fn given_narrow_bounds_when_calculate_then_expansion_may_occur() {
-        // Create a world with very narrow initial bounds
-        // The random phenotypes are likely to exceed these bounds
-        let bounds: Vec<RangeInclusive<f64>> = vec![4.9..=5.1, 4.9..=5.1];
-        let constants = GlobalConstants::new_with_seed(50, 5, 123);
-
+    fn given_shrunken_dimensions_when_calculate_then_dimensions_expand() {
+        // 1. Create world with normal bounds
+        let bounds: Vec<RangeInclusive<f64>> = vec![-10.0..=10.0, -10.0..=10.0];
+        let constants = GlobalConstants::new_with_seed(20, 4, 42);
         let mut world = World::new(&bounds, constants, Box::new(TestFunction));
 
-        // Verify initial dimension version
-        assert_eq!(world.dimension_version(), 0);
+        // 2. Create tiny dimensions
+        // Organisms are at random positions in [-10, 10], so they will be outside [0, 0.001]
+        let tiny_bounds = vec![0.0..=0.001, 0.0..=0.001];
+        let tiny_dims = Arc::new(Dimensions::new(&tiny_bounds));
 
-        // Calculate region keys - this should trigger expansions
+        // 3. Manually update world dimensions
+        world.dimensions = tiny_dims.clone();
+        world.dimension_version += 1;
+
+        // 4. Force organisms to adopt tiny dimensions and calculate keys
+        // This puts them in an "OutOfBounds" state relative to their stored dimensions
+        let requests = world.organism_ids.iter().map(|&id| {
+            CalculateRegionKeyRequest(
+                id,
+                Some(tiny_dims.clone()),
+                world.dimension_version,
+                vec![], // No specific changed dims, full recalc
+            )
+        });
+
+        // We must consume the responses to ensure processing completes
+        let _responses: Vec<CalculateRegionKeyResponse> = world
+            .organism_pool
+            .send_and_receive(requests)
+            .expect("Thread pool should be available")
+            .collect();
+
+        let initial_version = world.dimension_version;
+
+        // 5. Now run calculate_region_keys
+        // It should detect the OutOfBounds state and expand
         let changed = world.calculate_region_keys();
 
-        // With narrow bounds and random phenotypes, we expect dimensions to expand
-        // and version to increment
-        // The exact number of expansions depends on random phenotypes
-        // Just verify the function completes without panic
-        let _changed = changed;
+        // 6. Verify expansion
+        assert!(!changed.is_empty(), "Should have expanded dimensions");
+        assert!(
+            world.dimension_version > initial_version,
+            "Version should increment"
+        );
+
+        // Verify dimensions expanded back to cover the organisms (roughly)
+        // The expansion logic increases bounds by 50% or doubles them, so they should be > 0.001
+        let dims = world.dimensions.get_dimensions();
+        assert!(dims[0].range().end() > &0.001 || dims[0].range().start() < &0.0);
+    }
+
+    #[test]
+    fn given_specific_dimension_shrunken_when_calculate_then_only_that_dimension_expands() {
+        // 1. Create world
+        let bounds: Vec<RangeInclusive<f64>> = vec![-10.0..=10.0, -10.0..=10.0];
+        let constants = GlobalConstants::new_with_seed(20, 4, 42);
+        let mut world = World::new(&bounds, constants, Box::new(TestFunction));
+
+        // 2. Shrink ONLY dimension 1. Dimension 0 stays [-10, 10].
+        // Organisms are in [-10, 10].
+        // So Dim 0 is fine. Dim 1 is OOB.
+        let mixed_bounds = vec![-10.0..=10.0, 0.0..=0.001];
+        let mixed_dims = Arc::new(Dimensions::new(&mixed_bounds));
+
+        world.dimensions = mixed_dims.clone();
+        world.dimension_version += 1;
+
+        // 3. Force update organisms
+        let requests = world.organism_ids.iter().map(|&id| {
+            CalculateRegionKeyRequest(
+                id,
+                Some(mixed_dims.clone()),
+                world.dimension_version,
+                vec![],
+            )
+        });
+        let _responses: Vec<CalculateRegionKeyResponse> = world
+            .organism_pool
+            .send_and_receive(requests)
+            .expect("Thread pool should be available")
+            .collect();
+
+        // 4. Calculate
+        let changed = world.calculate_region_keys();
+
+        // 5. Verify
+        assert!(changed.contains(&1), "Dimension 1 should change");
+        assert!(!changed.contains(&0), "Dimension 0 should NOT change");
     }
 
     #[test]
@@ -182,24 +250,5 @@ mod tests {
         // The second call should not require any expansion since all organisms
         // are already within bounds after the first call
         assert!(changed2.is_empty());
-    }
-
-    #[test]
-    fn given_expansion_when_calculate_then_dimension_version_increments() {
-        // Use narrow bounds to force expansion
-        let bounds: Vec<RangeInclusive<f64>> = vec![0.0..=0.001, 0.0..=0.001];
-        let constants = GlobalConstants::new_with_seed(10, 2, 789);
-
-        let mut world = World::new(&bounds, constants, Box::new(TestFunction));
-
-        let initial_version = world.dimension_version();
-
-        // Calculate region keys - should expand
-        let changed = world.calculate_region_keys();
-
-        // If any dimensions changed, version should have incremented
-        if !changed.is_empty() {
-            assert!(world.dimension_version() > initial_version);
-        }
     }
 }
