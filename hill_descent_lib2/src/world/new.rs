@@ -56,11 +56,11 @@ impl World {
 
         // Create thread pool with optimal thread count.
         // Using threads = population_size gives optimal work distribution (1 organism per thread).
-        // Cap at 5x logical CPUs to prevent excessive context switching on large populations.
+        // Cap at 2x logical CPUs to prevent excessive context switching on large populations.
         let available_cpus = std::thread::available_parallelism()
             .map(|p| p.get())
             .unwrap_or(4);
-        let max_threads = available_cpus * 5;
+        let max_threads = available_cpus * 2;
         let thread_count = population_size.min(max_threads) as u64;
         let organism_pool = ThreadPool::<Organism>::new(thread_count);
 
