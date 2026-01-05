@@ -28,14 +28,26 @@ impl LocusAdjustment {
         direction_of_travel: DirectionOfTravel,
         doubling_or_halving_flag: bool,
     ) -> u64 {
-        let mut buf = Vec::with_capacity(10);
-        buf.extend_from_slice(&adjustment_value.get().to_le_bytes());
-        buf.push(match direction_of_travel {
-            DirectionOfTravel::Add => 0,
-            DirectionOfTravel::Subtract => 1,
-        });
-        buf.push(if doubling_or_halving_flag { 1 } else { 0 });
-        xxh3_64(&buf)
+        let val_bytes = adjustment_value.get().to_le_bytes();
+        let dir_byte = match direction_of_travel {
+            DirectionOfTravel::Add => 0u8,
+            DirectionOfTravel::Subtract => 1u8,
+        };
+        let flag_byte = if doubling_or_halving_flag { 1u8 } else { 0u8 };
+
+        let data = [
+            val_bytes[0],
+            val_bytes[1],
+            val_bytes[2],
+            val_bytes[3],
+            val_bytes[4],
+            val_bytes[5],
+            val_bytes[6],
+            val_bytes[7],
+            dir_byte,
+            flag_byte,
+        ];
+        xxh3_64(&data)
     }
 
     /// Constructs a new LocusAdjustment, enforcing adjustment_value >= 0
