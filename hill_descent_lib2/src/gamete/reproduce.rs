@@ -32,6 +32,10 @@ impl Gamete {
         let mut use_p1 = true;
         let mut cps = points.into_iter();
         let mut next_cp = cps.next();
+
+        // Pre-calculate mutation distributions
+        let dists = sys.mutation_distributions();
+
         for i in 0..len {
             if let Some(cp) = next_cp
                 && cp == i
@@ -42,21 +46,21 @@ impl Gamete {
             if use_p1 {
                 if i < NUM_SYSTEM_PARAMETERS {
                     // System parameters: use bounded mutation
-                    offspring1.push(parent1.loci()[i].mutate(rng, sys));
-                    offspring2.push(parent2.loci()[i].mutate(rng, sys));
+                    offspring1.push(parent1.loci()[i].mutate(rng, &dists));
+                    offspring2.push(parent2.loci()[i].mutate(rng, &dists));
                 } else {
                     // Problem parameters: use unbounded mutation
-                    offspring1.push(parent1.loci()[i].mutate_unbound(rng, sys));
-                    offspring2.push(parent2.loci()[i].mutate_unbound(rng, sys));
+                    offspring1.push(parent1.loci()[i].mutate_unbound(rng, &dists));
+                    offspring2.push(parent2.loci()[i].mutate_unbound(rng, &dists));
                 }
             } else if i < NUM_SYSTEM_PARAMETERS {
                 // System parameters: use bounded mutation
-                offspring1.push(parent2.loci()[i].mutate(rng, sys));
-                offspring2.push(parent1.loci()[i].mutate(rng, sys));
+                offspring1.push(parent2.loci()[i].mutate(rng, &dists));
+                offspring2.push(parent1.loci()[i].mutate(rng, &dists));
             } else {
                 // Problem parameters: use unbounded mutation
-                offspring1.push(parent2.loci()[i].mutate_unbound(rng, sys));
-                offspring2.push(parent1.loci()[i].mutate_unbound(rng, sys));
+                offspring1.push(parent2.loci()[i].mutate_unbound(rng, &dists));
+                offspring2.push(parent1.loci()[i].mutate_unbound(rng, &dists));
             }
         }
         (Gamete::new(offspring1), Gamete::new(offspring2))

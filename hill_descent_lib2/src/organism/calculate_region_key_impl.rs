@@ -286,12 +286,12 @@ mod tests {
         // Setup: 3 dimensions
         let dimensions = create_test_dimensions(vec![0.0..=10.0, 0.0..=10.0, 0.0..=10.0]);
         let phenotype = create_test_phenotype(vec![5.0, 5.0, 5.0]);
-        
+
         // Cached key has wrong values for all dimensions
         // Dim 0: 99 (unchanged, should be preserved by incremental update)
         // Dim 1: 99 (changed, should be updated)
         // Dim 2: 99 (changed, should be updated)
-        let cached_key = RegionKey::new(vec![99, 99, 99]); 
+        let cached_key = RegionKey::new(vec![99, 99, 99]);
 
         // Two dimensions changed (1 and 2)
         let (result, _) =
@@ -301,7 +301,7 @@ mod tests {
             CalculateRegionKeyResult::Ok(key) => {
                 // If incremental: [99, 0, 0] (Dim 0 preserved, Dims 1&2 updated)
                 // If full recalc: [0, 0, 0] (All calculated from scratch)
-                assert_eq!(key.values(), &[99, 0, 0]); 
+                assert_eq!(key.values(), &[99, 0, 0]);
             }
             _ => panic!("Expected Ok result"),
         }

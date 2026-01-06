@@ -1,3 +1,16 @@
+use rand::distr::Bernoulli;
+
+/// Pre-calculated Bernoulli distributions for mutation probabilities.
+/// This avoids recreating them for every locus mutation.
+#[derive(Debug, Clone, Copy)]
+pub struct MutationDistributions {
+    pub m1: Bernoulli,
+    pub m2: Bernoulli,
+    pub m3: Bernoulli,
+    pub m4: Bernoulli,
+    pub m5: Bernoulli,
+}
+
 /// System-wide evolvable parameters for the GA (e.g., mutation rates, max age, crossover points).
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct SystemParameters {
@@ -41,6 +54,18 @@ impl SystemParameters {
             m5: values[4],
             max_age: values[5],
             crossover_points: values[6],
+        }
+    }
+
+    /// Creates pre-calculated Bernoulli distributions for mutation probabilities.
+    /// Panics if any probability is not in [0, 1].
+    pub fn mutation_distributions(&self) -> MutationDistributions {
+        MutationDistributions {
+            m1: Bernoulli::new(self.m1).expect("m1 probability invalid"),
+            m2: Bernoulli::new(self.m2).expect("m2 probability invalid"),
+            m3: Bernoulli::new(self.m3).expect("m3 probability invalid"),
+            m4: Bernoulli::new(self.m4).expect("m4 probability invalid"),
+            m5: Bernoulli::new(self.m5).expect("m5 probability invalid"),
         }
     }
 
