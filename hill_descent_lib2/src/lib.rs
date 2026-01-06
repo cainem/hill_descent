@@ -58,10 +58,10 @@
 //! - Optional tracing support (feature: `enable-tracing`)
 
 // Use mimalloc as the global allocator for better multi-threaded performance
-// use mimalloc::MiMalloc;
+use mimalloc::MiMalloc;
 
-// #[global_allocator]
-// static GLOBAL: MiMalloc = MiMalloc;
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 // Stage 1 - Copied from hill_descent_lib
 pub mod gamete;
