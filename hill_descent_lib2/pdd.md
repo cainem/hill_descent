@@ -62,8 +62,17 @@ pub struct World {
     best_score: f64,
     best_organism_id: Option<u64>,
     
+    /// Parameters of the best organism (cached)
+    best_params: Vec<f64>,
+    
     /// All organism IDs currently in the pool
     organism_ids: Vec<u64>,
+    
+    /// Next organism ID to assign
+    next_organism_id: u64,
+
+    /// World seed for deterministic behavior
+    world_seed: u64,
 }
 ```
 
@@ -154,52 +163,36 @@ pub struct Dimensions {
 
 ### 3.1 Organism Messages
 
-#### 3.1.1 CalculateRegionKey
+#### 3.1.1 ProcessEpoch
 
-Request an organism to calculate its region key.
+Aggregated request to process a full epoch step for an organism (Region Key + Fitness + Age).
+This combines what would otherwise be separate sequential calls to reduce synchronization overhead.
 
 ```rust
-struct CalculateRegionKeyRequest {
-    id: u64,
-    dimension_version: u64,
-    changed_dimensions: Vec<usize>,
-    dimensions: Arc<Dimensions>,
-}
+struct ProcessEpochRequest(
+    u64,                              // id
+    Option<Arc<Dimensions>>,          // dimensions (if updated)
+    u64,                              // dimension_version
+    Vec<usize>,                       // changed_dimensions
+    usize                             // training_data_index
+);
 
-enum CalculateRegionKeyResponse {
-    /// Key calculated successfully
+enum ProcessEpochResult {
+    /// Epoch processed successfully - organism was in bounds.
     Ok {
-        id: u64,
         region_key: RegionKey,
+        score: f64,
+        new_age: usize,
+        should_remove: bool,
     },
-    /// Organism is outside bounds of specified dimensions
+    /// Organism is outside dimension bounds - needs dimension expansion.
     OutOfBounds {
-        id: u64,
         dimensions_exceeded: Vec<usize>,
     },
 }
 ```
 
-#### 3.1.2 EvaluateFitness
-
-Request an organism to evaluate its fitness.
-
-```rust
-struct EvaluateFitnessRequest {
-    id: u64,
-    inputs: Vec<f64>,
-    known_outputs: Vec<f64>,
-}
-
-struct EvaluateFitnessResponse {
-    id: u64,
-    score: f64,
-    age: usize,
-    region_key: RegionKey,
-}
-```
-
-#### 3.1.3 GetPhenotype
+#### 3.1.2 GetPhenotype
 
 Request an organism's phenotype for reproduction.
 
@@ -214,7 +207,7 @@ struct GetPhenotypeResponse {
 }
 ```
 
-#### 3.1.4 Reproduce
+#### 3.1.3 Reproduce
 
 Request an organism to perform reproduction with a partner's phenotype.
 
@@ -232,22 +225,7 @@ struct ReproduceResponse {
 }
 ```
 
-#### 3.1.5 IncrementAgeAndCheckDeath
-
-Increment age and check if organism should die.
-
-```rust
-struct IncrementAgeRequest {
-    id: u64,
-}
-
-struct IncrementAgeResponse {
-    id: u64,
-    should_remove: bool,
-}
-```
-
-#### 3.1.6 UpdateDimensions
+#### 3.1.4 UpdateDimensions
 
 Update the organism's dimensions reference.
 
@@ -271,38 +249,33 @@ struct UpdateDimensionsResponse {
 ```
 training_run(data: TrainingData) -> bool
 │
-├── 1. Calculate Region Keys (may loop if dimensions expand)
-│   ├── Send CalculateRegionKeyRequest to all organisms
+├── 1. Process Epoch (Unified Step)
+│   ├── Send ProcessEpochRequest to all organisms
 │   ├── Collect responses
 │   ├── If any OutOfBounds:
 │   │   ├── Expand dimensions (union of all exceeded)
 │   │   ├── Increment dimension_version
-│   │   ├── Send UpdateDimensionsRequest to all organisms
-│   │   └── Repeat from start of step 1
+│   │   ├── Retry process_step for all organisms with new dimensions
+│   │   └── Repeat until all Ok
 │   └── All Ok: proceed
 │
-├── 2. Evaluate Fitness
-│   ├── Send EvaluateFitnessRequest to all organisms
-│   ├── Collect responses (score, age, region_key)
-│   └── Track best_score and best_organism_id
-│
-├── 3. Populate Regions
-│   ├── Clear all regions
-│   ├── Add OrganismEntry to appropriate region based on region_key
-│   └── Calculate min_score per region
-│
-├── 4. Calculate Carrying Capacities
-│   ├── Collect min_scores from all regions
+├── 2. Update Region Capacities
+│   ├── Calculate min_score per region
 │   ├── Calculate capacity using inverse fitness formula
 │   └── Assign capacities to regions
 │
-├── 5. Region Processing (parallel via Rayon)
+├── 3. Region Processing (parallel via Rayon)
+│   ├── Populate regions with organisms based on responses
 │   ├── Sort organisms by score (primary), age (secondary)
-│   ├── Mark excess organisms for death (truncate to capacity)
+│   ├── Determine organisms to remove (exceeded capacity)
 │   ├── Determine reproduction pairs (extreme pairing)
-│   └── Return list of (parent1_id, parent2_id) pairs
+│   └── Return processing results
 │
-├── 6. Reproduction
+├── 4. Cull Over-Capacity
+│   ├── Remove organisms marked for removal given capacity constraints
+│   └── Update organism_ids list
+│
+├── 5. Reproduction
 │   ├── For each pair:
 │   │   ├── Send GetPhenotypeRequest to parent2
 │   │   ├── Send ReproduceRequest to parent1 with parent2's phenotype
@@ -310,46 +283,15 @@ training_run(data: TrainingData) -> bool
 │   │   └── Create new organisms in pool
 │   └── Collect all new organism IDs
 │
-├── 7. Age and Cull
-│   ├── Send IncrementAgeRequest to all organisms
-│   ├── Collect responses
-│   ├── Remove dead organisms from pool
+├── 6. Cull Aged-Out
+│   ├── Remove organisms that signalled should_remove (due to max age) in step 1
 │   └── Update organism_ids list
 │
 └── 8. Return
     └── Return true if at resolution limit, false otherwise
 ```
 
-### 4.2 Detailed Step: Calculate Region Keys
-
-```
-calculate_region_keys() -> Result<(), Vec<usize>>
-│
-├── changed_dimensions = [] (first call) or [changed...] (retry)
-│
-├── Send batch: CalculateRegionKeyRequest to all organism_ids
-│   ├── dimension_version: current version
-│   ├── changed_dimensions: indices that changed
-│   └── dimensions: Arc<Dimensions>
-│
-├── Collect all responses
-│
-├── Partition responses:
-│   ├── ok_responses: Vec<(id, RegionKey)>
-│   └── out_of_bounds: Vec<(id, Vec<usize>)>
-│
-├── If out_of_bounds is empty:
-│   └── Return Ok(())
-│
-└── Else:
-    ├── Union all exceeded dimensions
-    ├── Expand those dimensions
-    ├── Increment dimension_version
-    ├── Update self.dimensions = Arc::new(new_dimensions)
-    └── Return Err(changed_indices) for retry
-```
-
-### 4.3 Detailed Step: Reproduction
+### 4.2 Detailed Step: Reproduction
 
 ```
 perform_reproduction(pairs: Vec<(u64, u64)>) -> Vec<u64>
@@ -516,6 +458,7 @@ Optimized for:
 ```toml
 [dependencies]
 messaging_thread_pool = "5.0"  # Thread pool with message passing
+mimalloc = "0.1"               # High-performance allocator
 ```
 
 ### 10.2 Retained Dependencies
@@ -542,8 +485,20 @@ hill_descent_lib2/
 │   ├── world/
 │   │   ├── mod.rs                  # World struct and core impl
 │   │   ├── training_run.rs         # Main training loop
-│   │   ├── calculate_region_keys.rs
-│   │   ├── evaluate_fitness.rs
+│   │   ├── single_valued_function.rs
+│   │   ├── world_function.rs
+│   │   ├── process_epoch.rs        # Unified epoch processing
+│   │   ├── regions/
+│   │   │   ├── mod.rs              # Regions container
+│   │   │   ├── region.rs           # Single region
+│   │   │   ├── region_key.rs
+│   │   │   ├── populate.rs
+│   │   │   ├── carrying_capacity.rs
+│   │   │   └── process.rs          # Sort, truncate, pair
+│   │   ├── dimensions/
+│   │   │   ├── mod.rs              # Dimensions with versioning
+│   │   │   ├── dimension.rs        # Single dimension
+│   │   │   └── expand.rs
 │   │   ├── reproduction.rs
 │   │   ├── age_and_cull.rs
 │   │   ├── get_best_score.rs
@@ -552,22 +507,11 @@ hill_descent_lib2/
 │   │   └── setup_world.rs
 │   ├── organism/
 │   │   ├── mod.rs                  # Organism pool item
-│   │   ├── messages.rs             # Request/Response types
-│   │   ├── calculate_region_key.rs
-│   │   ├── evaluate_fitness.rs
-│   │   ├── reproduce.rs
-│   │   └── increment_age.rs
-│   ├── regions/
-│   │   ├── mod.rs                  # Regions container
-│   │   ├── region.rs               # Single region
-│   │   ├── region_key.rs           # RegionKey (copied from lib1)
-│   │   ├── populate.rs
-│   │   ├── carrying_capacity.rs
-│   │   └── process.rs              # Sort, truncate, pair
-│   ├── dimensions/
-│   │   ├── mod.rs                  # Dimensions with versioning
-│   │   ├── dimension.rs            # Single dimension
-│   │   └── expand.rs
+│   │   ├── process_epoch_impl.rs   # Unified epoch implementation
+│   │   ├── calculate_region_key_impl.rs
+│   │   ├── evaluate_fitness_impl.rs
+│   │   ├── reproduce_impl.rs
+│   │   └── increment_age_impl.rs
 │   ├── phenotype/                  # Copied from lib1
 │   ├── gamete/                     # Copied from lib1
 │   ├── locus/                      # Copied from lib1
