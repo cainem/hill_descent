@@ -26,5 +26,6 @@ pub(crate) const NUM_SYSTEM_PARAMETERS: usize = 7;
 // Re-export key types
 pub use parameters::GlobalConstants;
 pub use training_data::TrainingData;
+pub use world::get_best_organism::BestOrganism;
 pub use world::setup_world::setup_world;
 pub use world::{SingleValuedFunction, World, WorldFunction};
