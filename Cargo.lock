@@ -939,6 +939,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "hill_descent_lib3"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "getrandom",
+ "indexmap",
+ "log",
+ "mimalloc",
+ "rand",
+ "rayon",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
+ "xxhash-rust",
+]
+
+[[package]]
 name = "hill_descent_server"
 version = "0.2.0"
 dependencies = [

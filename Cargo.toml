@@ -1,5 +1,5 @@
 [workspace]
-members = ["hill_descent_lib", "hill_descent_lib2", "hill_descent_server", "hill_descent_benchmarks"]
+members = ["hill_descent_lib", "hill_descent_lib2", "hill_descent_lib3", "hill_descent_server", "hill_descent_benchmarks"]
 resolver = "2"
 
 [workspace.dependencies]
