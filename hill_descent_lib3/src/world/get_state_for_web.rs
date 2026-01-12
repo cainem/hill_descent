@@ -100,7 +100,7 @@ impl World {
         let web_states: Vec<_> = self
             .organisms
             .par_iter()
-            .map(|o| {
+            .map(|(_, o)| {
                 let org = o.read().unwrap();
                 (org.id(), org.get_web_state())
             })

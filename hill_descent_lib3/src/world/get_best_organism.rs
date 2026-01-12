@@ -98,8 +98,7 @@ impl World {
         match self.best_organism_id {
             Some(id) => self
                 .organisms
-                .iter()
-                .find(|o| o.read().unwrap().id() == id)
+                .get(&id)
                 .map(|o| (id, o.read().unwrap().phenotype().clone())),
             None => None,
         }

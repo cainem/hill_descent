@@ -2,16 +2,16 @@
 
 use std::sync::{Arc, RwLock};
 
+use indexmap::IndexMap;
+
 use super::{Dimensions, Regions, WorldFunction};
 use crate::{organism::Organism, parameters::GlobalConstants};
 
 /// The World coordinates all operations in the genetic algorithm.
 pub struct World {
-    /// Organisms (Shared Memory + Locking model)
-    pub(super) organisms: Vec<Arc<RwLock<Organism>>>,
-
-    /// All organism IDs currently in the pool (for O(1) lookups)
-    pub(super) organism_ids: Vec<u64>,
+    /// Organisms stored by ID for O(1) lookup (Shared Memory + Locking model)
+    /// Uses IndexMap to maintain insertion order for deterministic iteration.
+    pub(super) organisms: IndexMap<u64, Arc<RwLock<Organism>>>,
 
     /// Spatial dimensions (bounds and intervals)
     pub(super) dimensions: Arc<Dimensions>,
@@ -62,7 +62,15 @@ impl World {
 
     /// Returns the number of organisms in the pool.
     pub fn organism_count(&self) -> usize {
-        self.organism_ids.len()
+        self.organisms.len()
+    }
+
+    /// Returns all organism IDs currently in the pool.
+    ///
+    /// Note: Order is not guaranteed. For deterministic ordering,
+    /// the caller should sort if needed.
+    pub fn organism_ids(&self) -> Vec<u64> {
+        self.organisms.keys().copied().collect()
     }
 
     /// Returns the world seed.

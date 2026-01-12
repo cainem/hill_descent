@@ -119,27 +119,23 @@ pub struct Organism {
     is_dead: bool,
 }
 
-/// Initialization data for creating a new Organism.
-#[derive(Debug, Clone)]
-pub struct CreateOrganism {
-    pub id: u64,
-    pub parent_ids: (Option<u64>, Option<u64>),
-    pub phenotype: Arc<Phenotype>,
-    pub dimensions: Arc<Dimensions>,
-    pub world_function: Arc<dyn WorldFunction + Send + Sync>,
-}
-
 impl Organism {
-    /// Creates a new organism.
-    pub fn new(init: CreateOrganism) -> Self {
+    /// Creates a new organism with the given parameters.
+    pub fn new(
+        id: u64,
+        parent_ids: (Option<u64>, Option<u64>),
+        phenotype: Arc<Phenotype>,
+        dimensions: Arc<Dimensions>,
+        world_function: Arc<dyn WorldFunction + Send + Sync>,
+    ) -> Self {
         Self {
-            id: init.id,
-            _parent_ids: init.parent_ids,
+            id,
+            _parent_ids: parent_ids,
             region_key: None,
             dimension_version: 0,
-            phenotype: init.phenotype,
-            dimensions: init.dimensions,
-            world_function: init.world_function,
+            phenotype,
+            dimensions,
+            world_function,
             score: None,
             age: 0,
             is_dead: false,

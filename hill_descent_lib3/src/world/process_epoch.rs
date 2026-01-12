@@ -1,7 +1,6 @@
 //! Combined epoch processing for all organisms.
 
 use rayon::prelude::*;
-use rustc_hash::FxHashMap;
 use std::sync::Arc;
 
 use super::World;
@@ -16,14 +15,6 @@ impl World {
     /// Returns (dimensions_changed, dead_organism_ids).
     pub fn process_epoch_all(&mut self, training_data_index: usize) -> (bool, Vec<u64>) {
         let mut dimensions_changed = false;
-
-        // Build index for O(1) organism lookups by ID
-        let organism_index: FxHashMap<u64, usize> = self
-            .organism_ids
-            .iter()
-            .enumerate()
-            .map(|(idx, &id)| (id, idx))
-            .collect();
 
         // These are only set after an out-of-bounds retry
         let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
@@ -48,7 +39,7 @@ impl World {
             let results: Vec<UpdateResult> = self
                 .organisms
                 .par_iter()
-                .map(|org_lock| {
+                .map(|(_, org_lock)| {
                     let mut org = org_lock.write().unwrap();
                     let res = org.process_epoch(
                         current_dims_arg.clone(),
@@ -125,11 +116,11 @@ impl World {
                     self.best_score = best_in_batch_score;
                     self.best_organism_id = best_in_batch_id;
 
-                    // Fetch params for best organism using O(1) index lookup
+                    // Fetch params for best organism using direct O(1) HashMap lookup
                     if let Some(best_id) = best_in_batch_id
-                        && let Some(&idx) = organism_index.get(&best_id)
+                        && let Some(org_lock) = self.organisms.get(&best_id)
                     {
-                        let org = self.organisms[idx].read().unwrap();
+                        let org = org_lock.read().unwrap();
                         let expressed = org.phenotype().expressed_values();
                         if expressed.len() > NUM_SYSTEM_PARAMETERS {
                             self.best_params = expressed[NUM_SYSTEM_PARAMETERS..].to_vec();

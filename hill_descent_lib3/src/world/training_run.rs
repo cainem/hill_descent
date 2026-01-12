@@ -61,13 +61,10 @@ impl World {
         !dimensions_changed
     }
 
-    /// Removes organisms by ID from both the organisms vector and organism_ids list.
+    /// Removes organisms by ID from the IndexMap using shift_remove to preserve order.
     fn remove_organisms(&mut self, ids: &[u64]) {
-        if ids.is_empty() {
-            return;
+        for id in ids {
+            self.organisms.shift_remove(id);
         }
-        self.organisms
-            .retain(|o| !ids.contains(&o.read().unwrap().id()));
-        self.organism_ids.retain(|id| !ids.contains(id));
     }
 }

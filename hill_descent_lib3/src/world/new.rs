@@ -2,14 +2,11 @@
 
 use std::sync::{Arc, RwLock};
 
+use indexmap::IndexMap;
 use rand::{SeedableRng, rngs::StdRng};
 
 use super::{Dimensions, Regions, World, WorldFunction};
-use crate::{
-    organism::{CreateOrganism, Organism},
-    parameters::GlobalConstants,
-    phenotype::Phenotype,
-};
+use crate::{organism::Organism, parameters::GlobalConstants, phenotype::Phenotype};
 
 impl World {
     /// Creates a new World with an initial random population.
@@ -32,33 +29,28 @@ impl World {
 
         let population_size = global_constants.population_size();
 
-        // Generate initial organisms
-        let mut organisms = Vec::with_capacity(population_size);
+        // Generate initial organisms into IndexMap (maintains insertion order for determinism)
+        let mut organisms: IndexMap<u64, Arc<RwLock<Organism>>> =
+            IndexMap::with_capacity(population_size);
 
         for organism_id in 0..(population_size as u64) {
             let phenotype = Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));
 
-            let init = CreateOrganism {
-                id: organism_id,
-                parent_ids: (None, None),
+            let org = Organism::new(
+                organism_id,
+                (None, None),
                 phenotype,
-                dimensions: Arc::clone(&dimensions),
-                world_function: Arc::clone(&world_function),
-            };
-
-            let org = Organism::new(init);
-            organisms.push(Arc::new(RwLock::new(org)));
+                Arc::clone(&dimensions),
+                Arc::clone(&world_function),
+            );
+            organisms.insert(organism_id, Arc::new(RwLock::new(org)));
         }
 
         // Create regions
         let regions = Regions::new(&global_constants);
 
-        // Build organism_ids list
-        let organism_ids: Vec<u64> = (0..population_size as u64).collect();
-
         World {
             organisms,
-            organism_ids,
             dimensions,
             dimension_version: 0,
             regions,
