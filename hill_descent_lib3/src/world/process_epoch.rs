@@ -1,6 +1,7 @@
 //! Combined epoch processing for all organisms.
 
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::World;
@@ -12,15 +13,19 @@ use crate::world::regions::{OrganismEntry, RegionKey};
 impl World {
     /// Processes an epoch for all organisms using parallel iterators.
     ///
-    /// Returns (dimensions_changed, dead_organism_ids).
-    pub fn process_epoch_all(&mut self, training_data_index: usize) -> (bool, Vec<u64>) {
+    /// Returns (dimensions_changed, dead_organism_ids, dead_per_region).
+    /// The `dead_per_region` map is used for gap-filling reproduction.
+    pub fn process_epoch_all(
+        &mut self,
+        training_data_index: usize,
+    ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
         let mut dimensions_changed = false;
 
         // These are only set after an out-of-bounds retry
         let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
         let mut changed_since_last_attempt: Vec<usize> = Vec::new();
 
-        let dead_organism_ids = loop {
+        let (dead_organism_ids, dead_per_region) = loop {
             let dim_version = self.dimension_version;
 
             // Capture loop variables by reference to avoid cloning on each iteration
@@ -128,12 +133,20 @@ impl World {
                     }
                 }
 
-                // Collect dead IDs
-                break results
-                    .iter()
-                    .filter(|r| r.is_dead)
-                    .map(|r| r.id)
-                    .collect::<Vec<u64>>();
+                // Collect dead IDs and count per region
+                let mut dead_ids = Vec::new();
+                let mut dead_per_region_map: HashMap<RegionKey, usize> = HashMap::new();
+
+                for res in &results {
+                    if res.is_dead {
+                        dead_ids.push(res.id);
+                        if let Some(key) = &res.region_key {
+                            *dead_per_region_map.entry(key.clone()).or_insert(0) += 1;
+                        }
+                    }
+                }
+
+                break (dead_ids, dead_per_region_map);
             }
 
             // Handle Out Of Bounds
@@ -148,6 +161,6 @@ impl World {
             dimensions_to_send = Some(Arc::clone(&self.dimensions));
         };
 
-        (dimensions_changed, dead_organism_ids)
+        (dimensions_changed, dead_organism_ids, dead_per_region)
     }
 }
