@@ -8,10 +8,11 @@ impl World {
     ///
     /// # Returns
     ///
-    /// `true` if dimensions were NOT expanded (i.e., at resolution limit),
-    /// `false` if dimensions were expanded due to out-of-bounds organisms.
+    /// Always returns `false` - lib3 does not implement resolution limit detection.
+    /// Unlike lib1 which tracks precision-based resolution limits, lib3 uses a simpler
+    /// architecture that expands dimensions on-demand without sophisticated limit detection.
     ///
-    /// Note: This matches lib2's return semantics where `true` indicates stability.
+    /// This allows test code to use the same loop structure as lib1 without early termination.
     pub fn training_run(&mut self, training_data: TrainingData) -> bool {
         // Get training data index (0 for function optimization)
         let training_data_index = match training_data {
@@ -21,7 +22,7 @@ impl World {
 
         // Step 1: Combined epoch processing
         // This updates organisms, regions, and returns dead organisms with region info
-        let (dimensions_changed, dead_organisms, dead_per_region) =
+        let (_dimensions_changed, dead_organisms, dead_per_region) =
             self.process_epoch_all(training_data_index);
 
         // Step 2: Update carrying capacities based on region fitness
@@ -57,9 +58,8 @@ impl World {
             self.remove_organisms(&dead_organisms);
         }
 
-        // Return true if dimensions did NOT change (at resolution limit / stable)
-        // This matches lib2's semantics where the return value indicates stability
-        !dimensions_changed
+        // Always return false - lib3 does not track resolution limits
+        false
     }
 
     /// Removes organisms by ID from the IndexMap using shift_remove to preserve order.

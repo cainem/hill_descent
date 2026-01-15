@@ -28,8 +28,8 @@ impl SingleValuedFunction for Sphere {
 
 #[test]
 fn given_fixed_seed_when_training_run_in_single_thread_pool_then_best_is_golden() {
-    // Updated golden values for gap-filling reproduction strategy
-    const EXPECTED_BEST_SCORE: f64 = 0.002752285745434627;
+    // Updated golden values after fixing state corruption and score caching issues
+    const EXPECTED_BEST_SCORE: f64 = 2.9769169971382927e-7;
     const FLOAT_TOLERANCE: f64 = 1e-10;
 
     let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();

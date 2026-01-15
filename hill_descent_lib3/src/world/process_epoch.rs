@@ -21,6 +21,11 @@ impl World {
     ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
         let mut dimensions_changed = false;
 
+        // Increment dimension version at start of each epoch to invalidate cached results
+        // This ensures organisms are re-evaluated each epoch (age increment, etc.)
+        // Further increments happen on OOB to track retry iterations
+        self.dimension_version += 1;
+
         // These are only set after an out-of-bounds retry
         let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
         let mut changed_since_last_attempt: Vec<usize> = Vec::new();
@@ -45,6 +50,31 @@ impl World {
                 .organisms
                 .par_iter()
                 .map(|(_, org_lock)| {
+                    // First check if we can use cached result (score caching optimization)
+                    {
+                        let org = org_lock.read().unwrap();
+                        if org.is_epoch_complete(dim_version) {
+                            // Already processed successfully - return cached result
+                            if let Some(ProcessEpochResult::Ok {
+                                should_remove,
+                                region_key,
+                                score,
+                                new_age,
+                            }) = org.get_cached_epoch_result()
+                            {
+                                return UpdateResult {
+                                    id: org.id(),
+                                    is_oob: false,
+                                    oob_dims: Vec::new(),
+                                    is_dead: should_remove,
+                                    entry: Some(OrganismEntry::new(org.id(), new_age, Some(score))),
+                                    region_key: Some(region_key),
+                                };
+                            }
+                        }
+                    }
+
+                    // Need to process - acquire write lock
                     let mut org = org_lock.write().unwrap();
                     let res = org.process_epoch(
                         current_dims_arg.clone(),

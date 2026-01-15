@@ -169,6 +169,25 @@ impl Organism {
 
     // Logic Methods
 
+    /// Returns whether this organism has already been successfully processed in the current epoch.
+    /// Used to skip re-evaluation during retry loops.
+    pub fn is_epoch_complete(&self, dimension_version: u64) -> bool {
+        // If we have a valid region_key and our cached version matches the request,
+        // we've already been successfully processed in this iteration
+        self.region_key.is_some() && self.dimension_version == dimension_version
+    }
+
+    /// Returns the cached result from a previously successful epoch processing.
+    /// Only valid when `is_epoch_complete` returns true.
+    pub fn get_cached_epoch_result(&self) -> Option<ProcessEpochResult> {
+        self.region_key.as_ref().map(|key| ProcessEpochResult::Ok {
+            region_key: key.clone(),
+            score: self.score.unwrap_or(f64::MAX),
+            new_age: self.age,
+            should_remove: self.is_dead,
+        })
+    }
+
     /// Processes an organism's epoch: calculates region key, evaluates fitness, and increments age.
     pub fn process_epoch(
         &mut self,
@@ -182,8 +201,8 @@ impl Organism {
             self.dimensions = dims;
         }
 
-        // Take ownership of the current key
-        let current_key = self.region_key.take();
+        // Clone the region key rather than taking it, so we preserve state on OOB
+        let current_key = self.region_key.clone();
 
         let result = process_epoch_impl::process_epoch(
             &self.phenotype,
@@ -198,7 +217,6 @@ impl Organism {
         );
 
         // Update cached state based on result
-        self.dimension_version = dimension_version;
         match &result {
             ProcessEpochResult::Ok {
                 region_key,
@@ -206,13 +224,15 @@ impl Organism {
                 new_age,
                 should_remove,
             } => {
+                self.dimension_version = dimension_version;
                 self.region_key = Some(region_key.clone());
                 self.score = Some(*score);
                 self.age = *new_age;
                 self.is_dead = *should_remove;
             }
             ProcessEpochResult::OutOfBounds { .. } => {
-                // Don't update state if out of bounds
+                // Preserve existing state on out of bounds - key stays intact for retry
+                // Don't update dimension_version so incremental update works on retry
             }
         }
 
