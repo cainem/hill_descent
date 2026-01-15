@@ -20,7 +20,7 @@ impl World {
     ///
     /// 1. Process epoch for all organisms (combined region key + fitness + age)
     /// 2. Update carrying capacities based on region fitness
-    /// 3. Process regions (sort, cull, select reproduction pairs)
+    /// 3. Process regions (sort, cull, select reproduction pairs using gap-filling)
     /// 4. Remove organisms that exceeded carrying capacity
     /// 5. Perform reproduction for selected pairs (dead-from-age can still participate)
     /// 6. Remove organisms that died from age
@@ -32,14 +32,15 @@ impl World {
         };
 
         // Step 1: Combined epoch processing (region key + fitness + age increment)
-        // This replaces separate calculate_region_keys, evaluate_fitness, and age_and_cull calls
-        let (at_resolution_limit, dead_organisms) = self.process_epoch_all(training_data_index);
+        // Returns dead organisms with their region info for gap-filling
+        let (at_resolution_limit, dead_organisms, dead_per_region) =
+            self.process_epoch_all(training_data_index);
 
         // Step 2: Update carrying capacities based on region fitness
         self.regions.update_carrying_capacities();
 
-        // Step 3: Process regions (sort, cull, select reproduction pairs)
-        let process_results = self.regions.process_all(self.world_seed);
+        // Step 3: Process regions (sort, cull, select reproduction pairs using gap-filling)
+        let process_results = self.regions.process_all(self.world_seed, &dead_per_region);
 
         // Step 4: Collect organisms to remove (exceeded carrying capacity only)
         let capacity_exceeded: Vec<u64> = process_results

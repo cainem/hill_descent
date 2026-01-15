@@ -25,9 +25,11 @@ impl SingleValuedFunction for Sphere {
 
 #[test]
 fn given_fixed_seed_when_training_run_in_single_thread_pool_then_best_is_golden() {
-    const EXPECTED_BEST_SCORE: f64 = 3.9638177853654935e-5;
-    const EXPECTED_BEST_PARAMS: [f64; 2] = [-0.003919103998453521, -0.004927352402960494];
-    const EXPECTED_BEST_ID: Option<u64> = Some(4969);
+    // Updated golden values after gap-filling reproduction fix (was: 3.9638177853654935e-5)
+    // The new algorithm converges ~7000x better on the sphere function
+    const EXPECTED_BEST_SCORE: f64 = 5.519807809038649e-9;
+    const EXPECTED_BEST_PARAMS: [f64; 2] = [3.4837814254101446e-5, -6.562114374982636e-5];
+    const EXPECTED_BEST_ID: Option<u64> = Some(9067);
     const FLOAT_TOLERANCE: f64 = 1e-12;
 
     let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();

@@ -4,6 +4,7 @@
 //! increment into a single message pass per organism, reducing synchronization
 //! barriers.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::{
@@ -30,10 +31,18 @@ impl World {
     ///
     /// # Returns
     ///
-    /// Tuple of (dimensions_changed, organisms_to_remove_due_to_age)
-    /// - `dimensions_changed`: true if any dimensions were expanded
-    /// - The dead organism IDs are collected for removal
-    pub fn process_epoch_all(&mut self, training_data_index: usize) -> (bool, Vec<u64>) {
+    /// Tuple of (at_resolution_limit, dead_organism_ids, dead_per_region)
+    /// - `at_resolution_limit`: true if NO dimensions were expanded (stable)
+    /// - `dead_organism_ids`: IDs of organisms that died from age
+    /// - `dead_per_region`: Count of dead organisms per region (for gap-filling)
+    pub fn process_epoch_all(
+        &mut self,
+        training_data_index: usize,
+    ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
+        // Increment dimension version at start of each epoch to invalidate cached results
+        // This ensures organisms are re-evaluated each epoch (age increment, etc.)
+        self.dimension_version += 1;
+
         let mut dimensions_changed = false;
         let mut pending_ids = self.organism_ids.clone();
         let mut all_results: Vec<(u64, ProcessEpochResult)> = Vec::new();
@@ -107,6 +116,7 @@ impl World {
         // Now process all the successful results
         let mut entries: Vec<(RegionKey, OrganismEntry)> = Vec::with_capacity(all_results.len());
         let mut dead_organisms: Vec<u64> = Vec::new();
+        let mut dead_per_region: HashMap<RegionKey, usize> = HashMap::new();
         let mut new_best_id: Option<u64> = None;
 
         for (id, result) in all_results {
@@ -125,8 +135,10 @@ impl World {
                 }
 
                 // Track dead organisms for later removal (AFTER reproduction)
+                // Also track count per region for gap-filling reproduction
                 if should_remove {
                     dead_organisms.push(id);
+                    *dead_per_region.entry(region_key.clone()).or_insert(0) += 1;
                 }
 
                 // Create entry for region population
@@ -153,7 +165,7 @@ impl World {
         // Populate regions with organism entries
         self.regions.populate(entries);
 
-        (!dimensions_changed, dead_organisms)
+        (!dimensions_changed, dead_organisms, dead_per_region)
     }
 }
 
@@ -183,12 +195,13 @@ mod tests {
         assert_eq!(world.best_score, f64::MAX);
 
         // Process epoch
-        let (at_resolution_limit, dead_organisms) = world.process_epoch_all(0);
+        let (at_resolution_limit, dead_organisms, dead_per_region) = world.process_epoch_all(0);
 
         // Best score should be updated
         assert!(world.best_score < f64::MAX);
         // We may or may not have dead organisms depending on random max_age values
         let _ = dead_organisms;
+        let _ = dead_per_region;
         // Check resolution limit flag
         let _ = at_resolution_limit;
     }
@@ -238,7 +251,7 @@ mod tests {
         let initial_version = world.dimension_version;
 
         // Process epoch - should trigger expansion
-        let (at_resolution_limit, _) = world.process_epoch_all(0);
+        let (at_resolution_limit, _, _) = world.process_epoch_all(0);
 
         assert!(
             !at_resolution_limit,

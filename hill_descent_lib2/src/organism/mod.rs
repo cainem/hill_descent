@@ -78,6 +78,12 @@ pub struct Organism {
 
     /// Whether organism has exceeded max age
     is_dead: bool,
+
+    /// Dimension version when epoch was last successfully completed (for score caching)
+    last_completed_epoch_version: Option<u64>,
+
+    /// Cached result from last successful epoch (for retry loop optimization)
+    cached_epoch_result: Option<ProcessEpochResult>,
 }
 
 /// Initialization data for creating a new Organism.
@@ -139,6 +145,8 @@ impl Organism {
             score: None,
             age: 0,
             is_dead: false,
+            last_completed_epoch_version: None,
+            cached_epoch_result: None,
         }
     }
 
@@ -247,6 +255,9 @@ impl Organism {
     /// This combined operation reduces synchronization barriers by performing three
     /// operations in a single message instead of three separate messages.
     ///
+    /// If this organism was already successfully processed for the given dimension_version,
+    /// returns the cached result (score caching optimization for retry loops).
+    ///
     /// # Arguments
     /// * `training_data_index` - Index into shared training data (0 for function optimization)
     #[messaging(ProcessEpochRequest, ProcessEpochResponse)]
@@ -257,13 +268,20 @@ impl Organism {
         changed_dimensions: Vec<usize>,
         training_data_index: usize,
     ) -> ProcessEpochResult {
+        // Score caching: if already processed for this dimension version, return cached result
+        if self.last_completed_epoch_version == Some(dimension_version)
+            && let Some(ref cached) = self.cached_epoch_result
+        {
+            return cached.clone();
+        }
+
         // Update dimensions if provided
         if let Some(dims) = dimensions {
             self.dimensions = dims;
         }
 
-        // Take ownership of the current key
-        let current_key = self.region_key.take();
+        // Clone instead of take - preserves region_key on OOB for next retry
+        let current_key = self.region_key.clone();
 
         let result = process_epoch_impl::process_epoch(
             &self.phenotype,
@@ -276,7 +294,6 @@ impl Organism {
         );
 
         // Update cached state based on result
-        self.dimension_version = dimension_version;
         match &result {
             ProcessEpochResult::Ok {
                 region_key,
@@ -284,13 +301,21 @@ impl Organism {
                 new_age,
                 should_remove,
             } => {
+                // Only update dimension_version on success
+                self.dimension_version = dimension_version;
                 self.region_key = Some(region_key.clone());
                 self.score = Some(*score);
                 self.age = *new_age;
                 self.is_dead = *should_remove;
+
+                // Cache result for retry loop optimization
+                self.last_completed_epoch_version = Some(dimension_version);
+                self.cached_epoch_result = Some(result.clone());
             }
             ProcessEpochResult::OutOfBounds { .. } => {
                 // Don't update state if out of bounds - will need dimension expansion
+                // region_key is preserved (used clone, not take)
+                // dimension_version NOT updated - allows incremental update on retry
             }
         }
 
