@@ -1,10 +1,11 @@
 //! Hill Descent Library (v3 - Shared Memory / Rayon)
 
 // Use mimalloc as the global allocator for better multi-threaded performance
-use mimalloc::MiMalloc;
+// Temporarily disabled to align allocator with hill_descent_lib for profiling comparisons.
+// use mimalloc::MiMalloc;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+// #[global_allocator]
+// static GLOBAL: MiMalloc = MiMalloc;
 
 pub mod format_score;
 pub mod gamete;
