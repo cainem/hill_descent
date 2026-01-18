@@ -1,5 +1,7 @@
 //! Training run - the main optimization loop.
 
+use std::collections::HashSet;
+
 use messaging_thread_pool::RemovePoolItemRequest;
 
 use super::World;
@@ -22,8 +24,9 @@ impl World {
     /// 2. Update carrying capacities based on region fitness
     /// 3. Process regions (sort, cull, select reproduction pairs using gap-filling)
     /// 4. Remove organisms that exceeded carrying capacity
-    /// 5. Perform reproduction for selected pairs (dead-from-age can still participate)
+    /// 5. Filter reproduction pairs to exclude organisms that died from age
     /// 6. Remove organisms that died from age
+    /// 7. Perform reproduction for selected pairs
     pub fn training_run(&mut self, training_data: TrainingData) -> bool {
         // Get training data index (0 for function optimization)
         let training_data_index = match training_data {
@@ -48,10 +51,12 @@ impl World {
             .flat_map(|result| result.organisms_to_remove.iter().copied())
             .collect();
 
-        // Step 5: Collect all reproduction pairs
+        // Step 5: Collect all reproduction pairs (exclude organisms that died from age)
+        let dead_set: HashSet<u64> = dead_organisms.iter().copied().collect();
         let reproduction_pairs: Vec<(u64, u64)> = process_results
             .into_iter()
             .flat_map(|result| result.reproduction_pairs)
+            .filter(|(p1_id, p2_id)| !dead_set.contains(p1_id) && !dead_set.contains(p2_id))
             .collect();
 
         // Step 6: Remove organisms that exceeded carrying capacity
@@ -68,12 +73,7 @@ impl World {
                 .retain(|id| !capacity_exceeded.contains(id));
         }
 
-        // Step 7: Perform reproduction for selected pairs
-        // NOTE: Dead-from-age organisms can still participate in reproduction
-        // to prevent guaranteed extinction in low-population scenarios
-        self.perform_reproduction(reproduction_pairs);
-
-        // Step 8: Remove organisms that died from age (AFTER reproduction)
+        // Step 7: Remove organisms that died from age (BEFORE reproduction)
         if !dead_organisms.is_empty() {
             let remove_requests = dead_organisms.iter().map(|&id| RemovePoolItemRequest(id));
             self.organism_pool
@@ -82,6 +82,9 @@ impl World {
                 .for_each(drop);
             self.organism_ids.retain(|id| !dead_organisms.contains(id));
         }
+
+        // Step 8: Perform reproduction for selected pairs
+        self.perform_reproduction(reproduction_pairs);
 
         at_resolution_limit
     }

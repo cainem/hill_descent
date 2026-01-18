@@ -1,5 +1,7 @@
 //! Training run - the main optimization loop.
 
+use std::collections::HashSet;
+
 use super::World;
 use crate::training_data::TrainingData;
 
@@ -37,10 +39,12 @@ impl World {
             .flat_map(|result| result.organisms_to_remove.iter().copied())
             .collect();
 
-        // Step 5: Collect all reproduction pairs
+        // Step 5: Collect all reproduction pairs (exclude organisms that died from age)
+        let dead_set: HashSet<u64> = dead_organisms.iter().copied().collect();
         let reproduction_pairs: Vec<(u64, u64)> = process_results
             .into_iter()
             .flat_map(|result| result.reproduction_pairs)
+            .filter(|(p1_id, p2_id)| !dead_set.contains(p1_id) && !dead_set.contains(p2_id))
             .collect();
 
         // Step 6: Remove organisms that exceeded carrying capacity
@@ -49,14 +53,13 @@ impl World {
             self.remove_organisms(&capacity_exceeded);
         }
 
-        // Step 7: Perform reproduction for selected pairs
-        // NOTE: Dead-from-age organisms can still participate in reproduction (if not culled for capacity)
-        self.perform_reproduction(reproduction_pairs);
-
-        // Step 8: Remove organisms that died from age (AFTER reproduction)
+        // Step 7: Remove organisms that died from age (BEFORE reproduction)
         if !dead_organisms.is_empty() {
             self.remove_organisms(&dead_organisms);
         }
+
+        // Step 8: Perform reproduction for selected pairs
+        self.perform_reproduction(reproduction_pairs);
 
         // Always return false - lib3 does not track resolution limits
         false
