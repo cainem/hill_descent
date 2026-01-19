@@ -1,6 +1,6 @@
 //! World struct - the coordinator that orchestrates training runs.
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use indexmap::IndexMap;
 
@@ -9,9 +9,10 @@ use crate::{organism::Organism, parameters::GlobalConstants};
 
 /// The World coordinates all operations in the genetic algorithm.
 pub struct World {
-    /// Organisms stored by ID for O(1) lookup (Shared Memory + Locking model)
+    /// Organisms stored by ID for O(1) lookup.
+    /// Uses Arc<Organism> with interior mutability (atomics + mutex) for lock-free access.
     /// Uses IndexMap to maintain insertion order for deterministic iteration.
-    pub(super) organisms: IndexMap<u64, Arc<RwLock<Organism>>>,
+    pub(super) organisms: IndexMap<u64, Arc<Organism>>,
 
     /// Spatial dimensions (bounds and intervals)
     pub(super) dimensions: Arc<Dimensions>,

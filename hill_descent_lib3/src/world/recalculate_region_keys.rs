@@ -27,17 +27,16 @@ impl World {
         let new_dimensions = Arc::clone(&self.dimensions);
 
         // Parallel recalculation of region keys
+        // Organism uses interior mutability so no locks needed
         let entries: Vec<(RegionKey, OrganismEntry)> = self
             .organisms
             .par_iter()
-            .filter_map(|(_, org_lock)| {
-                let mut org = org_lock.write().unwrap();
-
+            .filter_map(|(_, org)| {
                 // Update organism's dimensions to the new subdivided dimensions
                 org.set_dimensions(Arc::clone(&new_dimensions));
 
                 // Get the organism's current region key and update the subdivided dimension
-                if let Some(mut region_key) = org.region_key().cloned() {
+                if let Some(mut region_key) = org.region_key() {
                     // Calculate new interval for the subdivided dimension
                     let expressed = org.phenotype().expression_problem_values();
                     if dimension_index < expressed.len() {

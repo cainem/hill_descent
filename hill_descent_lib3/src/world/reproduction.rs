@@ -1,6 +1,6 @@
 //! Reproduction phase of training run.
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use rayon::prelude::*;
@@ -41,8 +41,7 @@ impl World {
             .collect();
 
         // Fetch phenotypes for all unique parents using direct O(1) lookups
-        // We need to collect phenotypes before parallel reproduction to avoid
-        // holding locks during the parallel phase
+        // Organism uses interior mutability so no locks needed
         let phenotypes: Vec<_> = tasks
             .iter()
             .flat_map(|(p1_id, p2_id, seed)| {
@@ -50,16 +49,12 @@ impl World {
                     .organisms
                     .get(p1_id)
                     .expect("Parent 1 not found")
-                    .read()
-                    .unwrap()
                     .phenotype()
                     .clone();
                 let p2_pheno = self
                     .organisms
                     .get(p2_id)
                     .expect("Parent 2 not found")
-                    .read()
-                    .unwrap()
                     .phenotype()
                     .clone();
                 [((*p1_id, *p2_id, *seed), (p1_pheno, p2_pheno))]
@@ -97,7 +92,7 @@ impl World {
                 Arc::clone(&dimensions),
                 Arc::clone(&world_function),
             );
-            self.organisms.insert(id1, Arc::new(RwLock::new(org1)));
+            self.organisms.insert(id1, Arc::new(org1));
 
             // Offspring 2
             let id2 = self.next_organism_id;
@@ -109,7 +104,7 @@ impl World {
                 Arc::clone(&dimensions),
                 Arc::clone(&world_function),
             );
-            self.organisms.insert(id2, Arc::new(RwLock::new(org2)));
+            self.organisms.insert(id2, Arc::new(org2));
         }
 
         count

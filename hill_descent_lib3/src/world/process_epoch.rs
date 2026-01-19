@@ -74,33 +74,29 @@ impl World {
             let results: Vec<UpdateResult> = self
                 .organisms
                 .par_iter()
-                .map(|(_, org_lock)| {
+                .map(|(_, org)| {
                     // First check if we can use cached result (score caching optimization)
-                    {
-                        let org = org_lock.read().unwrap();
-                        if org.is_epoch_complete(dim_version) {
-                            // Already processed successfully - return cached result
-                            if let Some(ProcessEpochResult::Ok {
-                                should_remove,
-                                region_key,
-                                score,
-                                new_age,
-                            }) = org.get_cached_epoch_result()
-                            {
-                                return UpdateResult {
-                                    id: org.id(),
-                                    is_oob: false,
-                                    oob_dims: Vec::new(),
-                                    is_dead: should_remove,
-                                    entry: Some(OrganismEntry::new(org.id(), new_age, Some(score))),
-                                    region_key: Some(region_key),
-                                };
-                            }
+                    if org.is_epoch_complete(dim_version) {
+                        // Already processed successfully - return cached result
+                        if let Some(ProcessEpochResult::Ok {
+                            should_remove,
+                            region_key,
+                            score,
+                            new_age,
+                        }) = org.get_cached_epoch_result()
+                        {
+                            return UpdateResult {
+                                id: org.id(),
+                                is_oob: false,
+                                oob_dims: Vec::new(),
+                                is_dead: should_remove,
+                                entry: Some(OrganismEntry::new(org.id(), new_age, Some(score))),
+                                region_key: Some(region_key),
+                            };
                         }
                     }
 
-                    // Need to process - acquire write lock
-                    let mut org = org_lock.write().unwrap();
+                    // Need to process - uses interior mutability (atomics/mutex)
                     let res = org.process_epoch(
                         current_dims_arg.clone(),
                         dim_version,
@@ -178,9 +174,8 @@ impl World {
 
                     // Fetch params for best organism using direct O(1) HashMap lookup
                     if let Some(best_id) = best_in_batch_id
-                        && let Some(org_lock) = self.organisms.get(&best_id)
+                        && let Some(org) = self.organisms.get(&best_id)
                     {
-                        let org = org_lock.read().unwrap();
                         let expressed = org.phenotype().expressed_values();
                         if expressed.len() > NUM_SYSTEM_PARAMETERS {
                             self.best_params = expressed[NUM_SYSTEM_PARAMETERS..].to_vec();

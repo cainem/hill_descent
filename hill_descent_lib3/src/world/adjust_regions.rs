@@ -59,11 +59,11 @@ impl World {
         }
 
         // Collect expressed problem values for these organisms
+        // Organism uses interior mutability so no locks needed
         let expressed_values: Vec<Vec<f64>> = organism_ids
             .iter()
             .filter_map(|id| {
-                self.organisms.get(id).map(|org_lock| {
-                    let org = org_lock.read().unwrap();
+                self.organisms.get(id).map(|org| {
                     let expressed = org.phenotype().expressed_values();
                     if expressed.len() > NUM_SYSTEM_PARAMETERS {
                         expressed[NUM_SYSTEM_PARAMETERS..].to_vec()

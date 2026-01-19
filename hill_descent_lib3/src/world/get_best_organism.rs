@@ -99,7 +99,7 @@ impl World {
             Some(id) => self
                 .organisms
                 .get(&id)
-                .map(|o| (id, o.read().unwrap().phenotype().clone())),
+                .map(|org| (id, org.phenotype().clone())),
             None => None,
         }
     }

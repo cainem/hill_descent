@@ -1,7 +1,8 @@
-//! Organism module - Shared memory implementation
+//! Organism module - Lock-free implementation using atomics
 //!
-//! Unlike lib2 which uses actors, this version uses direct method calls on shared mutable structures
-//! protected by RwLocks in the World.
+//! This version uses atomic operations for mutable fields, eliminating the need
+//! for RwLock wrappers in the World's organism storage. Only the region_key
+//! uses a Mutex since it requires Clone operations.
 
 mod calculate_region_key_impl;
 mod evaluate_fitness_impl;
@@ -10,7 +11,10 @@ mod process_epoch_impl;
 mod reproduce_impl;
 mod update_dimensions_impl;
 
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+
+use arc_swap::ArcSwapOption;
 
 use crate::NUM_SYSTEM_PARAMETERS;
 use crate::{
@@ -84,39 +88,72 @@ pub struct GetWebStateResult {
 
 /// An organism in the genetic algorithm population.
 ///
-/// In this shared-memory implementation, Organism is a struct accessed via RwLock
-/// by parallel rayon iterators.
-#[derive(Debug)]
+/// This implementation uses atomic operations for mutable fields to enable
+/// lock-free concurrent access during parallel processing. The World stores
+/// organisms as `Arc<Organism>` (no RwLock wrapper needed).
+///
+/// Thread-safety model:
+/// - Immutable fields (id, parent_ids, phenotype, world_function): No synchronization needed
+/// - Region key: Protected by Mutex (requires Clone for access)
+/// - Other mutable fields: Atomic operations
+/// - Dimensions: ArcSwap for lock-free updates
 pub struct Organism {
-    /// Unique identifier
+    /// Unique identifier (immutable after creation)
     id: u64,
 
-    /// Parent IDs for pedigree tracking (None for initial random organisms)
+    /// Parent IDs for pedigree tracking (immutable after creation)
     _parent_ids: (Option<u64>, Option<u64>),
 
     /// Current region key (calculated from phenotype + dimensions)
-    region_key: Option<RegionKey>,
+    /// Protected by Mutex since RegionKey doesn't implement atomic operations
+    region_key: Mutex<Option<RegionKey>>,
 
     /// Cached dimension version (for incremental key updates)
-    dimension_version: u64,
+    /// Uses atomic for lock-free read/write
+    dimension_version: AtomicU64,
 
     /// Genetic material (immutable after creation)
     phenotype: Arc<Phenotype>,
 
-    /// Current dimensions reference
-    dimensions: Arc<Dimensions>,
+    /// Current dimensions reference (updated when dimensions are subdivided)
+    /// Uses ArcSwap for lock-free updates
+    dimensions: ArcSwapOption<Dimensions>,
 
-    /// Fitness function reference
+    /// Fitness function reference (immutable after creation)
     world_function: Arc<dyn WorldFunction + Send + Sync>,
 
-    /// Current fitness score (None if not yet evaluated)
-    score: Option<f64>,
+    /// Current fitness score stored as f64 bit representation (u64::MAX = None)
+    /// Uses atomic for lock-free concurrent access during parallel processing
+    score: AtomicU64,
 
     /// Age in training runs
-    age: usize,
+    /// Uses atomic for lock-free increments
+    age: AtomicUsize,
 
     /// Whether organism has exceeded max age
-    is_dead: bool,
+    /// Uses atomic for lock-free flag access
+    is_dead: AtomicBool,
+}
+
+// Manual Debug implementation since ArcSwapOption doesn't implement Debug
+impl std::fmt::Debug for Organism {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Organism")
+            .field("id", &self.id)
+            .field("_parent_ids", &self._parent_ids)
+            .field("region_key", &self.region_key)
+            .field(
+                "dimension_version",
+                &self.dimension_version.load(Ordering::Relaxed),
+            )
+            .field("phenotype", &self.phenotype)
+            .field("dimensions", &"<ArcSwapOption<Dimensions>>")
+            .field("world_function", &"<dyn WorldFunction>")
+            .field("score", &self.score())
+            .field("age", &self.age())
+            .field("is_dead", &self.is_dead())
+            .finish()
+    }
 }
 
 impl Organism {
@@ -131,102 +168,176 @@ impl Organism {
         Self {
             id,
             _parent_ids: parent_ids,
-            region_key: None,
-            dimension_version: 0,
+            region_key: Mutex::new(None),
+            dimension_version: AtomicU64::new(0),
             phenotype,
-            dimensions,
+            dimensions: ArcSwapOption::new(Some(dimensions)),
             world_function,
-            score: None,
-            age: 0,
-            is_dead: false,
+            score: AtomicU64::new(u64::MAX), // u64::MAX represents None
+            age: AtomicUsize::new(0),
+            is_dead: AtomicBool::new(false),
         }
     }
 
-    /// Accessors
+    // ========================================================================
+    // Accessors
+    // ========================================================================
+
+    /// Returns the organism's unique identifier.
     pub fn id(&self) -> u64 {
         self.id
     }
 
+    /// Returns whether the organism has been marked as dead.
+    /// Thread-safe atomic read.
     pub fn is_dead(&self) -> bool {
-        self.is_dead
+        self.is_dead.load(Ordering::Relaxed)
     }
 
+    /// Returns a reference to the organism's phenotype.
     pub fn phenotype(&self) -> &Arc<Phenotype> {
         &self.phenotype
     }
 
-    pub fn region_key(&self) -> Option<&RegionKey> {
-        self.region_key.as_ref()
+    /// Returns a clone of the current region key.
+    /// Thread-safe via Mutex.
+    pub fn region_key(&self) -> Option<RegionKey> {
+        self.region_key.lock().unwrap().clone()
     }
 
+    /// Returns the current fitness score.
+    /// Thread-safe atomic read.
     pub fn score(&self) -> Option<f64> {
-        self.score
+        let bits = self.score.load(Ordering::Acquire);
+        if bits == u64::MAX {
+            None
+        } else {
+            Some(f64::from_bits(bits))
+        }
     }
 
+    /// Returns the current age.
+    /// Thread-safe atomic read.
     pub fn age(&self) -> usize {
-        self.age
+        self.age.load(Ordering::Relaxed)
     }
+
+    /// Returns the cached dimension version.
+    /// Thread-safe atomic read.
+    pub fn cached_dimension_version(&self) -> u64 {
+        self.dimension_version.load(Ordering::Relaxed)
+    }
+
+    /// Returns a clone of the current dimensions Arc.
+    /// Thread-safe via ArcSwap.
+    pub fn dimensions(&self) -> Option<Arc<Dimensions>> {
+        self.dimensions.load_full()
+    }
+
+    // ========================================================================
+    // Mutators (thread-safe atomic operations)
+    // ========================================================================
 
     /// Sets the organism's dimensions (used when dimensions are subdivided).
-    pub fn set_dimensions(&mut self, dimensions: Arc<Dimensions>) {
-        self.dimensions = dimensions;
+    /// Thread-safe via ArcSwap.
+    pub fn set_dimensions(&self, dimensions: Arc<Dimensions>) {
+        self.dimensions.store(Some(dimensions));
     }
 
-    /// Sets the organism's region key (used when recalculating after dimension subdivision).
-    pub fn set_region_key(&mut self, region_key: Option<RegionKey>) {
-        self.region_key = region_key;
+    /// Sets the organism's region key.
+    /// Thread-safe via Mutex.
+    pub fn set_region_key(&self, region_key: Option<RegionKey>) {
+        *self.region_key.lock().unwrap() = region_key;
     }
 
+    /// Sets the fitness score.
+    /// Thread-safe atomic write.
+    fn set_score(&self, score: Option<f64>) {
+        let bits = score.map(|s| s.to_bits()).unwrap_or(u64::MAX);
+        self.score.store(bits, Ordering::Release);
+    }
+
+    /// Sets the age.
+    /// Thread-safe atomic write.
+    fn set_age(&self, age: usize) {
+        self.age.store(age, Ordering::Relaxed);
+    }
+
+    /// Marks the organism as dead.
+    /// Thread-safe atomic write.
+    fn mark_dead(&self) {
+        self.is_dead.store(true, Ordering::Relaxed);
+    }
+
+    /// Sets the dimension version.
+    /// Thread-safe atomic write.
+    fn set_dimension_version(&self, version: u64) {
+        self.dimension_version.store(version, Ordering::Relaxed);
+    }
+
+    // ========================================================================
     // Logic Methods
+    // ========================================================================
 
     /// Returns whether this organism has already been successfully processed in the current epoch.
     /// Used to skip re-evaluation during retry loops.
+    ///
+    /// Note: This is a caching optimization. There's a theoretical race condition between
+    /// checking dimension_version and region_key, but the fallback (full recompute) is safe.
     pub fn is_epoch_complete(&self, dimension_version: u64) -> bool {
-        // If we have a valid region_key and our cached version matches the request,
-        // we've already been successfully processed in this iteration
-        self.region_key.is_some() && self.dimension_version == dimension_version
+        // Check version first (atomic), then region_key (mutex)
+        self.dimension_version.load(Ordering::Acquire) == dimension_version
+            && self.region_key.lock().unwrap().is_some()
     }
 
     /// Returns the cached result from a previously successful epoch processing.
     /// Only valid when `is_epoch_complete` returns true.
     pub fn get_cached_epoch_result(&self) -> Option<ProcessEpochResult> {
-        self.region_key.as_ref().map(|key| ProcessEpochResult::Ok {
-            region_key: key.clone(),
-            score: self.score.unwrap_or(f64::MAX),
-            new_age: self.age,
-            should_remove: self.is_dead,
+        let region_key = self.region_key.lock().unwrap().clone();
+        region_key.map(|key| ProcessEpochResult::Ok {
+            region_key: key,
+            score: self.score().unwrap_or(f64::MAX),
+            new_age: self.age(),
+            should_remove: self.is_dead(),
         })
     }
 
     /// Processes an organism's epoch: calculates region key, evaluates fitness, and increments age.
+    ///
+    /// This method uses interior mutability (atomics and mutex) rather than &mut self,
+    /// enabling lock-free access from the World.
     pub fn process_epoch(
-        &mut self,
+        &self,
         dimensions: Option<Arc<Dimensions>>,
         dimension_version: u64,
         changed_dimensions: Vec<usize>,
         training_data_index: usize,
     ) -> ProcessEpochResult {
-        // Update dimensions if provided
+        // Update dimensions if provided (atomic via ArcSwap)
         if let Some(dims) = dimensions {
-            self.dimensions = dims;
+            self.dimensions.store(Some(dims));
         }
 
+        // Get current dimensions
+        let current_dims = self.dimensions.load_full().expect("Dimensions not set");
+
         // Clone the region key rather than taking it, so we preserve state on OOB
-        let current_key = self.region_key.clone();
+        let current_key = self.region_key.lock().unwrap().clone();
+        let cached_dim_version = self.dimension_version.load(Ordering::Acquire);
 
         let result = process_epoch_impl::process_epoch(
             &self.phenotype,
-            &self.dimensions,
+            &current_dims,
             &self.world_function,
-            self.age,
+            self.age(),
             training_data_index,
             current_key,
-            self.dimension_version,
+            cached_dim_version,
             dimension_version,
             &changed_dimensions,
         );
 
-        // Update cached state based on result
+        // Update cached state based on result (using atomic operations)
         match &result {
             ProcessEpochResult::Ok {
                 region_key,
@@ -234,11 +345,13 @@ impl Organism {
                 new_age,
                 should_remove,
             } => {
-                self.dimension_version = dimension_version;
-                self.region_key = Some(region_key.clone());
-                self.score = Some(*score);
-                self.age = *new_age;
-                self.is_dead = *should_remove;
+                self.set_dimension_version(dimension_version);
+                self.set_region_key(Some(region_key.clone()));
+                self.set_score(Some(*score));
+                self.set_age(*new_age);
+                if *should_remove {
+                    self.mark_dead();
+                }
             }
             ProcessEpochResult::OutOfBounds { .. } => {
                 // Preserve existing state on out of bounds - key stays intact for retry
@@ -263,13 +376,18 @@ impl Organism {
         )
     }
 
-    pub fn update_dimensions(&mut self, new_dimensions: Arc<Dimensions>, dimension_version: u64) {
-        self.dimensions = update_dimensions_impl::update_dimensions(new_dimensions);
-        self.dimension_version = dimension_version;
+    /// Updates dimensions and invalidates cached region key.
+    pub fn update_dimensions(&self, new_dimensions: Arc<Dimensions>, dimension_version: u64) {
+        self.dimensions
+            .store(Some(update_dimensions_impl::update_dimensions(
+                new_dimensions,
+            )));
+        self.set_dimension_version(dimension_version);
         // Invalidate cached key as dimensions have changed
-        self.region_key = None;
+        self.set_region_key(None);
     }
 
+    /// Returns state for web visualization.
     pub fn get_web_state(&self) -> GetWebStateResult {
         let expressed = self.phenotype.expressed_values();
         // Extract position params (after NUM_SYSTEM_PARAMETERS)
@@ -278,11 +396,11 @@ impl Organism {
 
         GetWebStateResult {
             params,
-            age: self.age,
+            age: self.age(),
             max_age: max_age.round() as usize,
-            score: self.score,
-            region_key: self.region_key.clone(),
-            is_dead: self.is_dead,
+            score: self.score(),
+            region_key: self.region_key(),
+            is_dead: self.is_dead(),
         }
     }
 }

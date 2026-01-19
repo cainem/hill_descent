@@ -97,13 +97,11 @@ impl World {
         };
 
         // Query all organisms for their web state in parallel
+        // Organism uses interior mutability so no locks needed
         let web_states: Vec<_> = self
             .organisms
             .par_iter()
-            .map(|(_, o)| {
-                let org = o.read().unwrap();
-                (org.id(), org.get_web_state())
-            })
+            .map(|(_, org)| (org.id(), org.get_web_state()))
             .collect();
 
         // Build organism states, filtering out dead organisms

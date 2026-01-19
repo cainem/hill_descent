@@ -19,6 +19,7 @@ categories = ["algorithms", "science"]
 [dependencies]
 # Concurrency
 rayon = "1.10"
+arc-swap = "1.7"
 
 # Memory allocator
 mimalloc = { workspace = true }

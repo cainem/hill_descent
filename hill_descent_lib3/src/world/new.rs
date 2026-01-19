@@ -1,6 +1,6 @@
 //! World constructor - creates a new World with initial population.
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use indexmap::IndexMap;
 use rand::{SeedableRng, rngs::StdRng};
@@ -30,7 +30,7 @@ impl World {
         let population_size = global_constants.population_size();
 
         // Generate initial organisms into IndexMap (maintains insertion order for determinism)
-        let mut organisms: IndexMap<u64, Arc<RwLock<Organism>>> =
+        let mut organisms: IndexMap<u64, Arc<Organism>> =
             IndexMap::with_capacity(population_size);
 
         for organism_id in 0..(population_size as u64) {
@@ -43,7 +43,7 @@ impl World {
                 Arc::clone(&dimensions),
                 Arc::clone(&world_function),
             );
-            organisms.insert(organism_id, Arc::new(RwLock::new(org)));
+            organisms.insert(organism_id, Arc::new(org));
         }
 
         // Create regions

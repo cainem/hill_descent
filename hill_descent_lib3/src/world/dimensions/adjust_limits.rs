@@ -56,8 +56,8 @@ impl Dimensions {
         let mut max_value = f64::NEG_INFINITY;
 
         // Find min and max values for the specified dimension across all organisms
-        for org_lock in world.organisms.values() {
-            let org = org_lock.read().unwrap();
+        // Organism uses interior mutability so no locks needed
+        for org in world.organisms.values() {
             let expressed_values = org.phenotype().expressed_values();
 
             // Calculate the actual index in expressed_values (system parameters + dimension index)
@@ -171,8 +171,7 @@ mod tests {
         // Find actual organism min/max for dimension 0
         let mut min_val = f64::INFINITY;
         let mut max_val = f64::NEG_INFINITY;
-        for org_lock in world.organisms.values() {
-            let org = org_lock.read().unwrap();
+        for org in world.organisms.values() {
             let expressed = org.phenotype().expressed_values();
             if expressed.len() > crate::NUM_SYSTEM_PARAMETERS {
                 let val = expressed[crate::NUM_SYSTEM_PARAMETERS];
@@ -221,8 +220,7 @@ mod tests {
         // Find actual organism min/max for dimension 0
         let mut min_val = f64::INFINITY;
         let mut max_val = f64::NEG_INFINITY;
-        for org_lock in world.organisms.values() {
-            let org = org_lock.read().unwrap();
+        for org in world.organisms.values() {
             let expressed = org.phenotype().expressed_values();
             if expressed.len() > crate::NUM_SYSTEM_PARAMETERS {
                 let val = expressed[crate::NUM_SYSTEM_PARAMETERS];
