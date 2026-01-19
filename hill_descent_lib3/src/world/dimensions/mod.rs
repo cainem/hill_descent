@@ -3,8 +3,10 @@
 //! Dimensions track the spatial bounds of the optimization problem with
 //! version numbers to enable efficient incremental region key updates.
 
+pub mod adjust_limits;
 pub mod calculate_dimensions_key;
 pub mod dimension;
+pub mod divide_dimension;
 pub mod expand_bounds;
 pub mod new;
 

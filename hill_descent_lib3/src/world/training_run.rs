@@ -1,20 +1,31 @@
 //! Training run - the main optimization loop.
 
-use std::collections::HashSet;
-
 use super::World;
+use super::adjust_regions::AdjustRegionsResult;
 use crate::training_data::TrainingData;
 
 impl World {
     /// Performs a single training run (generation).
     ///
+    /// This follows a specific order to maintain consistency between region keys
+    /// and death tracking:
+    /// 1. Process epoch (age organisms, count deaths per region)
+    /// 2. Update carrying capacities based on current region fitness
+    /// 3. Process regions (sort, cull, select reproduction pairs)
+    /// 4. Remove dead organisms
+    /// 5. Perform reproduction
+    /// 6. Adjust regions (subdivide dimensions) - AFTER reproduction so region
+    ///    keys remain consistent with death tracking throughout the cycle
+    ///
     /// # Returns
     ///
-    /// Always returns `false` - lib3 does not implement resolution limit detection.
-    /// Unlike lib1 which tracks precision-based resolution limits, lib3 uses a simpler
-    /// architecture that expands dimensions on-demand without sophisticated limit detection.
+    /// Returns `true` if at resolution limit (no further meaningful dimension
+    /// subdivisions possible), `false` otherwise.
     ///
-    /// This allows test code to use the same loop structure as lib1 without early termination.
+    /// The resolution limit is reached when:
+    /// - No dimensions can be subdivided due to floating-point precision limits
+    /// - There is no diversity in organism values (all organisms have same values)
+    /// - Target number of regions has been reached
     pub fn training_run(&mut self, training_data: TrainingData) -> bool {
         // Get training data index (0 for function optimization)
         let training_data_index = match training_data {
@@ -39,30 +50,73 @@ impl World {
             .flat_map(|result| result.organisms_to_remove.iter().copied())
             .collect();
 
-        // Step 5: Collect all reproduction pairs (exclude organisms that died from age)
-        let dead_set: HashSet<u64> = dead_organisms.iter().copied().collect();
+        // Step 5: Collect all reproduction pairs
+        // NOTE: We do NOT exclude dead-from-age organisms from reproduction.
+        // In lib1's flow, reproduction happens BEFORE aging, so organisms that will
+        // die from age still participate in reproduction. We maintain this behavior
+        // by allowing dead organisms to be parents - their offspring carry their genes.
         let reproduction_pairs: Vec<(u64, u64)> = process_results
             .into_iter()
             .flat_map(|result| result.reproduction_pairs)
-            .filter(|(p1_id, p2_id)| !dead_set.contains(p1_id) && !dead_set.contains(p2_id))
             .collect();
 
         // Step 6: Remove organisms that exceeded carrying capacity
-        // (Done BEFORE reproduction - these organisms cannot participate)
+        // (Done BEFORE reproduction - these organisms cannot participate as they are worst performers)
         if !capacity_exceeded.is_empty() {
             self.remove_organisms(&capacity_exceeded);
         }
 
-        // Step 7: Remove organisms that died from age (BEFORE reproduction)
+        // Step 7: Perform reproduction for selected pairs
+        // This happens BEFORE removing dead-from-age organisms, matching lib1's behavior
+        // where reproduction occurs before aging. Dead-from-age organisms can still
+        // participate in reproduction - they pass on their genes before dying.
+        self.perform_reproduction(reproduction_pairs);
+
+        // Step 8: Remove organisms that died from age (AFTER reproduction)
         if !dead_organisms.is_empty() {
             self.remove_organisms(&dead_organisms);
         }
 
-        // Step 8: Perform reproduction for selected pairs
-        self.perform_reproduction(reproduction_pairs);
+        // Step 9: Adjust regions AFTER reproduction is complete
+        // This ensures region keys remain consistent with dead_per_region tracking
+        // throughout the reproduction cycle. The new region structure takes effect
+        // in the NEXT training run.
+        // Return true if at resolution limit (no more useful subdivisions possible)
+        self.adjust_regions_loop()
+    }
 
-        // Always return false - lib3 does not track resolution limits
-        false
+    /// Adjusts regions in a loop - subdivide dimensions until we reach
+    /// the target number of regions or hit the resolution limit.
+    ///
+    /// This is the key mechanism that allows finer-grained search over time.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if at resolution limit, `false` otherwise.
+    fn adjust_regions_loop(&mut self) -> bool {
+        loop {
+            let adjust_result = self.adjust_regions();
+
+            match adjust_result {
+                AdjustRegionsResult::DimensionExpanded { dimension_index } => {
+                    // Dimension was expanded - recalculate region keys for all organisms.
+                    // IMPORTANT: We don't call process_epoch_all here because that would
+                    // increment organism ages multiple times per training_run call.
+                    // Instead, we just recalculate region keys and repopulate regions.
+                    self.recalculate_region_keys_for_dimension(dimension_index);
+                    // Continue loop to potentially expand more dimensions
+                    continue;
+                }
+                AdjustRegionsResult::ExpansionNotNecessary => {
+                    // Target regions reached
+                    return false;
+                }
+                AdjustRegionsResult::AtResolutionLimit => {
+                    // Can't expand further
+                    return true;
+                }
+            }
+        }
     }
 
     /// Removes organisms by ID from the IndexMap using shift_remove to preserve order.

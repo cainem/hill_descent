@@ -167,6 +167,16 @@ impl Organism {
         self.age
     }
 
+    /// Sets the organism's dimensions (used when dimensions are subdivided).
+    pub fn set_dimensions(&mut self, dimensions: Arc<Dimensions>) {
+        self.dimensions = dimensions;
+    }
+
+    /// Sets the organism's region key (used when recalculating after dimension subdivision).
+    pub fn set_region_key(&mut self, region_key: Option<RegionKey>) {
+        self.region_key = region_key;
+    }
+
     // Logic Methods
 
     /// Returns whether this organism has already been successfully processed in the current epoch.

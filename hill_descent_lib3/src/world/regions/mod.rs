@@ -3,6 +3,9 @@
 //! Regions group organisms by their spatial location (region key) and handle
 //! carrying capacity calculation, organism culling, and reproduction selection.
 
+pub mod calculate_dimension_stats;
+pub mod count_unique_values_with_tolerance;
+pub mod find_most_diverse_index;
 pub mod organism_entry;
 pub mod populate;
 pub mod process;

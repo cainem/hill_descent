@@ -51,14 +51,18 @@ impl Region {
         let survivor_count = capacity.min(organism_count);
         let survivors = &self.organisms()[..survivor_count];
 
-        // Step 4: Calculate gaps to fill (gap-filling strategy)
-        // Gaps = organisms removed for capacity + organisms that will die from age
-        let removed_for_capacity = organisms_to_remove.len();
-        let total_deaths = removed_for_capacity + dead_count_in_region;
-
-        // How many offspring needed to fill back to capacity?
-        // Each pair produces 2 offspring, so we need ceil(gaps / 2) pairs
-        let offspring_needed = total_deaths.min(capacity); // Can't exceed capacity
+        // Step 4: Calculate offspring needed to fill to capacity after age deaths
+        //
+        // survivor_count is the count AFTER capacity truncation but BEFORE age deaths.
+        // dead_count_in_region is how many will die from age in this region.
+        // After age deaths, we'll have: survivor_count - min(dead_count_in_region, survivor_count)
+        // We need to fill back to capacity.
+        //
+        // Note: dead_count_in_region may include organisms that were capacity-culled,
+        // so we cap it at survivor_count.
+        let age_deaths_in_survivors = dead_count_in_region.min(survivor_count);
+        let post_death_count = survivor_count - age_deaths_in_survivors;
+        let offspring_needed = capacity.saturating_sub(post_death_count);
         let pairs_needed = offspring_needed.div_ceil(2);
 
         // Step 5: Select top performers for reproduction and pair them
@@ -224,28 +228,33 @@ mod tests {
     // ==================== Region::process tests ====================
 
     #[test]
-    fn given_region_under_capacity_when_process_with_no_deaths_then_no_reproduction() {
+    fn given_region_under_capacity_when_process_with_no_deaths_then_reproduction_fills_to_capacity()
+    {
         let mut region = Region::new();
         region.set_carrying_capacity(10);
         region.add_organism(OrganismEntry::new(1, 0, Some(1.0)));
         region.add_organism(OrganismEntry::new(2, 0, Some(2.0)));
         region.add_organism(OrganismEntry::new(3, 0, Some(3.0)));
 
-        // No deaths = no gaps to fill
+        // 3 organisms, capacity 10, no deaths = need 7 offspring = 4 pairs
+        // But we only have 3 organisms, which with duplication gives us 2 pairs max
         let result = region.process(0);
 
         assert!(
             result.organisms_to_remove.is_empty(),
             "No organisms should be removed when under capacity"
         );
-        assert!(
-            result.reproduction_pairs.is_empty(),
-            "No reproduction when no gaps to fill"
+        // With 3 organisms + top duplicated = 4 positions = 2 pairs
+        // Each pair produces 2 offspring = 4 offspring max
+        assert_eq!(
+            result.reproduction_pairs.len(),
+            2,
+            "2 pairs max from 3 organisms (limited by available parents)"
         );
     }
 
     #[test]
-    fn given_region_under_capacity_when_process_with_deaths_then_reproduction_fills_gaps() {
+    fn given_region_under_capacity_when_process_with_deaths_then_reproduction_fills_to_capacity() {
         let mut region = Region::new();
         region.set_carrying_capacity(10);
         region.add_organism(OrganismEntry::new(1, 0, Some(1.0)));
@@ -253,14 +262,16 @@ mod tests {
         region.add_organism(OrganismEntry::new(3, 0, Some(3.0)));
         region.add_organism(OrganismEntry::new(4, 0, Some(4.0)));
 
-        // 2 deaths = 2 offspring needed = 1 pair
+        // 4 organisms, 2 deaths -> post_death = 2, need 8 offspring = 4 pairs
+        // But we only have 4 organisms = 2 pairs with extreme pairing
         let result = region.process(2);
 
         assert!(result.organisms_to_remove.is_empty());
+        // With 4 organisms = 2 pairs (extreme pairing: best with worst, second with third)
         assert_eq!(
             result.reproduction_pairs.len(),
-            1,
-            "1 pair needed to produce 2 offspring"
+            2,
+            "2 pairs max from 4 organisms (limited by available parents)"
         );
     }
 
@@ -279,21 +290,23 @@ mod tests {
     }
 
     #[test]
-    fn given_region_over_capacity_when_process_then_reproduction_fills_gaps_from_removal() {
+    fn given_region_over_capacity_when_process_then_no_reproduction_when_at_capacity_after_cull() {
         let mut region = Region::new();
         region.set_carrying_capacity(2);
         region.add_organism(OrganismEntry::new(1, 0, Some(1.0)));
         region.add_organism(OrganismEntry::new(2, 0, Some(2.0)));
         region.add_organism(OrganismEntry::new(3, 0, Some(3.0))); // Will be removed
 
-        // 1 removed for capacity + 0 deaths = 1 gap = 1 pair (produces 2, one fills gap)
+        // 3 organisms, capacity 2, 1 removed -> survivor_count = 2
+        // post_death_count = 2 - 0 = 2, offspring_needed = 2 - 2 = 0
         let result = region.process(0);
 
         assert_eq!(result.organisms_to_remove.len(), 1);
+        // After cull, exactly at capacity - no reproduction needed
         assert_eq!(
             result.reproduction_pairs.len(),
-            1,
-            "1 pair to fill the gap from removed organism"
+            0,
+            "No reproduction needed when exactly at capacity after cull"
         );
     }
 
@@ -463,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn given_region_with_deaths_when_process_all_then_reproduction_fills_gaps() {
+    fn given_region_with_deaths_when_process_all_then_reproduction_fills_to_capacity() {
         use crate::parameters::GlobalConstants;
         use crate::world::regions::RegionKey;
         use std::collections::HashMap;
@@ -489,7 +502,7 @@ mod tests {
         let results = regions.process_all(12345, &dead_per_region);
 
         assert_eq!(results.len(), 1);
-        // 2 deaths = 2 offspring needed = 1 pair
-        assert_eq!(results[0].reproduction_pairs.len(), 1);
+        // 4 organisms = 2 pairs max with extreme pairing
+        assert_eq!(results[0].reproduction_pairs.len(), 2);
     }
 }

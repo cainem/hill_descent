@@ -4,8 +4,8 @@
 //! It runs the training inside a single-thread Rayon pool so the execution order
 //! is deterministic.
 //!
-//! Note: The gap-filling reproduction strategy produces different results than
-//! the generational approach - fewer offspring per epoch means slower convergence.
+//! Note: The fill-to-capacity reproduction strategy with dimension subdivision
+//! produces different convergence characteristics than earlier versions.
 
 use hill_descent_lib3::{GlobalConstants, SingleValuedFunction, TrainingData, setup_world};
 use rayon::ThreadPoolBuilder;
@@ -28,8 +28,8 @@ impl SingleValuedFunction for Sphere {
 
 #[test]
 fn given_fixed_seed_when_training_run_in_single_thread_pool_then_best_is_golden() {
-    // Updated golden values after fixing state corruption and score caching issues
-    const EXPECTED_BEST_SCORE: f64 = 2.9769169971382927e-7;
+    // Updated golden values after adding dimension subdivision and fill-to-capacity reproduction
+    const EXPECTED_BEST_SCORE: f64 = 0.0015707753011852058;
     const FLOAT_TOLERANCE: f64 = 1e-10;
 
     let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();

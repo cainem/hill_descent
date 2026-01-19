@@ -19,6 +19,25 @@ impl World {
         &mut self,
         training_data_index: usize,
     ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
+        self.process_epoch_all_with_subdivided_dims(training_data_index, &[])
+    }
+
+    /// Processes an epoch for all organisms, with knowledge of which dimensions were subdivided.
+    ///
+    /// This variant is called after dimension subdivision (not OOB expansion) to ensure
+    /// organisms recalculate their region keys for the subdivided dimensions.
+    ///
+    /// # Arguments
+    ///
+    /// * `training_data_index` - Index into shared training data
+    /// * `subdivided_dims` - Indices of dimensions that were subdivided (need region key recalc)
+    ///
+    /// Returns (dimensions_changed, dead_organism_ids, dead_per_region).
+    pub fn process_epoch_all_with_subdivided_dims(
+        &mut self,
+        training_data_index: usize,
+        subdivided_dims: &[usize],
+    ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
         let mut dimensions_changed = false;
 
         // Increment dimension version at start of each epoch to invalidate cached results
@@ -26,9 +45,15 @@ impl World {
         // Further increments happen on OOB to track retry iterations
         self.dimension_version += 1;
 
-        // These are only set after an out-of-bounds retry
-        let mut dimensions_to_send: Option<Arc<Dimensions>> = None;
-        let mut changed_since_last_attempt: Vec<usize> = Vec::new();
+        // If dimensions were subdivided, we need to send the updated dimensions to all organisms
+        // so they can recalculate their region keys with the new interval counts.
+        let mut dimensions_to_send: Option<Arc<Dimensions>> = if !subdivided_dims.is_empty() {
+            Some(Arc::clone(&self.dimensions))
+        } else {
+            None
+        };
+        // Start with subdivided dimensions (for dimension subdivision), then add OOB dimensions
+        let mut changed_since_last_attempt: Vec<usize> = subdivided_dims.to_vec();
 
         let (dead_organism_ids, dead_per_region) = loop {
             let dim_version = self.dimension_version;

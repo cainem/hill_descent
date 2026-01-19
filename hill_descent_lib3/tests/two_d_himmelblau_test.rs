@@ -42,10 +42,14 @@ pub fn execute() {
 
     // Run for a number of epochs to allow the system to find a minimum.
     for i in 0..2000 {
+        let org_count_before = world.organism_count();
+
         // Objective-function mode: use TrainingData::None with function floor
         let at_resolution_limit = world.training_run(TrainingData::None {
             floor_value: Himmelblau.function_floor(),
         });
+
+        let org_count_after = world.organism_count();
 
         // Get the current best score from organisms
         let current_best = world.get_best_score();
@@ -54,12 +58,20 @@ pub fn execute() {
             best_score = current_best;
         }
 
-        if at_resolution_limit {
+        if i < 15 {
+            println!(
+                "Epoch {i}: orgs before={}, after={}, best score={:e}",
+                org_count_before, org_count_after, best_score
+            );
+        }
+
+        if at_resolution_limit && i > 100 {
+            // Only respect resolution limit after some epochs have run
             println!("Resolution limit reached at epoch {i}");
             break;
         }
 
-        if i % 100 == 0 {
+        if i % 100 == 0 && i > 0 {
             println!("Epoch {i}: Best score so far: {best_score}");
         }
     }
