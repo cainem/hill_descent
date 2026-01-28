@@ -35,8 +35,10 @@ impl World {
                 // Update organism's dimensions to the new subdivided dimensions
                 org.set_dimensions(Arc::clone(&new_dimensions));
 
-                // Get the organism's current region key and update the subdivided dimension
-                if let Some(mut region_key) = org.region_key() {
+                // Take the organism's region key (leaves None in place) to avoid Arc refcount
+                // increment, which would cause expensive cloning in Arc::make_mut during
+                // update_position calls.
+                if let Some(mut region_key) = org.take_region_key() {
                     // Calculate new interval for the subdivided dimension
                     let expressed = org.phenotype().expression_problem_values();
                     if dimension_index < expressed.len() {

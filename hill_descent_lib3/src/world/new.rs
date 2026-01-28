@@ -30,8 +30,7 @@ impl World {
         let population_size = global_constants.population_size();
 
         // Generate initial organisms into IndexMap (maintains insertion order for determinism)
-        let mut organisms: IndexMap<u64, Arc<Organism>> =
-            IndexMap::with_capacity(population_size);
+        let mut organisms: IndexMap<u64, Arc<Organism>> = IndexMap::with_capacity(population_size);
 
         for organism_id in 0..(population_size as u64) {
             let phenotype = Arc::new(Phenotype::new_random_phenotype(&mut rng, &extended_bounds));

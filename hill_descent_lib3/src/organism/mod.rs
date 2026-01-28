@@ -205,6 +205,17 @@ impl Organism {
         self.region_key.lock().unwrap().clone()
     }
 
+    /// Takes the region key from the organism, leaving None in its place.
+    ///
+    /// This is more efficient than `region_key()` when you need to mutate the key,
+    /// as it avoids incrementing the Arc refcount and thus prevents `Arc::make_mut`
+    /// from cloning the underlying Vec during `update_position()` calls.
+    ///
+    /// Thread-safe via Mutex.
+    pub fn take_region_key(&self) -> Option<RegionKey> {
+        self.region_key.lock().unwrap().take()
+    }
+
     /// Returns the current fitness score.
     /// Thread-safe atomic read.
     pub fn score(&self) -> Option<f64> {
@@ -321,8 +332,10 @@ impl Organism {
         // Get current dimensions
         let current_dims = self.dimensions.load_full().expect("Dimensions not set");
 
-        // Clone the region key rather than taking it, so we preserve state on OOB
-        let current_key = self.region_key.lock().unwrap().clone();
+        // Take the region key rather than cloning - this avoids incrementing the Arc refcount,
+        // which prevents expensive Arc::make_mut cloning during update_position calls.
+        // On OOB, the key stays None which triggers a full recalculation on retry.
+        let current_key = self.take_region_key();
         let cached_dim_version = self.dimension_version.load(Ordering::Acquire);
 
         let result = process_epoch_impl::process_epoch(
@@ -331,7 +344,7 @@ impl Organism {
             &self.world_function,
             self.age(),
             training_data_index,
-            current_key,
+            current_key, // Move ownership - no clone needed
             cached_dim_version,
             dimension_version,
             &changed_dimensions,
@@ -354,8 +367,8 @@ impl Organism {
                 }
             }
             ProcessEpochResult::OutOfBounds { .. } => {
-                // Preserve existing state on out of bounds - key stays intact for retry
-                // Don't update dimension_version so incremental update works on retry
+                // Key stays None (taken above) which triggers full recalculation on retry.
+                // Don't update dimension_version so incremental update works on retry.
             }
         }
 

@@ -116,8 +116,8 @@ impl Dimensions {
 #[cfg(test)]
 mod tests {
     use crate::parameters::GlobalConstants;
-    use crate::world::single_valued_function::SingleValuedFunction;
     use crate::world::World;
+    use crate::world::single_valued_function::SingleValuedFunction;
     use std::ops::RangeInclusive;
 
     #[derive(Debug)]
@@ -159,7 +159,8 @@ mod tests {
     }
 
     #[test]
-    fn given_organisms_with_narrow_spread_when_adjusting_limits_then_range_adjusts_to_organism_span() {
+    fn given_organisms_with_narrow_spread_when_adjusting_limits_then_range_adjusts_to_organism_span()
+     {
         // Start with a very wide range
         let bounds: Vec<RangeInclusive<f64>> = vec![-100.0..=100.0];
         let constants = GlobalConstants::new_with_seed(100, 10, 42);
