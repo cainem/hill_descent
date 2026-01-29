@@ -319,14 +319,14 @@ impl Organism {
     /// enabling lock-free access from the World.
     pub fn process_epoch(
         &self,
-        dimensions: Option<Arc<Dimensions>>,
+        dimensions: Option<&Arc<Dimensions>>,
         dimension_version: u64,
-        changed_dimensions: Vec<usize>,
+        changed_dimensions: &[usize],
         training_data_index: usize,
     ) -> ProcessEpochResult {
         // Update dimensions if provided (atomic via ArcSwap)
         if let Some(dims) = dimensions {
-            self.dimensions.store(Some(dims));
+            self.dimensions.store(Some(Arc::clone(dims)));
         }
 
         // Get current dimensions
@@ -347,7 +347,7 @@ impl Organism {
             current_key, // Move ownership - no clone needed
             cached_dim_version,
             dimension_version,
-            &changed_dimensions,
+            changed_dimensions,
         );
 
         // Update cached state based on result (using atomic operations)

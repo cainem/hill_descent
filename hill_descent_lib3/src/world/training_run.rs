@@ -119,10 +119,22 @@ impl World {
         }
     }
 
-    /// Removes organisms by ID from the IndexMap using shift_remove to preserve order.
+    /// Removes organisms by ID from the IndexMap while preserving order.
+    /// Uses batch retain for O(N) performance instead of O(M*N).
     fn remove_organisms(&mut self, ids: &[u64]) {
-        for id in ids {
-            self.organisms.shift_remove(id);
+        if ids.is_empty() {
+            return;
+        }
+
+        // For very small numbers of removals, shift_remove is efficient enough.
+        // For larger numbers, we use retain with a HashSet to avoid O(N^2) behavior.
+        if ids.len() < 10 {
+            for id in ids {
+                self.organisms.shift_remove(id);
+            }
+        } else {
+            let id_set: std::collections::HashSet<u64> = ids.iter().copied().collect();
+            self.organisms.retain(|id, _| !id_set.contains(id));
         }
     }
 }
