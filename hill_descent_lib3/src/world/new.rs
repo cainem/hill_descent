@@ -60,6 +60,7 @@ impl World {
             best_params: Vec::new(),
             next_organism_id: population_size as u64,
             world_seed,
+            epoch_count: 0,
         }
     }
 }

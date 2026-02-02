@@ -28,7 +28,8 @@ impl World {
         }
 
         // Create a deterministic RNG for reproduction seeds
-        let mut rng = StdRng::seed_from_u64(self.world_seed.wrapping_add(self.dimension_version));
+        // Uses epoch_count (not dimension_version) to ensure different seeds each epoch
+        let mut rng = StdRng::seed_from_u64(self.world_seed.wrapping_add(self.epoch_count));
 
         // Pre-generate all reproduction seeds for determinism
         // (seeds must be generated in order before parallel reproduction)

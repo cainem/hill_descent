@@ -43,6 +43,9 @@ pub struct World {
 
     /// World seed for deterministic behavior
     pub(super) world_seed: u64,
+
+    /// Epoch counter for reproduction RNG seeding (increments every epoch)
+    pub(super) epoch_count: u64,
 }
 
 impl World {

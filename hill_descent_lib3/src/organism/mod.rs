@@ -313,6 +313,65 @@ impl Organism {
         })
     }
 
+    /// Returns whether this organism has a valid cached region key for the given dimension version.
+    /// Used to determine if we can skip region key calculation (but still need fitness eval).
+    pub fn has_valid_region_key(&self, dimension_version: u64) -> bool {
+        self.dimension_version.load(Ordering::Acquire) == dimension_version
+            && self.region_key.lock().unwrap().is_some()
+    }
+
+    /// Processes an epoch using cached region key but fresh fitness evaluation and age increment.
+    ///
+    /// This is an optimization for when dimensions haven't changed - we reuse the cached
+    /// region key but still evaluate fitness (training data may vary) and increment age.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called without a valid cached region key.
+    pub fn process_epoch_with_cached_region_key(
+        &self,
+        training_data_index: usize,
+    ) -> ProcessEpochResult {
+        // Get cached region key (must exist - caller should check has_valid_region_key first)
+        let region_key = self
+            .region_key
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("process_epoch_with_cached_region_key called without valid cached key");
+
+        // Get current age before incrementing
+        let current_age = self.age();
+
+        // Evaluate fitness (training data may have changed)
+        let (fitness_result, score) = evaluate_fitness_impl::evaluate_fitness(
+            &self.phenotype,
+            &self.world_function,
+            &region_key,
+            current_age,
+            training_data_index,
+        );
+
+        // Increment age and check death
+        let max_age = self.phenotype.system_parameters().max_age();
+        let (age_result, new_age, _) =
+            increment_age_impl::increment_age(fitness_result.age, max_age);
+
+        // Update cached state
+        self.set_score(Some(score));
+        self.set_age(new_age);
+        if age_result.should_remove {
+            self.mark_dead();
+        }
+
+        ProcessEpochResult::Ok {
+            region_key,
+            score,
+            new_age,
+            should_remove: age_result.should_remove,
+        }
+    }
+
     /// Processes an organism's epoch: calculates region key, evaluates fitness, and increments age.
     ///
     /// This method uses interior mutability (atomics and mutex) rather than &mut self,

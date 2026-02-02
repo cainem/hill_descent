@@ -40,10 +40,15 @@ impl World {
     ) -> (bool, Vec<u64>, HashMap<RegionKey, usize>) {
         let mut dimensions_changed = false;
 
-        // Increment dimension version at start of each epoch to invalidate cached results
-        // This ensures organisms are re-evaluated each epoch (age increment, etc.)
-        // Further increments happen on OOB to track retry iterations
-        self.dimension_version += 1;
+        // Increment epoch counter for reproduction RNG seeding
+        self.epoch_count += 1;
+
+        // Only increment dimension version when dimensions actually change.
+        // This allows organisms to use cached region keys when dimensions are stable.
+        // Further increments happen on OOB to track retry iterations.
+        if !subdivided_dims.is_empty() {
+            self.dimension_version += 1;
+        }
 
         // If dimensions were subdivided, we need to send the updated dimensions to all organisms
         // so they can recalculate their region keys with the new interval counts.
@@ -80,25 +85,20 @@ impl World {
                 .organisms
                 .par_iter()
                 .fold(
-                    || StepResult::Success(SuccessData {
-                        region_entries: Vec::new(),
-                        dead_ids: Vec::new(),
-                        dead_per_region_map: HashMap::new(),
-                        best_score: f64::MAX,
-                        best_id: None,
-                    }),
+                    || {
+                        StepResult::Success(SuccessData {
+                            region_entries: Vec::new(),
+                            dead_ids: Vec::new(),
+                            dead_per_region_map: HashMap::new(),
+                            best_score: f64::MAX,
+                            best_id: None,
+                        })
+                    },
                     |mut acc, (_, org)| {
-                        // First check if we can use cached result (score caching optimization)
-                        let res = if org.is_epoch_complete(dim_version) {
-                            org.get_cached_epoch_result().unwrap_or_else(|| {
-                                // Fallback if cache check failed (theoretical race)
-                                org.process_epoch(
-                                    current_dims_arg.as_ref(),
-                                    dim_version,
-                                    current_changed_dims,
-                                    training_data_index,
-                                )
-                            })
+                        // Check if we can use cached region key (dimensions unchanged)
+                        // We still need to evaluate fitness (training data may differ) and increment age
+                        let res = if org.has_valid_region_key(dim_version) {
+                            org.process_epoch_with_cached_region_key(training_data_index)
                         } else {
                             org.process_epoch(
                                 current_dims_arg.as_ref(),
@@ -118,10 +118,11 @@ impl World {
                                 if let StepResult::Success(ref mut data) = acc {
                                     let entry = OrganismEntry::new(org.id(), new_age, Some(score));
                                     data.region_entries.push((region_key.clone(), entry));
-                                    
+
                                     if should_remove {
                                         data.dead_ids.push(org.id());
-                                        *data.dead_per_region_map.entry(region_key).or_insert(0) += 1;
+                                        *data.dead_per_region_map.entry(region_key).or_insert(0) +=
+                                            1;
                                     }
 
                                     if score < data.best_score {
@@ -130,32 +131,34 @@ impl World {
                                     }
                                 }
                             }
-                            ProcessEpochResult::OutOfBounds { dimensions_exceeded } => {
-                                match acc {
-                                    StepResult::Oob(ref mut dims) => {
-                                        for d in dimensions_exceeded {
-                                            if !dims.contains(&d) {
-                                                dims.push(d);
-                                            }
+                            ProcessEpochResult::OutOfBounds {
+                                dimensions_exceeded,
+                            } => match acc {
+                                StepResult::Oob(ref mut dims) => {
+                                    for d in dimensions_exceeded {
+                                        if !dims.contains(&d) {
+                                            dims.push(d);
                                         }
                                     }
-                                    StepResult::Success(_) => {
-                                        acc = StepResult::Oob(dimensions_exceeded);
-                                    }
                                 }
-                            }
+                                StepResult::Success(_) => {
+                                    acc = StepResult::Oob(dimensions_exceeded);
+                                }
+                            },
                         }
                         acc
                     },
                 )
                 .reduce(
-                    || StepResult::Success(SuccessData {
-                        region_entries: Vec::new(),
-                        dead_ids: Vec::new(),
-                        dead_per_region_map: HashMap::new(),
-                        best_score: f64::MAX,
-                        best_id: None,
-                    }),
+                    || {
+                        StepResult::Success(SuccessData {
+                            region_entries: Vec::new(),
+                            dead_ids: Vec::new(),
+                            dead_per_region_map: HashMap::new(),
+                            best_score: f64::MAX,
+                            best_id: None,
+                        })
+                    },
                     |acc1, acc2| match (acc1, acc2) {
                         (StepResult::Oob(mut d1), StepResult::Oob(d2)) => {
                             for d in d2 {

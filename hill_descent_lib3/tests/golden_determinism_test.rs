@@ -28,8 +28,10 @@ impl SingleValuedFunction for Sphere {
 
 #[test]
 fn given_fixed_seed_when_training_run_in_single_thread_pool_then_best_is_golden() {
-    // Updated golden values after adding dimension subdivision and fill-to-capacity reproduction
-    const EXPECTED_BEST_SCORE: f64 = 0.0015707753011852058;
+    // Golden value after implementing region key caching with separate epoch_count.
+    // The epoch_count provides more predictable reproduction seeding than dimension_version
+    // (which also changed on OOB events and dimension adjustments).
+    const EXPECTED_BEST_SCORE: f64 = 5.745927375727669e-5;
     const FLOAT_TOLERANCE: f64 = 1e-10;
 
     let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
