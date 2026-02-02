@@ -1,6 +1,4 @@
-use hill_descent_lib2::{
-    GlobalConstants, SingleValuedFunction, TrainingData, World,
-};
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData, World};
 use std::ops::RangeInclusive;
 
 // Ackley function (2D) is a widely-used multimodal benchmark for optimization.

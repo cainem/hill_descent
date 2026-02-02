@@ -1,4 +1,5 @@
 use rand::Rng;
+use std::sync::Arc;
 
 use crate::world::{organisms::organism::Organism, regions::region::Region};
 
@@ -23,8 +24,12 @@ impl Region {
     /// 4. If carrying capacity allows and population is still low, repeat reproduction passes
     ///    up to REPRODUCTION_FACTOR times using only the original organisms.
     ///
-    /// The resulting offspring are returned as a `Vec<Organism>` with age 0 and no score.
-    pub fn reproduce<R: Rng>(&mut self, number_to_reproduce: usize, rng: &mut R) -> Vec<Organism> {
+    /// The resulting offspring are returned as a `Vec<Arc<Organism>>` with age 0 and no score.
+    pub fn reproduce<R: Rng>(
+        &mut self,
+        number_to_reproduce: usize,
+        rng: &mut R,
+    ) -> Vec<Arc<Organism>> {
         if number_to_reproduce == 0 || self.organisms.is_empty() {
             return Vec::new();
         }

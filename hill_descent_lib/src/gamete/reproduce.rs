@@ -2,7 +2,6 @@ use crate::{NUM_SYSTEM_PARAMETERS, parameters::system_parameters::SystemParamete
 
 use super::Gamete;
 use rand::Rng;
-use rand::seq::SliceRandom;
 
 impl Gamete {
     /// Performs multi-point crossover with `crossovers` points and returns two offspring gametes.
@@ -22,10 +21,21 @@ impl Gamete {
             "Number of crossovers must satisfy len > 2 * crossovers"
         );
         // Generate unique, sorted crossover points between 1 and len-1
-        let mut points: Vec<usize> = (1..len).collect();
-        points.shuffle(rng);
-        points.truncate(crossovers);
-        points.sort_unstable();
+        let mut points = Vec::with_capacity(crossovers);
+        if crossovers > 0 {
+            if crossovers == 1 {
+                points.push(rng.random_range(1..len));
+            } else {
+                // For small number of crossovers, simple rejection sampling is faster than shuffling full range
+                while points.len() < crossovers {
+                    let cp = rng.random_range(1..len);
+                    if !points.contains(&cp) {
+                        points.push(cp);
+                    }
+                }
+                points.sort_unstable();
+            }
+        }
         // Perform crossover
         let mut offspring1 = Vec::with_capacity(len);
         let mut offspring2 = Vec::with_capacity(len);

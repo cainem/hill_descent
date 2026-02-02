@@ -52,11 +52,28 @@ impl Organisms {
         self.organisms.append(&mut others);
     }
 
+    /// Adds a single organism to the collection.
+    pub fn push(&mut self, organism: Arc<Organism>) {
+        self.organisms.push(organism);
+    }
+
     /// Creates an empty `Organisms` collection.
     pub fn new_empty() -> Self {
         Self {
             organisms: Vec::new(),
         }
+    }
+
+    /// Creates an empty `Organisms` collection with space for `capacity` organisms.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            organisms: Vec::with_capacity(capacity),
+        }
+    }
+
+    /// Returns the capacity of the underlying vector.
+    pub fn capacity(&self) -> usize {
+        self.organisms.capacity()
     }
 
     /// Creates a new `Organisms` collection from a vector of `Arc<Organism>`.
@@ -67,6 +84,15 @@ impl Organisms {
     /// Consumes the collection and returns the underlying vector.
     pub fn into_inner(self) -> Vec<Arc<Organism>> {
         self.organisms
+    }
+}
+
+impl IntoIterator for Organisms {
+    type Item = Arc<Organism>;
+    type IntoIter = std::vec::IntoIter<Arc<Organism>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.organisms.into_iter()
     }
 }
 

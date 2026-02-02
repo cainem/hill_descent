@@ -25,8 +25,8 @@ impl Region {
         number_to_reproduce: usize,
         max_passes: usize,
         rng: &mut R,
-    ) -> Vec<Organism> {
-        let mut all_offspring: Vec<Organism> = Vec::new();
+    ) -> Vec<Arc<Organism>> {
+        let mut all_offspring: Vec<Arc<Organism>> = Vec::new();
         let mut remaining_to_reproduce = number_to_reproduce;
 
         // Reproduction passes

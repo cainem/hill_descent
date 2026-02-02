@@ -3,7 +3,7 @@ use crate::world::organisms::organism::Organism;
 use crate::world::world_function::WorldFunction;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use rayon::prelude::*;
+use std::sync::Arc;
 
 impl Region {
     /// Processes region's complete lifecycle independently (designed for parallel execution).
@@ -14,11 +14,12 @@ impl Region {
         inputs: &[f64],
         known_outputs: &[f64],
         region_seed: u64,
-    ) -> Vec<Organism> {
-        // 1. Fitness evaluation (parallel within region for expensive fitness functions)
-        self.organisms.par_iter().for_each(|organism| {
+    ) -> Vec<Arc<Organism>> {
+        // 1. Fitness evaluation (sequential within region since outer loop is already parallelized)
+        // Parallelizing here adds significant Rayon overhead for trivial fitness functions.
+        for organism in self.organisms.iter() {
             organism.run(world_function, inputs, known_outputs);
-        });
+        }
 
         // 2. Sort by fitness (best first) then age (older first)
         self.organisms.sort_by(|a, b| {

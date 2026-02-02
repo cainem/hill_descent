@@ -1,6 +1,4 @@
-use hill_descent_lib2::{
-    GlobalConstants, SingleValuedFunction, TrainingData, World,
-};
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData, World};
 use std::ops::RangeInclusive;
 
 // Bukin function N.6 is a challenging optimization test function with a narrow curved valley.

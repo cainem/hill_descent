@@ -21,7 +21,7 @@ impl Regions {
         let mut region_entries: Vec<_> = self.regions.iter_mut().collect();
         region_entries.sort_by(|a, b| b.1.organisms().len().cmp(&a.1.organisms().len()));
 
-        let all_offspring: Vec<Vec<Organism>> = region_entries
+        let all_offspring: Vec<Vec<Arc<Organism>>> = region_entries
             .par_iter_mut()
             .map(|(region_key, region)| {
                 let region_seed = derive_region_seed(world_seed, region_key);
@@ -35,23 +35,12 @@ impl Regions {
         // In practice, population is usually smaller than max, so this avoids over-allocation
         let capacity = self.population_size + (self.population_size / 10).max(100);
         let mut all_organisms: Vec<Arc<Organism>> = Vec::with_capacity(capacity);
-        for (_key, region) in self.regions.iter() {
-            for organism in region.organisms() {
-                all_organisms.push(Arc::clone(organism));
-            }
-        }
-
-        // Clear organisms from all regions (they will be redistributed in update)
-        for (_key, region) in self.regions.iter_mut() {
-            region.clear_organisms();
+        for region in self.regions.values_mut() {
+            all_organisms.extend(region.take_organisms());
         }
 
         // Add offspring directly via iterator (no intermediate Vec allocation)
-        all_organisms.extend(
-            all_offspring
-                .into_iter()
-                .flat_map(|v| v.into_iter().map(Arc::new)),
-        );
+        all_organisms.extend(all_offspring.into_iter().flatten());
 
         Organisms::new_from_arc_vec(all_organisms)
     }

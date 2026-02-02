@@ -1,6 +1,4 @@
-use hill_descent_lib2::{
-    GlobalConstants, SingleValuedFunction, TrainingData, World,
-};
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData, World};
 use std::ops::RangeInclusive;
 
 // Schaffer function N.2 is a multimodal test function with smooth areas and ripples.

@@ -1,6 +1,4 @@
-use hill_descent_lib2::{
-    GlobalConstants, SingleValuedFunction, TrainingData, World,
-};
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData, World};
 use std::ops::RangeInclusive;
 
 // Himmelblau's function is a standard test function for optimization algorithms.

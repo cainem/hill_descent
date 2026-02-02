@@ -1,6 +1,4 @@
-use hill_descent_lib2::{
-    GlobalConstants, SingleValuedFunction, TrainingData, World,
-};
+use hill_descent_lib2::{GlobalConstants, SingleValuedFunction, TrainingData, World};
 use std::ops::RangeInclusive;
 
 // Styblinski–Tang function is a multimodal test function with many local minima.

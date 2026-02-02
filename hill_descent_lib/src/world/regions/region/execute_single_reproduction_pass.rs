@@ -19,7 +19,7 @@ impl Region {
         selected_organisms: &[Arc<Organism>],
         max_offspring_this_pass: usize,
         rng: &mut R,
-    ) -> Vec<Organism> {
+    ) -> Vec<Arc<Organism>> {
         let mut offspring = Vec::new();
 
         // Pair organisms for reproduction using extreme pairing strategy
