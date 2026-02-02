@@ -9,21 +9,30 @@ pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -
     if loci1.len() != loci2.len() {
         panic!("Gametes must have same number of loci");
     }
-    let max_u64 = u64::MAX as f64;
+    let max_u64_f64 = u64::MAX as f64;
     let mut result = Vec::with_capacity(loci1.len());
     for (l1, l2) in loci1.iter().zip(loci2.iter()) {
         let c1 = l1.adjustment().checksum();
         let c2 = l2.adjustment().checksum();
-        let (a, b) = if c1 <= c2 { (l1, l2) } else { (l2, l1) };
-        let ca = a.adjustment().checksum() as f64 / max_u64;
-        let cb = b.adjustment().checksum() as f64 / max_u64;
-        let midpoint = (ca + cb) / 2.0;
-        let r = rng.random_range(0.0..1.0);
-        let checksums_are_equal = a.adjustment().checksum() == b.adjustment().checksum();
-        let value = if (checksums_are_equal && r < 0.5) || (!checksums_are_equal && r <= midpoint) {
-            a.value().get()
+
+        let value = if c1 == c2 {
+            if rng.random_bool(0.5) {
+                l1.value().get()
+            } else {
+                l2.value().get()
+            }
         } else {
-            b.value().get()
+            let (a, b, ca, cb) = if c1 < c2 {
+                (l1, l2, c1, c2)
+            } else {
+                (l2, l1, c2, c1)
+            };
+            let midpoint = (ca as f64 + cb as f64) / (2.0 * max_u64_f64);
+            if rng.random_range(0.0..1.0) <= midpoint {
+                a.value().get()
+            } else {
+                b.value().get()
+            }
         };
         result.push(value);
     }

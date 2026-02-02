@@ -38,8 +38,15 @@ impl Locus {
                 new_adj_val.set(new_adj_val.get() / 2.0);
             }
         }
-        // Rebuild adjustment (checksum updated)
-        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Rebuild adjustment only if any properties changed to avoid redundant hashing
+        let new_adjustment = if new_adj_val != *self.adjustment.adjustment_value()
+            || new_direction != self.adjustment.direction_of_travel()
+            || new_double_flag != self.adjustment.doubling_or_halving_flag()
+        {
+            LocusAdjustment::new(new_adj_val, new_direction, new_double_flag)
+        } else {
+            self.adjustment.clone()
+        };
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
             if dists.m2.sample(rng) {
@@ -93,8 +100,15 @@ impl Locus {
                 new_adj_val.set(new_adj_val.get() / 2.0);
             }
         }
-        // Rebuild adjustment (checksum updated)
-        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Rebuild adjustment only if any properties changed to avoid redundant hashing
+        let new_adjustment = if new_adj_val != *self.adjustment.adjustment_value()
+            || new_direction != self.adjustment.direction_of_travel()
+            || new_double_flag != self.adjustment.doubling_or_halving_flag()
+        {
+            LocusAdjustment::new(new_adj_val, new_direction, new_double_flag)
+        } else {
+            self.adjustment.clone()
+        };
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
             if dists.m2.sample(rng) {
