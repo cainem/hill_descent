@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-02-04
+### Changed
+- Significant performance improvements across genetic operations (~20-40% faster execution)
+- Optimized mutation operations by pre-calculating Bernoulli distributions
+- Improved LocusAdjustment to avoid redundant rebuilds when values are unchanged
+- Enhanced Arc usage and reduced unnecessary clones in reproduction
+- Better thread pool load balancing and synchronization
+- Implemented incremental region key updates for more efficient spatial indexing
+
+### Internal
+- Added MutationDistributions struct for caching Bernoulli distributions (internal only)
+- Optimized gamete reproduction, locus mutation, and phenotype expression
+- Improved region processing and organism management performance
+
 ## [0.2.0] - 2025-11-21
 ### Added
 - Introduced the `TrainingData` enum to unify how supervised and unsupervised runs are configured.
