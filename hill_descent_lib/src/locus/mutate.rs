@@ -2,23 +2,24 @@
 use super::Locus; // Locus struct is defined in src/locus/mod.rs
 use crate::{
     locus::locus_adjustment::{DirectionOfTravel, LocusAdjustment},
-    parameters::system_parameters::SystemParameters,
+    parameters::system_parameters::MutationDistributions,
 };
 use rand::Rng;
+use rand::distr::Distribution;
 
 impl Locus {
     /// Applies PDD mutation rules to this locus, returning a new one.
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "trace", skip(self, rng, sys))
+        tracing::instrument(level = "trace", skip(self, rng, dists))
     )]
-    pub fn mutate<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, dists: &MutationDistributions) -> Self {
         let mut new_adj_val = *self.adjustment.adjustment_value();
         let mut new_direction = self.adjustment.direction_of_travel();
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
         // Direction mutation (m4)
-        if rng.random_bool(sys.m4()) {
+        if dists.m4.sample(rng) {
             new_direction = match new_direction {
                 DirectionOfTravel::Add => DirectionOfTravel::Subtract,
                 DirectionOfTravel::Subtract => DirectionOfTravel::Add,
@@ -26,28 +27,36 @@ impl Locus {
             new_double_flag = !new_double_flag;
         }
         // Doubling flag mutation (m3)
-        if rng.random_bool(sys.m3()) {
+        if dists.m3.sample(rng) {
             new_double_flag = !new_double_flag;
         }
         // Adjustment value mutation (m5)
-        if rng.random_bool(sys.m5()) {
+        if dists.m5.sample(rng) {
             if new_double_flag {
                 new_adj_val.set(new_adj_val.get() * 2.0);
             } else {
                 new_adj_val.set(new_adj_val.get() / 2.0);
             }
         }
-        // Rebuild adjustment (checksum updated)
-        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Rebuild adjustment only if any properties changed to avoid redundant hashing
+        let new_adjustment = if new_adj_val != *self.adjustment.adjustment_value()
+            || new_direction != self.adjustment.direction_of_travel()
+            || new_double_flag != self.adjustment.doubling_or_halving_flag()
+        {
+            LocusAdjustment::new(new_adj_val, new_direction, new_double_flag)
+        } else {
+            self.adjustment.clone()
+        };
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
-            if rng.random_bool(sys.m2()) {
+            if dists.m2.sample(rng) {
                 new_apply_flag = false;
             }
-        } else if rng.random_bool(sys.m1()) {
+        } else if dists.m1.sample(rng) {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true
+
         let mut new_value = self.value;
         if new_apply_flag {
             let sign = match new_adjustment.direction_of_travel() {
@@ -64,15 +73,15 @@ impl Locus {
     /// Used for non-system parameters that should be allowed to mutate freely.
     #[cfg_attr(
         feature = "enable-tracing",
-        tracing::instrument(level = "trace", skip(self, rng, sys))
+        tracing::instrument(level = "trace", skip(self, rng, dists))
     )]
-    pub fn mutate_unbound<R: Rng>(&self, rng: &mut R, sys: &SystemParameters) -> Self {
+    pub fn mutate_unbound<R: Rng>(&self, rng: &mut R, dists: &MutationDistributions) -> Self {
         let mut new_adj_val = *self.adjustment.adjustment_value();
         let mut new_direction = self.adjustment.direction_of_travel();
         let mut new_double_flag = self.adjustment.doubling_or_halving_flag();
         let mut new_apply_flag = self.apply_adjustment_flag();
         // Direction mutation (m4)
-        if rng.random_bool(sys.m4()) {
+        if dists.m4.sample(rng) {
             new_direction = match new_direction {
                 DirectionOfTravel::Add => DirectionOfTravel::Subtract,
                 DirectionOfTravel::Subtract => DirectionOfTravel::Add,
@@ -80,25 +89,32 @@ impl Locus {
             new_double_flag = !new_double_flag;
         }
         // Doubling flag mutation (m3)
-        if rng.random_bool(sys.m3()) {
+        if dists.m3.sample(rng) {
             new_double_flag = !new_double_flag;
         }
         // Adjustment value mutation (m5)
-        if rng.random_bool(sys.m5()) {
+        if dists.m5.sample(rng) {
             if new_double_flag {
                 new_adj_val.set(new_adj_val.get() * 2.0);
             } else {
                 new_adj_val.set(new_adj_val.get() / 2.0);
             }
         }
-        // Rebuild adjustment (checksum updated)
-        let new_adjustment = LocusAdjustment::new(new_adj_val, new_direction, new_double_flag);
+        // Rebuild adjustment only if any properties changed to avoid redundant hashing
+        let new_adjustment = if new_adj_val != *self.adjustment.adjustment_value()
+            || new_direction != self.adjustment.direction_of_travel()
+            || new_double_flag != self.adjustment.doubling_or_halving_flag()
+        {
+            LocusAdjustment::new(new_adj_val, new_direction, new_double_flag)
+        } else {
+            self.adjustment.clone()
+        };
         // Apply flag mutation (m1/m2)
         if new_apply_flag {
-            if rng.random_bool(sys.m2()) {
+            if dists.m2.sample(rng) {
                 new_apply_flag = false;
             }
-        } else if rng.random_bool(sys.m1()) {
+        } else if dists.m1.sample(rng) {
             new_apply_flag = true;
         }
         // Apply adjustment to value if flag is true (without clamping)
@@ -169,7 +185,7 @@ mod tests {
         let mut rng = SmallRng::seed_from_u64(0);
         // m1, m2, m3, m4, m5, max_age, crossover_points all 0.0
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(mutated_locus, initial_locus);
     }
 
@@ -179,7 +195,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]); // m4 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(
             mutated_locus.adjustment().direction_of_travel(),
             DirectionOfTravel::Subtract
@@ -193,7 +209,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Subtract, true, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]); // m4 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(
             mutated_locus.adjustment().direction_of_travel(),
             DirectionOfTravel::Add
@@ -207,7 +223,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]); // m3 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(mutated_locus.adjustment().doubling_or_halving_flag());
     }
 
@@ -217,7 +233,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, true, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]); // m3 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(!mutated_locus.adjustment().doubling_or_halving_flag());
     }
 
@@ -227,7 +243,7 @@ mod tests {
             create_test_locus_detailed(1.0, 2.0, DirectionOfTravel::Add, true, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 4.0);
     }
 
@@ -237,7 +253,7 @@ mod tests {
             create_test_locus_detailed(1.0, 2.0, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 1.0);
     }
 
@@ -248,7 +264,7 @@ mod tests {
             create_test_locus_detailed(1.0, 6.0, DirectionOfTravel::Add, true, false); // 6.0 * 2 = 12.0, should clamp to 10.0
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         let expected_max_adj_val =
             (100.0 * LocusAdjustment::ADJUSTMENT_VALUE_BOUND_PERCENTAGE).max(E0);
         assert_eq!(
@@ -278,9 +294,10 @@ mod tests {
         // System parameters that encourage mutation
         let sys = SystemParameters::new(&[1.0, 1.0, 1.0, 1.0, 1.0, 100.0, 2.0]); // High mutation probs
 
+        let dists = sys.mutation_distributions();
         // Mutate many times
         for i in 0..5000 {
-            locus = locus.mutate(&mut rng, &sys);
+            locus = locus.mutate(&mut rng, &dists);
             let current_value = locus.value().get();
             // Assert that the value never leaves the bounds defined in the Parameter.
             assert!(
@@ -297,7 +314,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 0.05);
     }
 
@@ -308,7 +325,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.0, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]); // m5 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(mutated_locus.adjustment().adjustment_value().get(), 0.0);
     }
 
@@ -318,7 +335,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m1 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(mutated_locus.apply_adjustment_flag());
     }
 
@@ -328,7 +345,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, true);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m2 = 1.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(!mutated_locus.apply_adjustment_flag());
     }
 
@@ -338,7 +355,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, false);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m1 = 0.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(!mutated_locus.apply_adjustment_flag());
     }
 
@@ -348,7 +365,7 @@ mod tests {
             create_test_locus_detailed(1.0, 0.1, DirectionOfTravel::Add, false, true);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m2 = 0.0
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(mutated_locus.apply_adjustment_flag());
     }
 
@@ -366,7 +383,7 @@ mod tests {
         );
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m1 = 1.0 to activate apply_flag
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(mutated_locus.apply_adjustment_flag());
         assert_eq!(mutated_locus.value().get(), initial_value + adj_val);
     }
@@ -385,7 +402,7 @@ mod tests {
         );
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m1 = 1.0 to activate apply_flag
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(mutated_locus.apply_adjustment_flag());
         assert_eq!(mutated_locus.value().get(), initial_value - adj_val);
     }
@@ -399,7 +416,7 @@ mod tests {
             create_test_locus_detailed(initial_value, adj_val, DirectionOfTravel::Add, false, true);
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // m2 = 1.0 to deactivate apply_flag
-        let mutated_locus = initial_locus.mutate(&mut rng, &sys);
+        let mutated_locus = initial_locus.mutate(&mut rng, &sys.mutation_distributions());
         assert!(!mutated_locus.apply_adjustment_flag());
         assert_eq!(mutated_locus.value().get(), initial_value); // Value should not change as apply_flag is false
     }
@@ -411,7 +428,7 @@ mod tests {
         let l = create_test_locus(1.5); // Uses simpler helper, specific initial state
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // All probs default to 0.0
-        let l2 = l.mutate(&mut rng, &sys);
+        let l2 = l.mutate(&mut rng, &sys.mutation_distributions());
         assert_eq!(l2, l);
     }
 
@@ -421,7 +438,7 @@ mod tests {
         let l = create_test_locus(2.0); // Uses simpler helper
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]);
-        let l2 = l.mutate(&mut rng, &sys);
+        let l2 = l.mutate(&mut rng, &sys.mutation_distributions());
 
         // Expected sequence with all probs = 1.0 and initial locus from create_test_locus(2.0):
         // Initial: val=2.0, adj_val=0.0, dir=Add, double=false, apply=false
@@ -469,7 +486,7 @@ mod tests {
 
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
-        let mutated = locus.mutate_unbound(&mut rng, &sys);
+        let mutated = locus.mutate_unbound(&mut rng, &sys.mutation_distributions());
 
         // Value should be 1.5 + 5.0 = 6.5, which exceeds the original bounds [1.0, 2.0]
         assert_eq!(mutated.value().get(), 6.5);
@@ -485,7 +502,7 @@ mod tests {
 
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
-        let mutated = locus.mutate_unbound(&mut rng, &sys);
+        let mutated = locus.mutate_unbound(&mut rng, &sys.mutation_distributions());
 
         // Value should be 1.5 - 3.0 = -1.5, which is below the original bounds [1.0, 2.0]
         assert_eq!(mutated.value().get(), -1.5);
@@ -500,7 +517,7 @@ mod tests {
 
         let mut rng = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
-        let mutated = locus.mutate_unbound(&mut rng, &sys);
+        let mutated = locus.mutate_unbound(&mut rng, &sys.mutation_distributions());
 
         // Value should remain unchanged since apply_flag is false
         assert_eq!(mutated.value().get(), 1.5);
@@ -518,8 +535,8 @@ mod tests {
         let mut rng2 = SmallRng::seed_from_u64(0);
         let sys = SystemParameters::new(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]); // No mutations
 
-        let mutated_bounded = locus.mutate(&mut rng1, &sys);
-        let mutated_unbound = locus.mutate_unbound(&mut rng2, &sys);
+        let mutated_bounded = locus.mutate(&mut rng1, &sys.mutation_distributions());
+        let mutated_unbound = locus.mutate_unbound(&mut rng2, &sys.mutation_distributions());
 
         // Bounded should clamp to 2.0, unbound should be 2.4
         assert_eq!(mutated_bounded.value().get(), 2.0);

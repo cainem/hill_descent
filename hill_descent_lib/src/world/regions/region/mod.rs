@@ -39,9 +39,6 @@ impl Region {
     /// Also updates the region's min_score if the organism has a score
     /// that is lower than the current min_score.
     pub fn add_organism(&mut self, organism: Arc<Organism>) {
-        // Add organism to the region
-        self.organisms.push(Arc::clone(&organism));
-
         // Update min_score if this organism has a score
         if let Some(score) = organism.score() {
             match self.min_score {
@@ -55,6 +52,9 @@ impl Region {
                 }
             }
         }
+
+        // Add organism to the region
+        self.organisms.push(organism);
     }
 
     // Optional: A way to get the number of organisms in the region
@@ -72,6 +72,13 @@ impl Region {
     /// Returns true if this region currently has no organisms.
     pub fn is_empty(&self) -> bool {
         self.organisms.is_empty()
+    }
+
+    /// Takes all organisms out of the region, leaving it empty.
+    ///
+    /// This avoids cloning Arcs when moving organisms between collections.
+    pub fn take_organisms(&mut self) -> Vec<Arc<Organism>> {
+        std::mem::take(&mut self.organisms)
     }
 
     pub fn organisms(&self) -> &[Arc<Organism>] {

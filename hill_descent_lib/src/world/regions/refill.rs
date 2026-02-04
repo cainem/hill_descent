@@ -1,4 +1,5 @@
 use crate::world::organisms::Organisms;
+use std::sync::Arc;
 
 impl super::Regions {
     /// Handles the successful update of all organism region keys.
@@ -25,7 +26,18 @@ impl super::Regions {
             region.clear_organisms();
             // Min scores are not cleared here - they are cleared manually where dimensions change
         }
-        self.add_organisms(organisms);
+
+        // Move organisms to avoid Arc cloning, but preserve capacity for the refill
+        let initial_capacity = organisms.capacity();
+        let orgs_to_move = std::mem::replace(organisms, Organisms::with_capacity(initial_capacity));
+        self.add_organisms(orgs_to_move);
+
+        // Populate back into the organisms collection to maintain the master list
+        for region in self.regions.values() {
+            for organism in region.organisms() {
+                organisms.push(Arc::clone(organism));
+            }
+        }
 
         crate::trace!(
             "refill: total organisms after: {} (in regions: {})",

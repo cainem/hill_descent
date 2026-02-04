@@ -33,7 +33,7 @@ Product definition is documented in `hill_descent_lib/pdd.md`.
 - **Remove old code** - If introducing new patterns, clean up duplicates
 - **Check comments for accuracy** - check that changes haven't left inaccurate constants
 - **Add new comments** - for functions added or amended make sure the function is accompanied by appropriate comments
-- **Check the pdd.md** - check that changes have not invalidated the `hill_descent_lib/pdd.md` and update as necessary
+- **Check pdd.md** - check that changes have not invalidated the `hill_descent_lib/pdd.md` and update as necessary
 - **Check tests** - Make sure the tests covering changed code still cover all conditions and branches
 
 ### Environment Notes

@@ -1,5 +1,7 @@
 use crate::world::organisms::Organisms;
+#[cfg(test)]
 use crate::world::organisms::organism::Organism;
+#[cfg(test)]
 use std::sync::Arc;
 
 impl super::Regions {
@@ -13,28 +15,24 @@ impl super::Regions {
     /// # Arguments
     ///
     /// * `self` - A mutable reference to the `Regions` instance.
-    /// * `organisms` - A reference to the `Organisms` collection to process.
+    /// * `organisms` - The `Organisms` collection to process (consumed to avoid cloning Arcs).
     ///
     /// # Panics
     ///
     /// Panics if any organism does not have a region key, as this indicates
     /// a serious bug in the system.
-    ///
-    /// # Performance Warning
-    ///
-    /// Logs a warning if the number of unique regions exceeds 1000. RegionKey uses
-    /// hash-only equality, which has negligible collision risk (<0.0000000003%) for
-    /// <1000 keys but increases to ~0.000003% for 10,000 keys.
-    pub fn add_organisms(&mut self, organisms: &Organisms) {
-        for organism in organisms.iter() {
+    pub fn add_organisms(&mut self, organisms: Organisms) {
+        for organism in organisms.into_iter() {
             let key = organism
                 .region_key()
                 .expect("All organisms must have a region key when adding to regions");
-            let organism_rc: Arc<Organism> = Arc::clone(organism);
             let region = self.regions.entry(key).or_default();
-            region.add_organism(organism_rc);
+            region.add_organism(organism);
         }
+        self.check_region_count();
+    }
 
+    fn check_region_count(&self) {
         // Warn if we have too many regions for hash-only equality to be safe
         let region_count = self.regions.len();
         if region_count > 1000 {
@@ -45,6 +43,20 @@ impl super::Regions {
                 region_count
             );
         }
+    }
+
+    #[cfg(test)]
+    pub fn add_organisms_ref(&mut self, organisms: &Organisms) {
+        for organism in organisms.iter() {
+            let key = organism
+                .region_key()
+                .expect("All organisms must have a region key when adding to regions");
+            let organism_rc: Arc<Organism> = Arc::clone(organism);
+            let region = self.regions.entry(key).or_default();
+            region.add_organism(organism_rc);
+        }
+
+        self.check_region_count();
     }
 }
 
@@ -77,7 +89,7 @@ mod tests {
         let mut regions = Regions::new(&global_constants);
         let organisms = Organisms::new_from_phenotypes(vec![]);
 
-        regions.add_organisms(&organisms);
+        regions.add_organisms_ref(&organisms);
 
         assert_eq!(regions.len(), 0);
     }
@@ -93,7 +105,7 @@ mod tests {
         // Organisms created by new_from_phenotypes will have _region_key = None by default.
 
         // This should panic because organisms don't have region keys
-        regions.add_organisms(&organisms_collection);
+        regions.add_organisms_ref(&organisms_collection);
     }
 
     #[test]
@@ -114,7 +126,7 @@ mod tests {
             .unwrap()
             .set_region_key(Some(region_key1.clone()));
 
-        regions.add_organisms(&organisms_collection);
+        regions.add_organisms_ref(&organisms_collection);
 
         assert_eq!(regions.len(), 1);
         let region = regions
@@ -145,7 +157,7 @@ mod tests {
         org2_mut.set_region_key(Some(region_key.clone()));
         let org2_rc_from_org = org2_mut.get_phenotype_rc();
 
-        regions.add_organisms(&organisms_collection);
+        regions.add_organisms_ref(&organisms_collection);
 
         assert_eq!(regions.len(), 1);
         let region = regions
@@ -186,7 +198,7 @@ mod tests {
         organism2_mut.set_region_key(Some(region_key2.clone()));
         let org2_rc_from_org = organism2_mut.get_phenotype_rc();
 
-        regions.add_organisms(&organisms_collection);
+        regions.add_organisms_ref(&organisms_collection);
 
         assert_eq!(regions.len(), 2);
 
@@ -224,7 +236,7 @@ mod tests {
             .next()
             .unwrap()
             .set_region_key(Some(region_key.clone()));
-        regions.add_organisms(&initial_organisms);
+        regions.add_organisms_ref(&initial_organisms);
 
         // Now, prepare a new organism to be added to the same region
         let new_organisms_to_add = Organisms::new_from_phenotypes(vec![mock_phenotype()]);
@@ -240,7 +252,7 @@ mod tests {
             .set_region_key(Some(region_key.clone()));
 
         // Act: add the new organism
-        regions.add_organisms(&new_organisms_to_add);
+        regions.add_organisms_ref(&new_organisms_to_add);
 
         // Assert
         assert_eq!(regions.len(), 1); // Still only one region
