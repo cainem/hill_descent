@@ -1,16 +1,28 @@
 use crate::gamete::Gamete;
 use rand::Rng;
 
-/// Compute expressed values per PDD regression rules.
-/// This function is intended for use within the phenotype module.
-pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -> Vec<f64> {
+/// Compute expressed values per PDD regression rules, writing into a caller-provided buffer.
+///
+/// The buffer is cleared before use. After the call, `result` contains one expressed
+/// value per locus pair, in order. This avoids allocating a new `Vec<f64>` on each call
+/// when buffers are reused via the phenotype's thread-local pool.
+///
+/// # Panics
+/// Panics if the two gametes have different numbers of loci.
+pub(super) fn compute_expressed_into<R: Rng>(
+    g1: &Gamete,
+    g2: &Gamete,
+    rng: &mut R,
+    result: &mut Vec<f64>,
+) {
     let loci1 = g1.loci();
     let loci2 = g2.loci();
     if loci1.len() != loci2.len() {
         panic!("Gametes must have same number of loci");
     }
     let max_u64_f64 = u64::MAX as f64;
-    let mut result = Vec::with_capacity(loci1.len());
+    result.clear();
+    result.reserve(loci1.len());
     for (l1, l2) in loci1.iter().zip(loci2.iter()) {
         let c1 = l1.adjustment().checksum();
         let c2 = l2.adjustment().checksum();
@@ -36,6 +48,14 @@ pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -
         };
         result.push(value);
     }
+}
+
+/// Compute expressed values per PDD regression rules.
+/// Convenience wrapper retained for tests; production code uses `compute_expressed_into`.
+#[cfg(test)]
+pub(super) fn compute_expressed<R: Rng>(g1: &Gamete, g2: &Gamete, rng: &mut R) -> Vec<f64> {
+    let mut result = Vec::with_capacity(g1.loci().len());
+    compute_expressed_into(g1, g2, rng, &mut result);
     result
 }
 

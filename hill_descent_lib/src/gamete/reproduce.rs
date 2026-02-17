@@ -36,9 +36,10 @@ impl Gamete {
                 points.sort_unstable();
             }
         }
-        // Perform crossover
-        let mut offspring1 = Vec::with_capacity(len);
-        let mut offspring2 = Vec::with_capacity(len);
+        // Perform crossover using pooled buffers to avoid per-call heap allocation.
+        // In the steady state, buffers are recycled from dropped gametes.
+        let mut offspring1 = Self::take_buffer(len);
+        let mut offspring2 = Self::take_buffer(len);
         let mut use_p1 = true;
         let mut cps = points.into_iter();
         let mut next_cp = cps.next();
