@@ -2,6 +2,7 @@ use crate::{
     NUM_SYSTEM_PARAMETERS, gamete::Gamete, parameters::system_parameters::SystemParameters,
 };
 use rand::Rng; // Retain Rng for Phenotype::new, though not used in new_for_test directly.
+use std::cell::RefCell;
 
 // Note: Locus, LocusAdjustment, DirectionOfTravel, Parameter imports moved into new_for_test
 
@@ -10,6 +11,24 @@ pub mod compute_expressed;
 pub mod compute_expressed_hash;
 pub mod new_random_phenotype;
 pub mod sexual_reproduction;
+
+/// Minimum expressed vector capacity (in f64 elements) for pool eligibility.
+/// Vectors smaller than this threshold are cheaply allocated by the system
+/// allocator, so pooling overhead is not justified.
+const MIN_EXPRESSED_POOL_CAPACITY: usize = 1_000;
+
+/// Maximum number of expressed buffers retained per thread in the pool.
+/// Prevents unbounded memory growth from cross-thread drops.
+const MAX_EXPRESSED_POOL_ENTRIES: usize = 50;
+
+thread_local! {
+    /// Thread-local pool of `Vec<f64>` buffers for reuse by `compute_expressed`.
+    ///
+    /// When a `Phenotype` with a large `expressed` vector is dropped, the backing
+    /// buffer is returned to this pool. When a new `Phenotype` is created, the
+    /// buffer is taken from the pool instead of allocating from the heap.
+    static EXPRESSED_POOL: RefCell<Vec<Vec<f64>>> = const { RefCell::new(Vec::new()) };
+}
 
 /// A Phenotype is constructed from a pair of gametes.
 #[derive(Debug, Clone, PartialEq)]
@@ -30,7 +49,7 @@ pub struct Phenotype {
 impl Phenotype {
     /// Creates a new Phenotype from two gametes, computing expressed values using the given RNG.
     pub fn new<R: Rng>(gamete1: Gamete, gamete2: Gamete, rng: &mut R) -> Self {
-        let expressed = compute_expressed::compute_expressed(&gamete1, &gamete2, rng);
+        let expressed = Self::compute_expressed_pooled(&gamete1, &gamete2, rng);
         if expressed.len() < NUM_SYSTEM_PARAMETERS {
             panic!(
                 "Cannot create Phenotype: expressed values (genes) length {} is less than required {} for SystemParameters. Gametes need to provide at least {} loci.",
@@ -141,6 +160,55 @@ impl Phenotype {
     pub fn expressed_hash(&self) -> u64 {
         self.expressed_hash
     }
+
+    /// Takes a pre-allocated `Vec<f64>` buffer from the thread-local pool,
+    /// or creates a new one with the given capacity if the pool is empty.
+    ///
+    /// Only uses the pool for capacities at or above `MIN_EXPRESSED_POOL_CAPACITY`.
+    fn take_expressed_buffer(capacity: usize) -> Vec<f64> {
+        if capacity >= MIN_EXPRESSED_POOL_CAPACITY {
+            EXPRESSED_POOL.with(|pool| {
+                pool.borrow_mut()
+                    .pop()
+                    .unwrap_or_else(|| Vec::with_capacity(capacity))
+            })
+        } else {
+            Vec::with_capacity(capacity)
+        }
+    }
+
+    /// Computes expressed values using a pooled buffer for the result.
+    ///
+    /// Takes a buffer from the thread-local pool (or allocates a new one),
+    /// then delegates to `compute_expressed::compute_expressed_into` to fill it.
+    fn compute_expressed_pooled<R: Rng>(
+        gamete1: &Gamete,
+        gamete2: &Gamete,
+        rng: &mut R,
+    ) -> Vec<f64> {
+        let mut buf = Self::take_expressed_buffer(gamete1.len());
+        compute_expressed::compute_expressed_into(gamete1, gamete2, rng, &mut buf);
+        buf
+    }
+}
+
+impl Drop for Phenotype {
+    fn drop(&mut self) {
+        // Only pool large expressed buffers where allocation cost justifies overhead.
+        if self.expressed.capacity() >= MIN_EXPRESSED_POOL_CAPACITY {
+            let mut buf = std::mem::take(&mut self.expressed);
+            buf.clear();
+            // Return buffer to thread-local pool for reuse, subject to pool cap.
+            // try_with handles the case where the thread-local is being destroyed
+            // during thread shutdown.
+            let _ = EXPRESSED_POOL.try_with(|pool| {
+                let mut pool = pool.borrow_mut();
+                if pool.len() < MAX_EXPRESSED_POOL_ENTRIES {
+                    pool.push(buf);
+                }
+            });
+        }
+    }
 }
 
 #[cfg(test)]
@@ -189,5 +257,113 @@ mod tests {
             expected_hash,
             "Expressed hash should match the re-calculated hash"
         );
+    }
+
+    #[test]
+    fn given_small_phenotype_when_dropped_then_expressed_buffer_not_pooled() {
+        let initial_pool_len = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+
+        {
+            // 9 loci — below MIN_EXPRESSED_POOL_CAPACITY threshold
+            let g1_vals = &[1.0, 2.0, 0.1, 0.5, 0.001, 100.0, 2.0, 8.0, 9.0];
+            let g2_vals = &[3.0, 4.0, 0.1, 0.5, 0.001, 100.0, 2.0, 10.0, 11.0];
+            let g1 = create_test_gamete(g1_vals);
+            let g2 = create_test_gamete(g2_vals);
+            let mut rng = SmallRng::seed_from_u64(0);
+            let _ph = Phenotype::new(g1, g2, &mut rng);
+            // _ph dropped here
+        }
+
+        let after_pool_len = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+        assert_eq!(
+            after_pool_len, initial_pool_len,
+            "Small expressed buffer should not be added to pool"
+        );
+    }
+
+    #[test]
+    fn given_large_phenotype_when_dropped_then_expressed_buffer_is_pooled() {
+        let initial_pool_len = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+
+        {
+            // Create a phenotype with many loci (>= MIN_EXPRESSED_POOL_CAPACITY)
+            let vals: Vec<f64> = (0..MIN_EXPRESSED_POOL_CAPACITY)
+                .map(|i| i as f64 * 0.01)
+                .collect();
+            // new_for_test bypasses compute_expressed but still sets `expressed`
+            let _ph = Phenotype::new_for_test(vals);
+            // _ph dropped here
+        }
+
+        let after_pool_len = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+        assert_eq!(
+            after_pool_len,
+            initial_pool_len + 1,
+            "Large expressed buffer should be returned to pool"
+        );
+    }
+
+    #[test]
+    fn given_expressed_pool_at_max_when_phenotype_dropped_then_buffer_freed() {
+        // Fill pool to MAX_EXPRESSED_POOL_ENTRIES
+        EXPRESSED_POOL.with(|pool| {
+            let mut pool = pool.borrow_mut();
+            pool.clear();
+            for _ in 0..MAX_EXPRESSED_POOL_ENTRIES {
+                pool.push(Vec::with_capacity(MIN_EXPRESSED_POOL_CAPACITY));
+            }
+        });
+
+        {
+            let vals: Vec<f64> = (0..MIN_EXPRESSED_POOL_CAPACITY)
+                .map(|i| i as f64 * 0.01)
+                .collect();
+            let _ph = Phenotype::new_for_test(vals);
+        }
+
+        let pool_len = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+        assert_eq!(
+            pool_len, MAX_EXPRESSED_POOL_ENTRIES,
+            "Pool should not exceed MAX_EXPRESSED_POOL_ENTRIES"
+        );
+
+        // Clean up
+        EXPRESSED_POOL.with(|pool| pool.borrow_mut().clear());
+    }
+
+    #[test]
+    fn given_take_expressed_buffer_when_pool_has_entry_then_reuses_buffer() {
+        let capacity = MIN_EXPRESSED_POOL_CAPACITY + 100;
+        EXPRESSED_POOL.with(|pool| {
+            pool.borrow_mut().push(Vec::with_capacity(capacity));
+        });
+
+        let reused = Phenotype::take_expressed_buffer(MIN_EXPRESSED_POOL_CAPACITY);
+        assert!(
+            reused.capacity() >= capacity,
+            "take_expressed_buffer should return a pooled buffer with retained capacity"
+        );
+        assert_eq!(reused.len(), 0, "Pooled buffer should be empty");
+    }
+
+    #[test]
+    fn given_take_expressed_buffer_when_below_threshold_then_skips_pool() {
+        EXPRESSED_POOL.with(|pool| {
+            pool.borrow_mut()
+                .push(Vec::with_capacity(MIN_EXPRESSED_POOL_CAPACITY));
+        });
+        let pool_before = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+
+        let buf = Phenotype::take_expressed_buffer(10);
+        assert_eq!(buf.capacity(), 10);
+
+        let pool_after = EXPRESSED_POOL.with(|pool| pool.borrow().len());
+        assert_eq!(
+            pool_after, pool_before,
+            "take_expressed_buffer below threshold should not drain the pool"
+        );
+
+        // Clean up
+        EXPRESSED_POOL.with(|pool| pool.borrow_mut().clear());
     }
 }
