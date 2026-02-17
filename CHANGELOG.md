@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1] - 2026-02-17
+### Changed
+- Reduced allocation overhead in gamete reproduction by reusing pooled locus buffers.
+- Reduced allocation overhead in phenotype expression by reusing pooled expressed-value buffers.
+
+### Internal
+- Added thread-local buffer pools with bounded retention to avoid unbounded memory growth.
+- Refactored phenotype expression internals to support writing into caller-provided buffers.
+
 ## [0.3.0] - 2026-02-04
 ### Changed
 - Significant performance improvements across genetic operations (~20-40% faster execution)
