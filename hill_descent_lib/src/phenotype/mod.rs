@@ -168,9 +168,14 @@ impl Phenotype {
     fn take_expressed_buffer(capacity: usize) -> Vec<f64> {
         if capacity >= MIN_EXPRESSED_POOL_CAPACITY {
             EXPRESSED_POOL.with(|pool| {
-                pool.borrow_mut()
+                let mut buffer = pool
+                    .borrow_mut()
                     .pop()
-                    .unwrap_or_else(|| Vec::with_capacity(capacity))
+                    .unwrap_or_else(|| Vec::with_capacity(capacity));
+                if buffer.capacity() < capacity {
+                    buffer.reserve(capacity - buffer.capacity());
+                }
+                buffer
             })
         } else {
             Vec::with_capacity(capacity)

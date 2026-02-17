@@ -22,6 +22,7 @@ pub(super) fn compute_expressed_into<R: Rng>(
     }
     let max_u64_f64 = u64::MAX as f64;
     result.clear();
+    result.reserve(loci1.len());
     for (l1, l2) in loci1.iter().zip(loci2.iter()) {
         let c1 = l1.adjustment().checksum();
         let c2 = l2.adjustment().checksum();

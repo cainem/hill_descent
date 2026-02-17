@@ -42,13 +42,18 @@ impl Gamete {
     ///
     /// Only uses the pool for capacities at or above `MIN_POOL_CAPACITY`.
     /// The returned buffer has length 0 but may have capacity greater than
-    /// `capacity` (from a previous gamete of equal or larger size).
+    /// or equal to `capacity` (from a previous gamete of equal or larger size).
     pub(crate) fn take_buffer(capacity: usize) -> Vec<Locus> {
         if capacity >= MIN_POOL_CAPACITY {
             LOCI_POOL.with(|pool| {
-                pool.borrow_mut()
+                let mut buffer = pool
+                    .borrow_mut()
                     .pop()
-                    .unwrap_or_else(|| Vec::with_capacity(capacity))
+                    .unwrap_or_else(|| Vec::with_capacity(capacity));
+                if buffer.capacity() < capacity {
+                    buffer.reserve(capacity - buffer.capacity());
+                }
+                buffer
             })
         } else {
             Vec::with_capacity(capacity)
